@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Yönetim Paneli — Yakında Kurye</title>
+  <link rel="icon" href="assets/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/admin.css?v=6">
+</head>
+<body>
+
+  <!-- Giriş -->
+  <div class="login" id="login" hidden>
+    <div class="login-wrap">
+      <div class="login-art" aria-hidden="true">
+        <img src="assets/img/logo-koyu.png" alt="">
+        <h2>Zamanında Yanınızda</h2>
+        <p>Kurye başvuruları, işletme talepleri, müşteriler, çalışanlar ve site içeriği tek panelde.</p>
+      </div>
+      <form class="login-card" id="loginForm" autocomplete="on">
+        <img src="assets/img/logo.png" alt="Yakında Kurye" class="login-logo">
+        <h1>Yönetim Paneli</h1>
+        <p class="muted">Devam etmek için giriş yapın.</p>
+        <label class="fld"><span>Kullanıcı adı</span><input name="user" autocomplete="username" required></label>
+        <label class="fld"><span>Şifre</span><span class="pw-wrap"><input name="pass" type="password" autocomplete="current-password" required><button type="button" class="pw-eye" id="pwEye" aria-label="Şifreyi göster"><span data-i="goz"></span></button></span></label>
+        <p class="login-err" id="loginErr" hidden>Kullanıcı adı veya şifre hatalı.</p>
+        <button class="btn btn-dark btn-block btn-lg">Giriş Yap</button>
+        <a href="index.html" class="back-link">← Siteye dön</a>
+      </form>
+    </div>
+  </div>
+
+  <!-- Panel -->
+  <div class="app" id="app" hidden>
+    <aside class="side" id="side">
+      <a href="#panel" class="side-brand"><img src="assets/img/logo-koyu.png" alt="Yakında Kurye"><span>Yönetim Paneli</span></a>
+      <nav class="side-nav" id="sideNav">
+        <a href="#panel" data-r="panel"><span data-i="panel"></span>Genel Bakış</a>
+        <span class="side-group">İşletmeler</span>
+        <a href="#basvurular/isletme" data-r="basvurular/isletme"><span data-i="magaza"></span>İşletme Talepleri<b class="nb" id="nbBiz" hidden></b></a>
+        <a href="#musteriler" data-r="musteriler"><span data-i="bina"></span>Müşteriler</a>
+        <span class="side-group">Kuryeler</span>
+        <a href="#basvurular/kurye" data-r="basvurular/kurye"><span data-i="motor"></span>Kurye Başvuruları<b class="nb" id="nbCour" hidden></b></a>
+        <a href="#calisanlar" data-r="calisanlar"><span data-i="ekip"></span>Çalışanlar</a>
+        <a href="#kayitlar" data-r="kayitlar"><span data-i="liste"></span>Kayıtlar & Puantaj</a>
+        <span class="side-group">Site</span>
+        <a href="#icerik" data-r="icerik"><span data-i="yazi"></span>Site İçeriği<b class="nb dot" id="nbPub" hidden title="Yayınlanmamış değişiklik var"></b></a>
+        <a href="#icerik/seo" data-r="icerik/seo"><span data-i="ara"></span>SEO</a>
+        <a href="#ayarlar" data-r="ayarlar"><span data-i="ayar"></span>Ayarlar</a>
+      </nav>
+      <div class="side-foot">
+        <a href="index.html" target="_blank" class="side-link"><span data-i="dis"></span>Siteyi görüntüle</a>
+        <div class="side-user"><span class="su-av">A</span><div><b id="suName">admin</b><small>Yönetici</small></div><button class="icon-btn sm" id="logout" title="Çıkış yap" aria-label="Çıkış yap"><span data-i="cikis"></span></button></div>
+      </div>
+    </aside>
+    <div class="side-overlay" id="sideOverlay"></div>
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-btn" id="menuBtn" aria-label="Menü"><span data-i="menu"></span></button>
+        <div class="tb-title"><h1 id="pageTitle">Genel Bakış</h1><small id="pageSub"></small></div>
+        <div class="gsearch" id="gsearch"><span data-i="ara"></span><input id="gq" placeholder="Ara… (başvuru, kurye, müşteri)" autocomplete="off"><kbd>Ctrl K</kbd><div class="gs-res" id="gres" hidden></div></div>
+        <div class="top-actions" id="topActions"></div>
+      </header>
+      <main class="view" id="view"></main>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <script src="assets/js/content.js?v=6"></script>
+  <script src="assets/js/store.js?v=6"></script>
+  <script src="assets/js/admin.js?v=6"></script>
+</body>
+</html>

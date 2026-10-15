@@ -1,0 +1,1280 @@
+/* Yakında Kurye — Yönetim paneli */
+(function () {
+  'use strict';
+  const $ = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+  const esc = YK.esc, I = YK.icon;
+  const view = $('#view');
+  const state = {};
+  const isoDay = d => { d = new Date(d); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+  const today = () => isoDay(new Date());
+  const addDays = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return isoDay(d); };
+  const thisMonth = () => today().slice(0, 7);
+  const monthLabel = m => m ? new Date(m + '-01T00:00:00').toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) : 'Tüm zamanlar';
+  const daysUntil = iso => Math.round((new Date(iso + 'T12:00:00') - new Date(today() + 'T12:00:00')) / 864e5);
+  const statusOf = k => YK.APP_STATUSES.find(s => s.key === k) || YK.APP_STATUSES[0];
+  const appName = a => a.data.adSoyad || a.data.isletmeAdi || '—';
+  const initials = n => (n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toLocaleUpperCase('tr-TR');
+  const num = v => Number(String(v || '').replace(',', '.')) || 0;
+  const telHref = t => 'tel:' + String(t || '').replace(/[^\d+]/g, '');
+  const waHref = t => { let d = String(t || '').replace(/\D/g, ''); if (d[0] === '0') d = '9' + d; return 'https://wa.me/' + d; };
+  const lower = s => String(s || '').toLocaleLowerCase('tr-TR');
+  const typeLabel = t => t === 'kurye' ? 'Kurye' : 'İşletme';
+
+  $$('[data-i]').forEach(el => { el.innerHTML = I(el.dataset.i); });
+
+  /* =================== Bileşenler =================== */
+  function toast(msg, type) {
+    const t = document.createElement('div'); t.className = 'toast ' + (type || '');
+    t.innerHTML = I(type === 'err' ? 'kapat' : type === 'info' ? 'gelen' : 'check') + '<span>' + esc(msg) + '</span>';
+    $('#toasts').appendChild(t); setTimeout(() => t.classList.add('out'), type === 'info' ? 5000 : 2600); setTimeout(() => t.remove(), type === 'info' ? 5400 : 3000);
+  }
+
+  function modal(o) {
+    const w = document.createElement('div'); w.className = 'm-wrap';
+    w.innerHTML = '<div class="m' + (o.wide ? ' m-wide' : '') + '" role="dialog" aria-modal="true"><div class="m-head"><h3>' + esc(o.title) + '</h3><button class="icon-btn m-x" aria-label="Kapat">' + I('kapat') + '</button></div><div class="m-body"></div><div class="m-foot"></div></div>';
+    const body = $('.m-body', w), foot = $('.m-foot', w);
+    if (typeof o.body === 'string') body.innerHTML = o.body; else if (o.body) body.appendChild(o.body);
+    const api = { el: w, body: body, close: close };
+    (o.actions || []).forEach(a => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ' + (a.cls || 'btn-light'); b.innerHTML = a.label;
+      if (a.left) b.classList.add('left');
+      b.onclick = () => a.onClick ? a.onClick(api) : close(); foot.appendChild(b);
+    });
+    if (!o.actions || !o.actions.length) foot.remove();
+    function onKey(e) { if (e.key === 'Escape' && w === $$('.m-wrap').pop()) close(); }
+    function close() { w.remove(); document.removeEventListener('keydown', onKey); if (o.onClose) o.onClose(); }
+    document.addEventListener('keydown', onKey);
+    w.addEventListener('mousedown', e => { if (e.target === w) close(); });
+    $('.m-x', w).onclick = close;
+    document.body.appendChild(w);
+    const first = $('input:not([type=hidden]):not([type=file]):not([type=checkbox]),select,textarea', body); if (first && !o.noFocus) setTimeout(() => first.focus(), 30);
+    return api;
+  }
+  function confirmBox(msg, ok, danger) {
+    return new Promise(res => {
+      modal({
+        title: 'Onay', body: '<p class="confirm-msg">' + esc(msg) + '</p>', noFocus: true, onClose: () => res(false),
+        actions: [{ label: 'Vazgeç' }, { label: ok || 'Sil', cls: danger === false ? 'btn-dark' : 'btn-danger', onClick: m => { res(true); m.close(); } }]
+      });
+    });
+  }
+  // Yazdırılabilir sayfa açar
+  function printDoc(title, html) {
+    const w = window.open('', '_blank');
+    if (!w) { toast('Açılır pencere engellendi. Tarayıcı izin vermeli.', 'err'); return; }
+    w.document.write('<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>body{font:14px/1.5 Poppins,system-ui,sans-serif;color:#111;margin:32px}h1{font-size:20px;margin:0 0 4px}.sub{color:#666;margin:0 0 20px}table{width:100%;border-collapse:collapse;margin-top:10px}th,td{border:1px solid #ddd;padding:7px 9px;text-align:left;vertical-align:top}th{background:#FFD500;font-size:12px;text-transform:uppercase}td.n,th.n{text-align:right}.logo{height:46px;margin-bottom:14px}.foot{margin-top:28px;color:#888;font-size:12px}.sign{display:flex;justify-content:space-between;margin-top:60px}.sign div{border-top:1px solid #333;padding-top:6px;width:40%;text-align:center}</style></head><body><img class="logo" src="' + location.href.replace(/admin\.html.*$/, '') + 'assets/img/logo.png" alt="">' + html + '<p class="foot">Yakında Kurye · ' + YK.fmtDate(new Date().toISOString(), true) + '</p><script>window.onload=function(){setTimeout(function(){window.print()},300)}<\/script></body></html>');
+    w.document.close();
+  }
+
+  function inputHTML(f, v) {
+    v = v == null || v === '' ? (f.def || '') : v;
+    const n = ' name="' + f.name + '"' + (f.required ? ' required' : '');
+    if (f.type === 'select') {
+      const opts = f.options.slice(); if (v && opts.indexOf(v) < 0) opts.push(v);
+      return '<select' + n + '>' + (f.def ? '' : '<option value="">Seçiniz</option>') + opts.map(o => '<option' + (o === v ? ' selected' : '') + '>' + esc(o) + '</option>').join('') + '</select>';
+    }
+    if (f.type === 'customer') {
+      const cs = YK.list('customers').filter(c => c.durum !== 'Ayrıldı' || c.id === v).sort((a, b) => (a.isletmeAdi || '').localeCompare(b.isletmeAdi || '', 'tr'));
+      return '<select' + n + '><option value="">— Atanmadı —</option>' + cs.map(c => '<option value="' + c.id + '"' + (c.id === v ? ' selected' : '') + '>' + esc(c.isletmeAdi) + '</option>').join('') + '</select>';
+    }
+    if (f.type === 'textarea') return '<textarea' + n + ' rows="' + (f.rows || 3) + '">' + esc(v) + '</textarea>';
+    return '<input' + n + ' type="' + (f.type || 'text') + '" value="' + esc(v) + '"' + (f.placeholder ? ' placeholder="' + esc(f.placeholder) + '"' : '') + (f.maxlength ? ' maxlength="' + f.maxlength + '"' : '') + (f.type === 'number' ? ' step="any" min="0"' : '') + '>';
+  }
+  function formHTML(fields, data) {
+    data = data || {};
+    return '<div class="f-grid">' + fields.map(f => '<label class="fld' + (f.full ? ' full' : '') + '"><span>' + esc(f.label) + (f.required ? ' <i>*</i>' : '') + '</span>' + inputHTML(f, data[f.name]) + (f.hint ? '<small>' + esc(f.hint) + '</small>' : '') + '</label>').join('') + '</div>';
+  }
+  function readForm(root, fields) {
+    const d = {}; let ok = true;
+    fields.forEach(f => {
+      const el = root.querySelector('[name="' + f.name + '"]'); if (!el) return;
+      d[f.name] = (el.value || '').trim();
+      const bad = f.required && !d[f.name]; el.classList.toggle('bad', bad); if (bad) ok = false;
+    });
+    if (!ok) { toast('Zorunlu alanları doldurun', 'err'); const b = root.querySelector('.bad'); if (b) b.focus(); }
+    return ok ? d : null;
+  }
+  function hydrate(root) { $$('img[data-src]', root || document).forEach(im => YK.setImg(im, im.dataset.src)); }
+  function avatar(e, size) {
+    return '<span class="av' + (size ? ' av-' + size : '') + '">' + (e.foto ? '<img data-src="' + esc(e.foto) + '" alt="">' : esc(initials(e.adSoyad))) + '</span>';
+  }
+  function badge(k) { const s = statusOf(k); return '<span class="st" style="--c:' + s.color + '">' + esc(s.label) + '</span>'; }
+  const EMP_COLORS = { 'Aktif': '#16a34a', 'İzinli': '#d97706', 'Pasif': '#6b7280', 'Ayrıldı': '#dc2626' };
+  function empBadge(d) { return '<span class="st" style="--c:' + (EMP_COLORS[d] || '#6b7280') + '">' + esc(d || '—') + '</span>'; }
+  function empty(icon, title, text, btn) { return '<div class="empty">' + I(icon) + '<h3>' + esc(title) + '</h3><p>' + esc(text) + '</p>' + (btn || '') + '</div>'; }
+  function setTop(title, actions, sub) { $('#pageTitle').textContent = title; $('#pageSub').textContent = sub || ''; $('#topActions').innerHTML = actions || ''; }
+  function newCount() { return YK.list('applications').filter(a => a.status === 'yeni').length; }
+  function updateBadges() {
+    const apps = YK.list('applications').filter(a => a.status === 'yeni');
+    [['nbCour', 'kurye'], ['nbBiz', 'isletme']].forEach(([id, t]) => { const n = apps.filter(a => a.type === t).length, b = $('#' + id); b.textContent = n; b.hidden = !n; });
+    $('#nbPub').hidden = !YK.hasUnpublished();
+    document.title = (apps.length ? '(' + apps.length + ') ' : '') + 'Yönetim Paneli — Yakında Kurye';
+  }
+  const custName = id => { const c = id && YK.get('customers', id); return c ? c.isletmeAdi : ''; };
+
+  // Çalışanın yaklaşan / geçmiş evrak tarihleri
+  function expiries(e) {
+    return YK.EXPIRY_FIELDS.filter(([k]) => e[k]).map(([k, l]) => ({ key: k, label: l, date: e[k], days: daysUntil(e[k]) })).filter(x => x.days <= 30);
+  }
+  const docCount = e => (e.evrak || []).filter(d => YK.EMP_DOCS.indexOf(d) >= 0).length;
+
+  /* =================== Giriş & oturum =================== */
+  const IDLE_MIN = 60;
+  let lastAct = Date.now();
+  ['click', 'keydown', 'mousemove', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { lastAct = Date.now(); }, { passive: true }));
+  setInterval(() => { if (YK.auth.isLogged() && !$('#app').hidden && Date.now() - lastAct > IDLE_MIN * 60000 && !dirty) { YK.auth.logout(); showLogin(); toast('Güvenlik için oturum kapatıldı', 'err'); } }, 60000);
+
+  let fails = 0, lockUntil = 0;
+  try { lockUntil = Number(sessionStorage.getItem('yk_lock')) || 0; } catch (e) {}
+  function showLogin() {
+    $('#login').hidden = false; $('#app').hidden = true; $$('.m-wrap').forEach(m => m.remove());
+    const f = $('#loginForm');
+    f.onsubmit = e => {
+      e.preventDefault();
+      if (Date.now() < lockUntil) { $('#loginErr').textContent = 'Çok fazla hatalı deneme. ' + Math.ceil((lockUntil - Date.now()) / 1000) + ' sn sonra tekrar deneyin.'; $('#loginErr').hidden = false; return; }
+      if (YK.auth.check(f.user.value, f.pass.value)) { fails = 0; YK.auth.login(); YK.log('Panele giriş yapıldı'); f.reset(); $('#loginErr').hidden = true; showApp(); }
+      else {
+        fails++; if (fails >= 5) { lockUntil = Date.now() + 60000; fails = 0; try { sessionStorage.setItem('yk_lock', lockUntil); } catch (er) {} }
+        $('#loginErr').textContent = 'Kullanıcı adı veya şifre hatalı.'; $('#loginErr').hidden = false; f.pass.value = ''; f.pass.focus();
+      }
+    };
+    setTimeout(() => f.user.focus(), 50);
+  }
+  function showApp() { $('#login').hidden = true; $('#app').hidden = false; lastAct = Date.now(); const u = YK.auth.creds().user; $('#suName').textContent = u; $('.su-av').textContent = (u[0] || 'A').toLocaleUpperCase('tr-TR'); route(); }
+  $('#pwEye').onclick = () => { const p = $('#loginForm').pass; p.type = p.type === 'password' ? 'text' : 'password'; $('#pwEye').innerHTML = I(p.type === 'password' ? 'goz' : 'kapat'); };
+  $('#logout').onclick = () => { if (!leaveOk()) return; YK.auth.logout(); location.hash = ''; showLogin(); };
+
+  /* =================== Canlı bildirim =================== */
+  // Site aynı tarayıcıda açıkken gelen başvuruyu anında bildirir
+  let knownNew = newCount();
+  function beep() { try { const c = new (window.AudioContext || window.webkitAudioContext)(); [0, .18].forEach(t => { const o = c.createOscillator(), g = c.createGain(); o.frequency.value = 880; g.gain.setValueAtTime(.12, c.currentTime + t); g.gain.exponentialRampToValueAtTime(.001, c.currentTime + t + .15); o.connect(g); g.connect(c.destination); o.start(c.currentTime + t); o.stop(c.currentTime + t + .16); }); } catch (e) {} }
+  window.addEventListener('storage', e => {
+    if (!YK.auth.isLogged() || $('#app').hidden) return;
+    if (e.key === 'yk_applications') {
+      const n = newCount();
+      if (n > knownNew) { const a = YK.list('applications')[0]; toast('Yeni ' + typeLabel(a.type).toLocaleLowerCase('tr-TR') + ' başvurusu: ' + appName(a), 'info'); beep(); }
+      knownNew = n; updateBadges();
+      if (/^#?(panel|basvurular)?$/.test(location.hash.replace('#', '')) && !$('.m-wrap') && !dirty) rerender();
+    }
+  });
+
+  /* =================== Yönlendirme =================== */
+  const ROUTES = { panel: viewPanel, basvurular: viewApps, musteriler: viewCustomers, musteri: viewCustomer, calisanlar: viewEmps, calisan: viewEmp, kayitlar: viewRecords, icerik: viewContent, ayarlar: viewSettings };
+  let dirty = false, lastHash = location.hash, skip = false;
+  function leaveOk() { return !dirty || confirm('Kaydedilmemiş değişiklikler var. Çıkmak istediğinize emin misiniz?'); }
+  window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+  window.addEventListener('hashchange', () => {
+    if (skip) { skip = false; return; }
+    if (!leaveOk()) { skip = true; location.hash = lastHash; return; }
+    dirty = false; route();
+  });
+  function route() {
+    if (!YK.auth.isLogged()) return showLogin();
+    lastHash = location.hash;
+    const parts = (location.hash.slice(1) || 'panel').split('/');
+    const fn = ROUTES[parts[0]] || viewPanel;
+    const full = parts.slice(0, 2).join('/');
+    const navKey = parts[0] === 'calisan' ? 'calisanlar' : parts[0] === 'musteri' ? 'musteriler' : parts[0] === 'icerik' ? (parts[1] === 'seo' ? 'icerik/seo' : 'icerik') : parts[0] === 'basvurular' ? full : parts[0];
+    $$('#sideNav a').forEach(a => a.classList.toggle('active', a.dataset.r === navKey));
+    $('#gres').hidden = true; $('#gq').value = '';
+    document.body.classList.remove('side-open');
+    updateBadges(); knownNew = newCount();
+    view.innerHTML = '';
+    fn(decodeURIComponent(parts[1] || ''));
+    hydrate(view);
+    window.scrollTo(0, 0);
+  }
+  function rerender() { const y = window.scrollY; route(); window.scrollTo(0, y); }
+  $('#menuBtn').onclick = () => document.body.classList.toggle('side-open');
+  $('#sideOverlay').onclick = () => document.body.classList.remove('side-open');
+
+  /* =================== Genel Bakış =================== */
+  function setupChecks() {
+    const c = YK.getContent(), D = YK.DEFAULT_CONTENT, s = c.settings;
+    let lastBackup = null; try { lastBackup = localStorage.getItem('yk_last_backup'); } catch (e) {}
+    return [
+      { ok: !YK.auth.isDefault(), t: 'Panel şifresini değiştirin', href: '#ayarlar' },
+      { ok: s.phone && s.phone !== D.settings.phone, t: 'Gerçek telefon numaranızı girin', href: '#icerik/genel' },
+      { ok: s.whatsapp && s.whatsapp !== D.settings.whatsapp, t: 'WhatsApp numaranızı girin', href: '#icerik/genel' },
+      { ok: s.address && s.address !== D.settings.address, t: 'Şube adresinizi girin', href: '#icerik/genel' },
+      { ok: s.email && s.email !== D.settings.email || !!(c.reviewed || {}).email, t: 'E-posta adresini kontrol edin', href: '#icerik/genel', confirm: 'email' },
+      { ok: !!c.calc.configured || c.sections.calc === false, t: 'Kazanç hesaplayıcıdaki paket ücretini ayarlayın', href: '#icerik/kazanc' },
+      { ok: !!(c.reviewed || {}).stats, t: 'İstatistik bandındaki değerleri doğrulayın', href: '#icerik/hero', confirm: 'stats' },
+      { ok: !!s.notify_key, t: 'Başvurular için e-posta bildirimini kurun (önerilir)', href: '#icerik/genel' },
+      { ok: !!s.site_url, t: 'SEO: sitenizin alan adını girin (ör. https://yakindakurye.com)', href: '#icerik/seo' },
+      { ok: !YK.hasUnpublished(), t: 'Site değişikliklerini yayınlayın (content.js)', href: '#icerik/yayin' },
+      { ok: lastBackup && Date.now() - new Date(lastBackup) < 7 * 864e5, t: 'Son 7 gün içinde yedek alın', href: '#ayarlar' }
+    ];
+  }
+
+  function viewPanel() {
+    setTop('Genel Bakış', '<a href="index.html" target="_blank" class="btn btn-light">' + I('dis') + '<span class="hide-sm">Siteyi aç</span></a>');
+    const apps = YK.list('applications'), emps = YK.list('employees'), recs = YK.list('records');
+    const m = thisMonth();
+    const newApps = apps.filter(a => a.status === 'yeni').length;
+    const monthApps = apps.filter(a => (a.createdAt || '').slice(0, 7) === m).length;
+    const active = emps.filter(e => e.durum === 'Aktif').length;
+    const monthRecs = recs.filter(r => (r.tarih || '').slice(0, 7) === m);
+    const sum = summary(monthRecs);
+
+    const days = []; for (let i = 13; i >= 0; i--) days.push(addDays(today(), -i));
+    const per = days.map(d => recs.filter(r => r.tarih === d).reduce((s, r) => s + num(r.paket), 0));
+    const max = Math.max.apply(null, per.concat([1]));
+    const appPer = days.map(d => apps.filter(a => isoDay(a.createdAt) === d).length);
+    const appMax = Math.max.apply(null, appPer.concat([1]));
+
+    const checks = setupChecks(), done = checks.filter(c => c.ok).length;
+    const checkCard = done < checks.length ? '<section class="card setup"><div class="card-head"><h2>' + I('check') + ' Yayına hazırlık kontrol listesi</h2><span class="pill">' + done + ' / ' + checks.length + '</span></div><div class="setup-bar"><i style="width:' + (done / checks.length * 100) + '%"></i></div><ul class="setup-list">' +
+      checks.map(c => '<li class="' + (c.ok ? 'ok' : '') + '"><span class="sc">' + I(c.ok ? 'check' : 'uyari') + '</span><span>' + esc(c.t) + '</span>' + (c.ok ? '' : (c.confirm ? '<button class="link-btn" data-conf="' + c.confirm + '">Doğruladım</button>' : '') + '<a class="link" href="' + c.href + '">Düzenle →</a>') + '</li>').join('') + '</ul></section>' : '';
+
+    const alerts = [];
+    emps.filter(e => e.durum !== 'Ayrıldı').forEach(e => expiries(e).forEach(x => alerts.push({ e: e, x: x })));
+    alerts.sort((a, b) => a.x.days - b.x.days);
+    const alertCard = alerts.length ? '<section class="card"><div class="card-head"><h2>' + I('uyari') + ' Evrak & tarih uyarıları</h2><span class="pill red">' + alerts.length + '</span></div><ul class="mini-list">' +
+      alerts.slice(0, 8).map(a => '<li data-emp="' + a.e.id + '">' + avatar(a.e, 'sm') + '<div><b>' + esc(a.e.adSoyad) + '</b><small>' + esc(a.x.label) + ' · ' + YK.fmtDate(a.x.date) + '</small></div><span class="st" style="--c:' + (a.x.days < 0 ? '#dc2626' : '#d97706') + '">' + (a.x.days < 0 ? (-a.x.days) + ' gün geçti' : a.x.days === 0 ? 'Bugün' : a.x.days + ' gün kaldı') + '</span></li>').join('') + '</ul></section>' : '';
+
+    const byEmp = {}; monthRecs.forEach(r => { byEmp[r.empId] = (byEmp[r.empId] || 0) + num(r.paket); });
+    const top = Object.keys(byEmp).map(id => ({ e: emps.find(x => x.id === id), p: byEmp[id] })).filter(x => x.e && x.p).sort((a, b) => b.p - a.p).slice(0, 5);
+    const topMax = top.length ? top[0].p : 1;
+    const logs = YK.getLog().slice(0, 7);
+
+    const hr = new Date().getHours(), greet = hr < 6 ? 'İyi geceler' : hr < 12 ? 'Günaydın' : hr < 18 ? 'İyi günler' : 'İyi akşamlar';
+    const custs = YK.list('customers'), activeCust = custs.filter(c => c.durum === 'Aktif' || c.durum === 'Deneme').length;
+    const nBiz = apps.filter(a => a.status === 'yeni' && a.type === 'isletme').length, nCour = apps.filter(a => a.status === 'yeni' && a.type === 'kurye').length;
+    const miniApps = (t, title) => { const l = apps.filter(a => a.type === t).slice(0, 5); return '<section class="card"><div class="card-head"><h2>' + I(t === 'kurye' ? 'motor' : 'magaza') + title + '</h2><a href="#basvurular/' + t + '" class="link">Tümü →</a></div>' +
+      (l.length ? '<ul class="mini-list">' + l.map(a => '<li data-app="' + a.id + '"><span class="type-dot ' + a.type + '">' + esc(initials(appName(a))) + '</span><div><b>' + esc(appName(a)) + '</b><small>' + esc(t === 'kurye' ? [a.data.ilce, a.data.calismaModeli].filter(Boolean).join(' · ') : [a.data.sektor, a.data.ilce].filter(Boolean).join(' · ')) + ' · ' + YK.fmtDate(a.createdAt, true) + '</small></div>' + badge(a.status) + '</li>').join('') + '</ul>'
+        : empty(t === 'kurye' ? 'motor' : 'magaza', t === 'kurye' ? 'Henüz kurye başvurusu yok' : 'Henüz işletme talebi yok', 'Sitedeki ' + (t === 'kurye' ? 'kurye başvuru' : 'işletme talep') + ' formundan gelenler burada listelenir.')) + '</section>'; };
+    view.innerHTML = '<section class="welcome"><div><small>' + new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '</small><h2>' + greet + ', ' + esc(YK.auth.creds().user) + '</h2><p>' + (nBiz + nCour ? '<b>' + nBiz + '</b> yeni işletme talebi ve <b>' + nCour + '</b> yeni kurye başvurusu sizi bekliyor.' : 'Bekleyen yeni başvuru yok. Her şey yolunda!') + '</p></div><div class="welcome-btns"><a href="#basvurular/isletme" class="btn btn-yellow">' + I('magaza') + 'İşletme talepleri</a><a href="#basvurular/kurye" class="btn btn-ghost-w">' + I('motor') + 'Kurye başvuruları</a></div></section>' + (YK.auth.isDefault() ? '<div class="alert">' + I('kalkan') + '<div><b>Varsayılan şifre kullanılıyor.</b> Güvenliğiniz için <a href="#ayarlar">Ayarlar</a> bölümünden şifrenizi değiştirin.</div></div>' : '') +
+      checkCard +
+      '<div class="kpis">' +
+      kpi('magaza', 'Yeni işletme talebi', nBiz, '#basvurular/isletme', nBiz ? 'hot' : '', 'biz') +
+      kpi('motor', 'Yeni kurye başvurusu', nCour, '#basvurular/kurye', nCour ? 'hot' : '', 'cour') +
+      kpi('bina', 'Aktif müşteri işletme', activeCust + ' / ' + custs.length, '#musteriler', '', 'cust') +
+      kpi('ekip', 'Aktif kurye / çalışan', active + ' / ' + emps.length, '#calisanlar', '', 'emp') +
+      '</div>' + alertCard +
+      '<div class="grid-2">' +
+      miniApps('isletme', 'Son işletme talepleri') + miniApps('kurye', 'Son kurye başvuruları') + '</div><div class="grid-2">' +
+      '<section class="card"><div class="card-head"><h2>' + I('grafik') + 'Son 14 gün</h2><div class="seg sm" id="chartSeg"><button class="on" data-c="p">Paket</button><button data-c="a">Başvuru</button></div></div>' +
+      '<div class="bars" id="barsP">' + per.map((v, i) => bar(v, max, days[i], 'paket')).join('') + '</div>' +
+      '<div class="bars" id="barsA" hidden>' + appPer.map((v, i) => bar(v, appMax, days[i], 'başvuru')).join('') + '</div>' +
+      '<div class="mini-stats"><div><small>Bu ay çalışma saati</small><b>' + sum.saat.toLocaleString('tr-TR') + ' sa</b></div><div><small>Bu ay hakediş</small><b>' + YK.fmtMoney(sum.kazanc) + '</b></div><div><small>Bu ay ödenen</small><b>' + YK.fmtMoney(sum.odenen) + '</b></div></div>' +
+      '</section>' +
+      '<section class="card"><div class="card-head"><h2>' + I('yildiz') + 'Bu ayın en çok teslimat yapanları</h2></div>' +
+      (top.length ? '<ol class="leader">' + top.map((x, i) => '<li data-emp="' + x.e.id + '"><span class="rank r' + (i + 1) + '">' + (i + 1) + '</span>' + avatar(x.e, 'sm') + '<div><b>' + esc(x.e.adSoyad) + '</b><span class="lbar"><i style="width:' + (x.p / topMax * 100) + '%"></i></span></div><b class="lnum">' + x.p.toLocaleString('tr-TR') + '</b></li>').join('') + '</ol>'
+        : empty('grafik', 'Henüz veri yok', 'Vardiya kayıtlarına paket sayısı girildikçe sıralama oluşur.')) + '</section>' +
+      '</div><div class="grid-2"><section class="card"><div class="card-head"><h2>' + I('gelen') + 'Başvuru durumları</h2></div><div class="status-row">' +
+      YK.APP_STATUSES.map(s => { const n = apps.filter(a => a.status === s.key).length; return '<a href="#basvurular" data-st="' + s.key + '" class="status-box" style="--c:' + s.color + '"><b>' + n + '</b><span>' + s.label + '</span></a>'; }).join('') +
+      '</div></section><section class="card"><div class="card-head"><h2>' + I('gecmis') + 'Son işlemler</h2><a href="#ayarlar" class="link">Geçmiş →</a></div>' +
+      (logs.length ? '<ul class="log">' + logs.map(l => '<li><span>' + esc(l.text) + '</span><small>' + YK.fmtDate(l.t, true) + '</small></li>').join('') + '</ul>' : '<p class="muted small">Henüz işlem yok.</p>') +
+      '</section></div>' +
+      '<section class="quick"><a href="#musteriler" data-q="cust" class="q-btn">' + I('bina') + 'Yeni müşteri ekle</a><a href="#calisanlar" data-q="emp" class="q-btn">' + I('kullanici') + 'Yeni çalışan ekle</a><a href="#kayitlar" data-q="puantaj" class="q-btn">' + I('takvim') + 'Günlük puantaj gir</a><a href="#kayitlar" data-q="rapor" class="q-btn">' + I('hesap') + 'Hakediş raporu</a><a href="#icerik" class="q-btn">' + I('kalem') + 'Site içeriğini düzenle</a></section>';
+
+    $$('[data-app]', view).forEach(li => li.onclick = () => openApp(li.dataset.app));
+    $$('[data-emp]', view).forEach(li => li.onclick = () => { location.hash = '#calisan/' + li.dataset.emp; });
+    $$('[data-st]', view).forEach(a => a.onclick = () => { state.apps = Object.assign(state.apps || {}, { status: a.dataset.st }); });
+    $$('[data-q]', view).forEach(a => a.onclick = e => { e.preventDefault(); const q = a.dataset.q; if (q === 'cust') custForm(null, null, c => { location.hash = '#musteri/' + c.id; }); else if (q === 'emp') empForm(null, null, () => { location.hash = '#calisanlar'; }); else if (q === 'puantaj') puantajModal(); else payrollModal(); });
+    $$('[data-conf]', view).forEach(b => b.onclick = e => { e.preventDefault(); const c = YK.getContent(); c.reviewed = Object.assign({}, c.reviewed, { [b.dataset.conf]: true }); YK.saveContent(c); rerender(); });
+    $$('#chartSeg button').forEach(b => b.onclick = () => { $$('#chartSeg button').forEach(x => x.classList.toggle('on', x === b)); $('#barsP').hidden = b.dataset.c !== 'p'; $('#barsA').hidden = b.dataset.c !== 'a'; });
+  }
+  function bar(v, max, d, unit) { return '<div class="bar" title="' + YK.fmtDate(d) + ': ' + v + ' ' + unit + '"><em>' + (v || '') + '</em><i style="height:' + Math.max(2, v / max * 100) + '%"></i><span>' + d.slice(8) + '</span></div>'; }
+  function kpi(ic, label, val, href, cls, tone) { return '<a class="kpi ' + (cls || '') + ' tone-' + (tone || 'k') + '" href="' + href + '"><span class="kpi-ic">' + I(ic) + '</span><div><small>' + esc(label) + '</small><b>' + esc(val) + '</b></div></a>'; }
+
+  /* =================== Başvurular =================== */
+  function viewApps(type) {
+    const st = state.apps = Object.assign({ status: '', q: '', sort: 'new', sel: {} }, state.apps);
+    st.sel = {}; st.type = type === 'kurye' || type === 'isletme' ? type : '';
+    setTop(st.type === 'kurye' ? 'Kurye Başvuruları' : st.type === 'isletme' ? 'İşletme Talepleri' : 'Tüm Başvurular', '<button class="btn btn-light" id="csvApps">' + I('indir') + '<span class="hide-sm">Excel (CSV)</span></button>',
+      st.type === 'kurye' ? 'Kurye olmak için siteden başvuranlar' : st.type === 'isletme' ? 'Kurye hizmeti almak isteyen restoran ve işletmeler' : 'İşletme talepleri ve kurye başvuruları birlikte');
+    view.innerHTML =
+      '<div class="toolbar">' +
+      '<div class="seg" id="segType">' + [['isletme', 'İşletme talepleri'], ['kurye', 'Kurye başvuruları'], ['', 'Tümü']].map(([k, l]) => '<a href="#basvurular' + (k ? '/' + k : '') + '" class="' + (st.type === k ? 'on' : '') + '">' + l + '</a>').join('') + '</div>' +
+      '<select id="fStatus" class="sel"><option value="">Tüm durumlar</option>' + YK.APP_STATUSES.map(s => '<option value="' + s.key + '"' + (st.status === s.key ? ' selected' : '') + '>' + s.label + '</option>').join('') + '</select>' +
+      '<select id="fSort" class="sel"><option value="new">En yeni</option><option value="old"' + (st.sort === 'old' ? ' selected' : '') + '>En eski</option><option value="name"' + (st.sort === 'name' ? ' selected' : '') + '>Ada göre</option></select>' +
+      '<label class="search">' + I('ara') + '<input id="fQ" placeholder="Ad, telefon, başvuru no, ilçe…" value="' + esc(st.q) + '"></label>' +
+      '</div><div class="bulk" id="bulk" hidden><b id="bulkN"></b><select id="bulkSt" class="sel"><option value="">Durum değiştir…</option>' + YK.APP_STATUSES.map(s => '<option value="' + s.key + '">' + s.label + '</option>').join('') + '</select><button class="btn btn-light sm" id="bulkCsv">' + I('indir') + 'CSV</button><button class="btn btn-danger-ghost sm" id="bulkDel">' + I('cop') + 'Sil</button><button class="link-btn" id="bulkClr">Seçimi temizle</button></div>' +
+      '<section class="card flush"><div id="appTable"></div></section>';
+
+    const filtered = () => {
+      const q = lower(st.q);
+      const rows = YK.list('applications').filter(a => (!st.type || a.type === st.type) && (!st.status || a.status === st.status) &&
+        (!q || lower([a.ref, appName(a), a.data.telefon, a.data.ilce, a.data.il, a.data.yetkili, a.data.eposta].join(' ')).indexOf(q) >= 0));
+      if (st.sort === 'old') rows.reverse();
+      if (st.sort === 'name') rows.sort((x, y) => appName(x).localeCompare(appName(y), 'tr'));
+      return rows;
+    };
+    const selIds = () => Object.keys(st.sel).filter(k => st.sel[k]);
+    function syncBulk() { const n = selIds().length; $('#bulk').hidden = !n; $('#bulkN').textContent = n + ' seçili'; const all = $('#selAll'); if (all) { const vis = $$('#appTable [data-sel]'); all.checked = vis.length && vis.every(c => c.checked); } }
+    function draw() {
+      const rows = filtered();
+      $('#appTable').innerHTML = rows.length ?
+        '<div class="table-wrap"><table class="tbl"><thead><tr><th class="cb"><input type="checkbox" id="selAll" aria-label="Tümünü seç"></th><th>Tarih</th><th>Tür</th><th>' + (st.type === 'kurye' ? 'Ad Soyad' : st.type === 'isletme' ? 'İşletme / Yetkili' : 'Ad / İşletme') + '</th><th>Telefon</th><th class="hide-md">Konum</th><th class="hide-md">Detay</th><th>Durum</th></tr></thead><tbody>' +
+        rows.map(a => '<tr data-id="' + a.id + '" class="' + (a.seen ? '' : 'unseen') + '"><td class="cb"><input type="checkbox" data-sel="' + a.id + '"' + (st.sel[a.id] ? ' checked' : '') + ' aria-label="Seç"></td><td><b>' + YK.fmtDate(a.createdAt) + '</b><small>' + esc(a.ref || '') + (a.notified ? ' · ' + I('mail', 'tiny') : '') + '</small></td>' +
+          '<td><span class="type-tag ' + a.type + '">' + typeLabel(a.type) + '</span></td>' +
+          '<td><b>' + esc(appName(a)) + '</b>' + (a.type === 'isletme' ? '<small>' + esc(a.data.yetkili || '') + '</small>' : '') + ((a.notes || []).length ? '<small>' + I('belge', 'tiny') + ' ' + a.notes.length + ' not</small>' : '') + '</td>' +
+          '<td class="nowrap">' + esc(a.data.telefon || '') + '</td><td class="hide-md">' + esc([a.data.ilce, a.data.il].filter(Boolean).join(' / ')) + '</td>' +
+          '<td class="hide-md"><small>' + esc(a.type === 'kurye' ? [a.data.calismaModeli, a.data.motor && a.data.motor.indexOf('Kendi') === 0 ? 'Kendi motoru' : 'Motor yok'].filter(Boolean).join(' · ') : [a.data.sektor, a.data.gunlukPaket && a.data.gunlukPaket + ' paket/gün'].filter(Boolean).join(' · ')) + '</small></td>' +
+          '<td>' + badge(a.status) + '</td></tr>').join('') + '</tbody></table></div><div class="tbl-foot">' + rows.length + (st.type === 'isletme' ? ' talep' : ' kayıt') + '</div>'
+        : empty(st.type === 'kurye' ? 'motor' : st.type === 'isletme' ? 'magaza' : 'gelen', 'Kayıt bulunamadı', st.q || st.status ? 'Filtreleri değiştirerek tekrar deneyin.' : st.type === 'isletme' ? 'Sitedeki işletme talep formundan gelen talepler burada görünür.' : st.type === 'kurye' ? 'Sitedeki kurye başvuru formundan gelen başvurular burada görünür.' : 'Sitedeki formlardan gelen kayıtlar burada görünür.');
+      $$('#appTable tr[data-id]').forEach(tr => tr.onclick = e => { if (e.target.closest('.cb')) return; openApp(tr.dataset.id, draw); });
+      $$('#appTable [data-sel]').forEach(c => c.onchange = () => { st.sel[c.dataset.sel] = c.checked; syncBulk(); });
+      const all = $('#selAll'); if (all) all.onchange = () => { $$('#appTable [data-sel]').forEach(c => { c.checked = all.checked; st.sel[c.dataset.sel] = all.checked; }); syncBulk(); };
+      syncBulk();
+    }
+    $('#fStatus').onchange = e => { st.status = e.target.value; draw(); };
+    $('#fSort').onchange = e => { st.sort = e.target.value; draw(); };
+    $('#fQ').oninput = e => { st.q = e.target.value; draw(); };
+    const exportRows = rows => {
+      const keys = []; ['kurye', 'isletme'].forEach(t => YK.FORMS[t].fields.forEach(f => { if (!keys.find(k => k.key === f.name)) keys.push({ key: f.name, label: f.label }); }));
+      const cols = [{ label: 'Başvuru No', get: r => r.ref }, { label: 'Tarih', get: r => YK.fmtDate(r.createdAt, true) }, { label: 'Tür', get: r => typeLabel(r.type) }, { label: 'Durum', get: r => statusOf(r.status).label }]
+        .concat(keys.map(k => ({ label: k.label, get: r => r.data[k.key] }))).concat([{ label: 'Notlar', get: r => (r.notes || []).map(n => n.text).join(' | ') }]);
+      YK.download('basvurular-' + today() + '.csv', YK.toCSV(rows, cols), 'text/csv;charset=utf-8');
+    };
+    $('#csvApps').onclick = () => exportRows(filtered());
+    $('#bulkCsv').onclick = () => { const ids = selIds(); exportRows(YK.list('applications').filter(a => ids.includes(a.id))); };
+    $('#bulkSt').onchange = e => {
+      const s = e.target.value; if (!s) return; const ids = selIds();
+      YK.saveList('applications', YK.list('applications').map(a => ids.includes(a.id) ? Object.assign({}, a, { status: s, seen: true, updatedAt: new Date().toISOString() }) : a));
+      YK.log(ids.length + ' başvurunun durumu "' + statusOf(s).label + '" yapıldı'); toast(ids.length + ' başvuru güncellendi'); st.sel = {}; e.target.value = ''; updateBadges(); draw();
+    };
+    $('#bulkDel').onclick = async () => {
+      const ids = selIds(); if (!(await confirmBox(ids.length + ' başvuru kalıcı olarak silinsin mi?'))) return;
+      YK.saveList('applications', YK.list('applications').filter(a => !ids.includes(a.id)));
+      YK.log(ids.length + ' başvuru silindi'); toast(ids.length + ' başvuru silindi'); st.sel = {}; updateBadges(); draw();
+    };
+    $('#bulkClr').onclick = () => { st.sel = {}; draw(); };
+    draw();
+  }
+
+  function printApp(a) {
+    const def = YK.FORMS[a.type];
+    printDoc(def.label + ' ' + (a.ref || ''), '<h1>' + esc(def.label) + ' — ' + esc(appName(a)) + '</h1><p class="sub">Başvuru No: ' + esc(a.ref || '') + ' · ' + YK.fmtDate(a.createdAt, true) + ' · Durum: ' + esc(statusOf(a.status).label) + '</p><table>' +
+      def.fields.map(f => '<tr><th style="width:34%">' + esc(f.label) + '</th><td>' + esc(f.type === 'date' ? YK.fmtDate(a.data[f.name]) : a.data[f.name] || '—').replace(/\n/g, '<br>') + '</td></tr>').join('') +
+      '<tr><th>KVKK onayı</th><td>' + (a.kvkk ? 'Verildi' : '—') + '</td></tr></table>' +
+      ((a.notes || []).length ? '<h1 style="margin-top:24px;font-size:16px">Notlar</h1><table>' + a.notes.map(n => '<tr><td style="width:24%">' + YK.fmtDate(n.t, true) + '</td><td>' + esc(n.text) + '</td></tr>').join('') + '</table>' : '') +
+      '<div class="sign"><div>Başvuru sahibi</div><div>Yetkili</div></div>');
+  }
+
+  function openApp(id, onChange) {
+    let a = YK.get('applications', id); if (!a) return;
+    if (!a.seen) { a = YK.update('applications', id, { seen: true }); updateBadges(); }
+    const def = YK.FORMS[a.type];
+    const refresh = () => { updateBadges(); if (onChange) onChange(); else if (/^#?(panel)?$/.test(location.hash.replace('#', ''))) rerender(); };
+    const body = document.createElement('div');
+    let m;
+    function render() {
+      a = YK.get('applications', id);
+      const age = a.data.dogumTarihi ? Math.floor((Date.now() - new Date(a.data.dogumTarihi)) / 31557600000) : null;
+      body.innerHTML =
+        '<div class="app-head"><span class="type-tag ' + a.type + '">' + def.label + '</span><span class="muted">' + esc(a.ref || '') + ' · ' + YK.fmtDate(a.createdAt, true) + '</span>' + (age ? '<span class="pill">' + age + ' yaş</span>' : '') + (a.notified ? '<span class="pill">' + I('mail', 'tiny') + ' e-posta gönderildi</span>' : '') + '</div>' +
+        '<div class="status-pick">' + YK.APP_STATUSES.map(s => '<button data-s="' + s.key + '" style="--c:' + s.color + '" class="' + (a.status === s.key ? 'on' : '') + '">' + s.label + '</button>').join('') + '</div>' +
+        '<dl class="dl">' + def.fields.map(f => '<div' + (f.full ? ' class="full"' : '') + '><dt>' + esc(f.label) + '</dt><dd>' + (a.data[f.name] ? esc(f.type === 'date' ? YK.fmtDate(a.data[f.name]) : a.data[f.name]).replace(/\n/g, '<br>') : '<span class="muted">—</span>') + '</dd></div>').join('') + '</dl>' +
+        (a.empId ? '<div class="alert ok">' + I('check') + '<div>Bu başvuru çalışan olarak eklendi. <a href="#calisan/' + a.empId + '" class="m-go">Çalışan kartını aç →</a></div></div>' : '') +
+        (a.custId ? '<div class="alert ok">' + I('check') + '<div>Bu işletme müşteri olarak kaydedildi. <a href="#musteri/' + a.custId + '" class="m-go">Müşteri kartını aç →</a></div></div>' : '') +
+        '<h4 class="sub">Notlar</h4><ul class="notes">' + ((a.notes || []).map((n, i) => '<li><p>' + esc(n.text) + '</p><small>' + YK.fmtDate(n.t, true) + ' <button data-dn="' + i + '" class="link-btn">sil</button></small></li>').join('') || '<li class="muted">Henüz not yok.</li>') + '</ul>' +
+        '<div class="note-add"><textarea id="noteTxt" rows="2" placeholder="Görüşme notu ekleyin… (Ctrl+Enter ile kaydet)"></textarea><button class="btn btn-dark" id="noteBtn">Ekle</button></div>';
+      $$('[data-s]', body).forEach(b => b.onclick = () => { YK.update('applications', id, { status: b.dataset.s }); YK.log(appName(a) + ' başvurusu: ' + statusOf(b.dataset.s).label); toast('Durum: ' + statusOf(b.dataset.s).label); render(); refresh(); });
+      const addNote = () => { const t = $('#noteTxt', body).value.trim(); if (!t) return; YK.update('applications', id, { notes: (a.notes || []).concat([{ t: new Date().toISOString(), text: t }]) }); render(); refresh(); };
+      $('#noteBtn', body).onclick = addNote;
+      $('#noteTxt', body).onkeydown = e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) addNote(); };
+      $$('[data-dn]', body).forEach(b => b.onclick = () => { const n = (a.notes || []).slice(); n.splice(+b.dataset.dn, 1); YK.update('applications', id, { notes: n }); render(); });
+      const go = $('.m-go', body); if (go) go.onclick = () => m.close();
+    }
+    render();
+    const actions = [
+      { label: I('cop') + '<span class="hide-sm">Sil</span>', cls: 'btn-danger-ghost', left: true, onClick: async mm => { if (await confirmBox('Bu başvuru kalıcı olarak silinsin mi?')) { YK.remove('applications', id); YK.log(appName(a) + ' başvurusu silindi'); mm.close(); toast('Başvuru silindi'); refresh(); } } },
+      { label: I('yazdir') + '<span class="hide-sm">Yazdır</span>', onClick: () => printApp(YK.get('applications', id)) },
+      { label: I('telefon') + 'Ara', onClick: () => { location.href = telHref(a.data.telefon); } },
+      { label: I('whatsapp') + 'WhatsApp', onClick: () => window.open(waHref(a.data.telefon), '_blank', 'noopener') }
+    ];
+    if (a.type === 'kurye' && !a.empId) actions.push({ label: I('kullanici') + 'Çalışan olarak ekle', cls: 'btn-yellow', onClick: mm => convertToEmp(id, mm) });
+    if (a.type === 'isletme' && !a.custId) actions.push({ label: I('bina') + 'Müşteri olarak kaydet', cls: 'btn-yellow', onClick: mm => convertToCust(id, mm) });
+    m = modal({ title: appName(a), body: body, wide: true, actions: actions, noFocus: true });
+  }
+
+  function convertToEmp(appId, parentModal) {
+    const a = YK.get('applications', appId); const d = a.data;
+    const pre = {
+      adSoyad: d.adSoyad, telefon: d.telefon, eposta: d.eposta, dogumTarihi: d.dogumTarihi, il: d.il, ilce: d.ilce,
+      ehliyet: d.ehliyet === 'Ehliyetim yok' ? 'Yok' : d.ehliyet, motor: (d.motor || '').indexOf('Kendi') === 0 ? 'Kendi motoru' : 'Şirket motoru',
+      calismaModeli: d.calismaModeli, durum: 'Aktif', baslangic: today(), gorev: 'Moto Kurye', notlar: 'Başvuru No: ' + (a.ref || '')
+    };
+    empForm(null, pre, emp => {
+      YK.update('applications', appId, { empId: emp.id, status: 'onaylandi' });
+      parentModal.close(); updateBadges(); location.hash = '#calisan/' + emp.id;
+    });
+  }
+
+  /* =================== Çalışanlar =================== */
+  function viewEmps() {
+    const st = state.emps = Object.assign({ durum: '', q: '' }, state.emps);
+    setTop('Çalışanlar', '<button class="btn btn-light" id="csvEmps">' + I('indir') + '<span class="hide-sm">CSV</span></button><button class="btn btn-yellow" id="addEmp">' + I('arti') + 'Yeni çalışan</button>');
+    const all = YK.list('employees');
+    const cnt = k => all.filter(e => e.durum === k).length;
+    view.innerHTML =
+      '<div class="kpis sm">' + kpiBtn('', 'Toplam', all.length) + ['Aktif', 'İzinli', 'Pasif', 'Ayrıldı'].map(k => kpiBtn(k, k, cnt(k))).join('') + '</div>' +
+      '<div class="toolbar"><label class="search">' + I('ara') + '<input id="fQ" placeholder="Ad, telefon, plaka, bölge…" value="' + esc(st.q) + '"></label></div>' +
+      '<section class="card flush"><div id="empTable"></div></section>';
+    function kpiBtn(k, l, n) { return '<button class="kpi-btn' + (st.durum === k ? ' on' : '') + '" data-d="' + k + '"><b>' + n + '</b><span>' + l + '</span></button>'; }
+    const filtered = () => {
+      const q = lower(st.q);
+      return YK.list('employees').filter(e => (!st.durum || e.durum === st.durum) && (!q || lower([e.adSoyad, e.telefon, e.plaka, e.bolge, custName(e.musteriId), e.ilce, e.tc].join(' ')).indexOf(q) >= 0))
+        .sort((x, y) => (x.adSoyad || '').localeCompare(y.adSoyad || '', 'tr'));
+    };
+    function draw() {
+      const rows = filtered();
+      $('#empTable').innerHTML = rows.length ?
+        '<div class="table-wrap"><table class="tbl"><thead><tr><th>Çalışan</th><th>Telefon</th><th class="hide-md">Görev / Model</th><th class="hide-md">İşletme / Bölge</th><th class="hide-md">Motor / Plaka</th><th class="hide-md">Evrak</th><th>Durum</th></tr></thead><tbody>' +
+        rows.map(e => { const ex = e.durum !== 'Ayrıldı' ? expiries(e) : []; const dc = docCount(e);
+          return '<tr data-id="' + e.id + '"><td><div class="who">' + avatar(e) + '<div><b>' + esc(e.adSoyad) + (ex.length ? ' <span class="warn-ic" title="' + esc(ex.map(x => x.label + ': ' + YK.fmtDate(x.date)).join(', ')) + '">' + I('uyari', 'tiny') + '</span>' : '') + '</b><small>' + esc(e.ilce || e.il || '') + '</small></div></div></td><td class="nowrap">' + esc(e.telefon || '') + '</td>' +
+          '<td class="hide-md">' + esc(e.gorev || '') + '<small>' + esc(e.calismaModeli || '') + '</small></td><td class="hide-md">' + (e.musteriId ? '<b>' + esc(custName(e.musteriId)) + '</b>' : '<span class="muted">Atanmadı</span>') + '<small>' + esc(e.bolge || '') + '</small></td>' +
+          '<td class="hide-md">' + esc(e.motor || '—') + '<small>' + esc(e.plaka || '') + '</small></td><td class="hide-md"><span class="doc-mini' + (dc === YK.EMP_DOCS.length ? ' full' : '') + '">' + dc + '/' + YK.EMP_DOCS.length + '</span></td><td>' + empBadge(e.durum) + '</td></tr>'; }).join('') +
+        '</tbody></table></div><div class="tbl-foot">' + rows.length + ' çalışan</div>'
+        : empty('ekip', 'Çalışan bulunamadı', all.length ? 'Filtreleri değiştirerek tekrar deneyin.' : 'İlk çalışanınızı ekleyin veya bir kurye başvurusunu çalışana dönüştürün.', all.length ? '' : '<button class="btn btn-yellow" id="addEmp2">' + I('arti') + 'Yeni çalışan</button>');
+      $$('#empTable tr[data-id]').forEach(tr => tr.onclick = () => { location.hash = '#calisan/' + tr.dataset.id; });
+      const b2 = $('#addEmp2'); if (b2) b2.onclick = () => empForm(null, null, rerender);
+      hydrate($('#empTable'));
+    }
+    $$('.kpi-btn', view).forEach(b => b.onclick = () => { st.durum = b.dataset.d; $$('.kpi-btn', view).forEach(x => x.classList.toggle('on', x === b)); draw(); });
+    $('#fQ').oninput = e => { st.q = e.target.value; draw(); };
+    $('#addEmp').onclick = () => empForm(null, null, rerender);
+    $('#csvEmps').onclick = () => YK.download('calisanlar-' + today() + '.csv', YK.toCSV(filtered(), YK.EMP_FIELDS.map(f => ({ label: f.label, get: e => f.type === 'customer' ? custName(e[f.name]) : e[f.name] })).concat([{ label: 'Teslim edilen evraklar', get: e => (e.evrak || []).join(', ') }])), 'text/csv;charset=utf-8');
+    draw();
+  }
+
+  function empForm(emp, prefill, onSaved) {
+    const data = Object.assign({}, prefill || {}, emp || {});
+    let foto = data.foto || '';
+    const evrak = (data.evrak || []).slice();
+    const body = document.createElement('div');
+    body.innerHTML = '<div class="photo-row"><span class="av av-lg" id="pv">' + (foto ? '<img data-src="' + esc(foto) + '" alt="">' : I('kullanici')) + '</span><div><button type="button" class="btn btn-light" id="pBtn">' + I('yukle') + 'Fotoğraf yükle</button> <button type="button" class="link-btn" id="pDel"' + (foto ? '' : ' hidden') + '>Kaldır</button><small class="muted block">JPG veya PNG · otomatik küçültülür</small></div><input type="file" accept="image/*" id="pFile" hidden></div>' +
+      formHTML(YK.EMP_FIELDS, data) +
+      '<h4 class="sub">Teslim alınan evraklar</h4><div class="docs">' + YK.EMP_DOCS.map(d => '<label class="doc"><input type="checkbox" value="' + esc(d) + '"' + (evrak.includes(d) ? ' checked' : '') + '><span>' + esc(d) + '</span></label>').join('') + '</div>';
+    hydrate(body);
+    $('#pBtn', body).onclick = () => $('#pFile', body).click();
+    $('#pFile', body).onchange = async e => {
+      const f = e.target.files[0]; if (!f) return;
+      try { const url = await YK.fileToDataUrl(f, 500); foto = await YK.media.put(url, 'foto-' + (data.adSoyad || '')); $('#pv', body).innerHTML = '<img src="' + url + '" alt="">'; $('#pDel', body).hidden = false; }
+      catch (er) { toast('Görsel yüklenemedi', 'err'); }
+    };
+    $('#pDel', body).onclick = () => { foto = ''; $('#pv', body).innerHTML = I('kullanici'); $('#pDel', body).hidden = true; };
+    const tcIn = body.querySelector('[name=tc]'); tcIn.inputMode = 'numeric'; tcIn.oninput = () => { tcIn.value = tcIn.value.replace(/\D/g, '').slice(0, 11); };
+    const ibIn = body.querySelector('[name=iban]'); ibIn.oninput = () => { const v = ibIn.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 26); ibIn.value = v.replace(/(.{4})/g, '$1 ').trim(); };
+    modal({
+      title: emp ? 'Çalışanı düzenle' : 'Yeni çalışan', body: body, wide: true,
+      actions: [{ label: 'Vazgeç' }, {
+        label: I('check') + 'Kaydet', cls: 'btn-dark', onClick: m => {
+          const d = readForm(body, YK.EMP_FIELDS); if (!d) return;
+          if (d.tc && !/^[1-9]\d{10}$/.test(d.tc)) { toast('T.C. Kimlik No 11 haneli olmalı', 'err'); tcIn.classList.add('bad'); tcIn.focus(); return; }
+          if (d.iban && !/^TR\d{24}$/.test(d.iban.replace(/\s/g, ''))) { toast('IBAN TR ile başlayan 26 karakter olmalı', 'err'); ibIn.classList.add('bad'); ibIn.focus(); return; }
+          const dup = YK.list('employees').find(x => x.id !== (emp && emp.id) && d.telefon && (x.telefon || '').replace(/\D/g, '') === d.telefon.replace(/\D/g, ''));
+          if (dup && !confirm(dup.adSoyad + ' aynı telefon numarasıyla kayıtlı. Yine de kaydedilsin mi?')) return;
+          d.foto = foto; d.evrak = $$('.doc input:checked', body).map(c => c.value);
+          const saved = emp ? YK.update('employees', emp.id, d) : YK.add('employees', d);
+          if (!saved) return;
+          YK.log(d.adSoyad + (emp ? ' kartı güncellendi' : ' çalışan olarak eklendi'));
+          m.close(); toast(emp ? 'Çalışan güncellendi' : 'Çalışan eklendi'); if (onSaved) onSaved(saved);
+        }
+      }]
+    });
+  }
+
+  function viewEmp(id) {
+    const e = YK.get('employees', id);
+    if (!e) { setTop('Çalışan'); view.innerHTML = empty('kullanici', 'Çalışan bulunamadı', 'Bu kayıt silinmiş olabilir.', '<a href="#calisanlar" class="btn btn-light">Çalışanlara dön</a>'); return; }
+    const st = state['emp_' + id] = Object.assign({ month: thisMonth() }, state['emp_' + id]);
+    setTop(e.adSoyad, '<a href="#calisanlar" class="btn btn-light">← <span class="hide-sm">Çalışanlar</span></a><button class="btn btn-light" id="printEmp">' + I('yazdir') + '<span class="hide-sm">Yazdır</span></button><button class="btn btn-light" id="editEmp">' + I('kalem') + '<span class="hide-sm">Düzenle</span></button><button class="btn btn-yellow" id="addRec">' + I('arti') + 'Kayıt ekle</button>');
+    const info = YK.EMP_FIELDS.filter(f => !['adSoyad', 'notlar', 'durum'].includes(f.name));
+    const ex = expiries(e), dc = docCount(e), allRecs = YK.list('records').filter(r => r.empId === id), bal = summary(allRecs).bakiye;
+    view.innerHTML =
+      '<div class="emp-layout"><section class="card profile">' +
+      '<div class="profile-top">' + avatar(e, 'xl') + '<h2>' + esc(e.adSoyad) + '</h2><p class="muted">' + esc([e.gorev, e.calismaModeli].filter(Boolean).join(' · ')) + '</p>' + empBadge(e.durum) +
+      '<div class="profile-btns"><a class="btn btn-light" href="' + telHref(e.telefon) + '">' + I('telefon') + 'Ara</a><a class="btn btn-light" target="_blank" rel="noopener" href="' + waHref(e.telefon) + '">' + I('whatsapp') + 'WhatsApp</a></div></div>' +
+      (ex.length ? '<div class="alert warn">' + I('uyari') + '<div>' + ex.map(x => '<b>' + esc(x.label) + '</b> ' + (x.days < 0 ? 'süresi ' + (-x.days) + ' gün önce doldu' : x.days + ' gün içinde doluyor') + ' (' + YK.fmtDate(x.date) + ')').join('<br>') + '</div></div>' : '') +
+      '<div class="bal ' + (bal > 0 ? 'pos' : '') + '"><small>Toplam kalan bakiye</small><b>' + YK.fmtMoney(bal) + '</b></div>' +
+      '<div class="doc-prog"><div class="card-head"><h2>Evraklar</h2><span class="pill">' + dc + ' / ' + YK.EMP_DOCS.length + '</span></div><div class="setup-bar"><i style="width:' + (dc / YK.EMP_DOCS.length * 100) + '%"></i></div><ul class="doc-list">' + YK.EMP_DOCS.map(d => '<li class="' + ((e.evrak || []).includes(d) ? 'ok' : '') + '">' + I((e.evrak || []).includes(d) ? 'check' : 'kapat', 'tiny') + esc(d) + '</li>').join('') + '</ul></div>' +
+      '<dl class="dl one">' + info.map(f => '<div><dt>' + esc(f.label) + '</dt><dd>' + (e[f.name] ? (f.type === 'customer' ? '<a class="link" href="#musteri/' + esc(e[f.name]) + '">' + esc(custName(e[f.name]) || '—') + '</a>' : esc(f.type === 'date' ? YK.fmtDate(e[f.name]) : e[f.name])) : '<span class="muted">—</span>') + '</dd></div>').join('') +
+      (e.notlar ? '<div><dt>Notlar</dt><dd>' + esc(e.notlar).replace(/\n/g, '<br>') + '</dd></div>' : '') + '</dl>' +
+      '<button class="btn btn-danger-ghost btn-block" id="delEmp">' + I('cop') + 'Çalışanı sil</button></section>' +
+      '<div class="emp-main"><div class="toolbar"><label class="month">Dönem <input type="month" id="fMonth" value="' + esc(st.month) + '"></label><button class="link-btn" id="allTime">Tüm zamanlar</button><span class="grow"></span>' + (bal > 0 ? '<button class="btn btn-dark sm" id="payBal">' + I('para') + 'Bakiyeyi öde (' + YK.fmtMoney(bal) + ')</button>' : '') + '</div><div id="empSum"></div><section class="card flush"><div id="empRecs"></div></section></div></div>';
+
+    function draw() {
+      const recs = allRecs.length ? YK.list('records').filter(r => r.empId === id && (!st.month || (r.tarih || '').slice(0, 7) === st.month)).sort((x, y) => (y.tarih || '').localeCompare(x.tarih || '')) : [];
+      $('#empSum').innerHTML = sumCards(summary(recs), monthLabel(st.month));
+      $('#empRecs').innerHTML = recTable(recs, false);
+      bindRecTable($('#empRecs'), rerender);
+    }
+    $('#fMonth').onchange = ev => { st.month = ev.target.value; draw(); };
+    $('#allTime').onclick = () => { st.month = ''; $('#fMonth').value = ''; draw(); };
+    $('#editEmp').onclick = () => empForm(e, null, rerender);
+    $('#addRec').onclick = () => recordForm(null, id, rerender);
+    const pb = $('#payBal'); if (pb) pb.onclick = () => payModal(e, bal, rerender);
+    $('#printEmp').onclick = () => {
+      const recs = YK.list('records').filter(r => r.empId === id && (!st.month || (r.tarih || '').slice(0, 7) === st.month)).sort((x, y) => (x.tarih || '').localeCompare(y.tarih || ''));
+      const s = summary(recs);
+      printDoc(e.adSoyad, '<h1>' + esc(e.adSoyad) + '</h1><p class="sub">' + esc([e.gorev, e.telefon, e.plaka].filter(Boolean).join(' · ')) + ' · Dönem: ' + esc(monthLabel(st.month)) + '</p>' +
+        '<table><tr><th>Tarih</th><th>Tür</th><th class="n">Paket</th><th class="n">Saat</th><th class="n">Tutar</th><th>Açıklama</th></tr>' + recs.map(r => '<tr><td>' + YK.fmtDate(r.tarih) + '</td><td>' + esc(r.tur) + '</td><td class="n">' + esc(r.paket || '') + '</td><td class="n">' + esc(r.saat || '') + '</td><td class="n">' + (r.tutar ? YK.fmtMoney(r.tutar) : '') + '</td><td>' + esc(r.aciklama || '') + '</td></tr>').join('') + '</table>' +
+        '<table style="margin-top:16px"><tr><th>Paket</th><th>Saat</th><th>Hakediş + prim</th><th>Ödenen + avans</th><th>Kesinti</th><th>Bakiye</th></tr><tr><td>' + s.paket + '</td><td>' + s.saat + '</td><td>' + YK.fmtMoney(s.kazanc) + '</td><td>' + YK.fmtMoney(s.odenen) + '</td><td>' + YK.fmtMoney(s.kesinti) + '</td><td><b>' + YK.fmtMoney(s.bakiye) + '</b></td></tr></table><div class="sign"><div>Çalışan</div><div>Yetkili</div></div>');
+    };
+    $('#delEmp').onclick = async () => {
+      const n = allRecs.length;
+      if (!(await confirmBox(e.adSoyad + ' silinsin mi?' + (n ? ' Çalışana ait ' + n + ' kayıt da silinecek.' : '')))) return;
+      YK.saveList('records', YK.list('records').filter(r => r.empId !== id));
+      if (e.foto) YK.media.del(e.foto.slice(6));
+      YK.remove('employees', id); YK.log(e.adSoyad + ' çalışan kaydı silindi'); toast('Çalışan silindi'); location.hash = '#calisanlar';
+    };
+    draw();
+  }
+
+  /* =================== Müşteriler (işletmeler) =================== */
+  const CUST_COLORS = { 'Aktif': '#16a34a', 'Deneme': '#2563eb', 'Pasif': '#6b7280', 'Ayrıldı': '#dc2626' };
+  const custBadge = d => '<span class="st" style="--c:' + (CUST_COLORS[d] || '#6b7280') + '">' + esc(d || '—') + '</span>';
+  const custCouriers = id => YK.list('employees').filter(e => e.musteriId === id && e.durum !== 'Ayrıldı');
+
+  function viewCustomers() {
+    const st = state.custs = Object.assign({ durum: '', q: '' }, state.custs);
+    setTop('Müşteriler', '<button class="btn btn-light" id="csvCust">' + I('indir') + '<span class="hide-sm">CSV</span></button><button class="btn btn-yellow" id="addCust">' + I('arti') + 'Yeni müşteri</button>', 'Kurye hizmeti verdiğiniz restoran ve işletmeler');
+    const all = YK.list('customers');
+    const cnt = k => all.filter(c => c.durum === k).length;
+    view.innerHTML =
+      '<div class="kpis sm">' + ['', ...YK.CUST_STATUSES].map(k => '<button class="kpi-btn' + (st.durum === k ? ' on' : '') + '" data-d="' + k + '"><b>' + (k ? cnt(k) : all.length) + '</b><span>' + (k || 'Toplam') + '</span></button>').join('') + '</div>' +
+      '<div class="toolbar"><label class="search">' + I('ara') + '<input id="fQ" placeholder="İşletme, yetkili, telefon, ilçe…" value="' + esc(st.q) + '"></label></div>' +
+      '<section class="card flush"><div id="custTable"></div></section>';
+    const filtered = () => {
+      const q = lower(st.q);
+      return YK.list('customers').filter(c => (!st.durum || c.durum === st.durum) && (!q || lower([c.isletmeAdi, c.yetkili, c.telefon, c.ilce, c.sektor].join(' ')).indexOf(q) >= 0))
+        .sort((x, y) => (x.isletmeAdi || '').localeCompare(y.isletmeAdi || '', 'tr'));
+    };
+    function draw() {
+      const rows = filtered();
+      $('#custTable').innerHTML = rows.length ?
+        '<div class="table-wrap"><table class="tbl"><thead><tr><th>İşletme</th><th>Yetkili</th><th class="hide-md">Sektör</th><th class="hide-md">Hizmet modeli</th><th class="hide-md">Kurye</th><th>Durum</th></tr></thead><tbody>' +
+        rows.map(c => '<tr data-id="' + c.id + '"><td><div class="who"><span class="av cust">' + esc(initials(c.isletmeAdi)) + '</span><div><b>' + esc(c.isletmeAdi) + '</b><small>' + esc([c.ilce, c.il].filter(Boolean).join(' / ')) + '</small></div></div></td><td>' + esc(c.yetkili || '') + '<small>' + esc(c.telefon || '') + '</small></td>' +
+          '<td class="hide-md">' + esc(c.sektor || '—') + '</td><td class="hide-md">' + esc(c.hizmetModeli || '—') + '<small>' + esc(c.ucret || '') + '</small></td><td class="hide-md"><span class="pill">' + I('motor', 'tiny') + ' ' + custCouriers(c.id).length + (c.kuryeSayisi ? ' / ' + esc(c.kuryeSayisi) : '') + '</span></td><td>' + custBadge(c.durum) + '</td></tr>').join('') +
+        '</tbody></table></div><div class="tbl-foot">' + rows.length + ' müşteri</div>'
+        : empty('bina', 'Müşteri bulunamadı', all.length ? 'Filtreleri değiştirerek tekrar deneyin.' : 'Anlaştığınız restoran ve işletmeleri buraya ekleyin ya da bir işletme talebini tek tıkla müşteriye dönüştürün.', all.length ? '' : '<button class="btn btn-yellow" id="addCust2">' + I('arti') + 'Yeni müşteri</button>');
+      $$('#custTable tr[data-id]').forEach(tr => tr.onclick = () => { location.hash = '#musteri/' + tr.dataset.id; });
+      const b2 = $('#addCust2'); if (b2) b2.onclick = () => custForm(null, null, c => { location.hash = '#musteri/' + c.id; });
+    }
+    $$('.kpi-btn', view).forEach(b => b.onclick = () => { st.durum = b.dataset.d; $$('.kpi-btn', view).forEach(x => x.classList.toggle('on', x === b)); draw(); });
+    $('#fQ').oninput = e => { st.q = e.target.value; draw(); };
+    $('#addCust').onclick = () => custForm(null, null, c => { location.hash = '#musteri/' + c.id; });
+    $('#csvCust').onclick = () => YK.download('musteriler-' + today() + '.csv', YK.toCSV(filtered(), YK.CUST_FIELDS.map(f => ({ label: f.label, key: f.name })).concat([{ label: 'Atanan kurye', get: c => custCouriers(c.id).map(e => e.adSoyad).join(', ') }])), 'text/csv;charset=utf-8');
+    draw();
+  }
+
+  function custForm(cust, prefill, onSaved) {
+    const data = Object.assign({}, prefill || {}, cust || {});
+    const body = document.createElement('div');
+    body.innerHTML = formHTML(YK.CUST_FIELDS, data);
+    modal({
+      title: cust ? 'Müşteriyi düzenle' : 'Yeni müşteri işletme', body: body, wide: true,
+      actions: [{ label: 'Vazgeç' }, {
+        label: I('check') + 'Kaydet', cls: 'btn-dark', onClick: m => {
+          const d = readForm(body, YK.CUST_FIELDS); if (!d) return;
+          const saved = cust ? YK.update('customers', cust.id, d) : YK.add('customers', d);
+          if (!saved) return;
+          YK.log(d.isletmeAdi + (cust ? ' müşteri kartı güncellendi' : ' müşteri olarak eklendi'));
+          m.close(); toast(cust ? 'Müşteri güncellendi' : 'Müşteri eklendi'); if (onSaved) onSaved(saved);
+        }
+      }]
+    });
+  }
+
+  function convertToCust(appId, parentModal) {
+    const a = YK.get('applications', appId), d = a.data;
+    const sekt = { 'Restoran / Kafe': 'Restoran / Kafe' };
+    const model = { 'Paket başı': 'Paket başı', 'Vardiyalı / saatlik': 'Vardiyalı / saatlik', 'İşletmeye özel kurye': 'İşletmeye özel kurye' };
+    custForm(null, {
+      isletmeAdi: d.isletmeAdi, sektor: sekt[d.sektor] || d.sektor, yetkili: d.yetkili, telefon: d.telefon, eposta: d.eposta, il: d.il, ilce: d.ilce, adres: d.adres,
+      kuryeSayisi: d.kuryeSayisi, calismaSaatleri: d.calismaSaatleri, hizmetModeli: model[d.hizmetModeli] || 'Belirlenmedi', durum: 'Aktif', baslangic: today(),
+      notlar: 'Talep No: ' + (a.ref || '') + (d.gunlukPaket ? '\nGünlük tahmini paket: ' + d.gunlukPaket : '') + (d.mesaj ? '\nNot: ' + d.mesaj : '')
+    }, c => { YK.update('applications', appId, { custId: c.id, status: 'onaylandi' }); parentModal.close(); updateBadges(); location.hash = '#musteri/' + c.id; });
+  }
+
+  function viewCustomer(id) {
+    const c = YK.get('customers', id);
+    if (!c) { setTop('Müşteri'); view.innerHTML = empty('bina', 'Müşteri bulunamadı', 'Bu kayıt silinmiş olabilir.', '<a href="#musteriler" class="btn btn-light">Müşterilere dön</a>'); return; }
+    setTop(c.isletmeAdi, '<a href="#musteriler" class="btn btn-light">← <span class="hide-sm">Müşteriler</span></a><button class="btn btn-light" id="editCust">' + I('kalem') + '<span class="hide-sm">Düzenle</span></button><button class="btn btn-yellow" id="assign">' + I('motor') + 'Kurye ata</button>', [c.sektor, c.hizmetModeli].filter(Boolean).join(' · '));
+    const couriers = custCouriers(id), ids = couriers.map(e => e.id);
+    const m = thisMonth(), recs = YK.list('records').filter(r => ids.includes(r.empId) && (r.tarih || '').slice(0, 7) === m), s = summary(recs);
+    const info = YK.CUST_FIELDS.filter(f => !['isletmeAdi', 'notlar', 'durum'].includes(f.name));
+    const app = YK.list('applications').find(a => a.custId === id);
+    view.innerHTML = '<div class="emp-layout"><section class="card profile"><div class="profile-top"><span class="av av-xl cust">' + esc(initials(c.isletmeAdi)) + '</span><h2>' + esc(c.isletmeAdi) + '</h2><p class="muted">' + esc(c.yetkili || '') + '</p>' + custBadge(c.durum) +
+      '<div class="profile-btns"><a class="btn btn-light" href="' + telHref(c.telefon) + '">' + I('telefon') + 'Ara</a><a class="btn btn-light" target="_blank" rel="noopener" href="' + waHref(c.telefon) + '">' + I('whatsapp') + 'WhatsApp</a></div></div>' +
+      '<dl class="dl one">' + info.map(f => '<div><dt>' + esc(f.label) + '</dt><dd>' + (c[f.name] ? esc(f.type === 'date' ? YK.fmtDate(c[f.name]) : c[f.name]) : '<span class="muted">—</span>') + '</dd></div>').join('') +
+      (c.notlar ? '<div><dt>Notlar</dt><dd>' + esc(c.notlar).replace(/\n/g, '<br>') + '</dd></div>' : '') + '</dl>' +
+      (app ? '<p class="small"><a class="link" href="#basvurular/isletme" data-app="' + app.id + '">Kaynak talep: ' + esc(app.ref || '') + '</a></p>' : '') +
+      '<button class="btn btn-danger-ghost btn-block" id="delCust">' + I('cop') + 'Müşteriyi sil</button></section>' +
+      '<div class="emp-main"><div class="sum-cards cols-4"><div><small>Atanan kurye</small><b>' + couriers.length + (c.kuryeSayisi ? ' / ' + esc(c.kuryeSayisi) : '') + '</b></div><div><small>Bu ay paket (atanan kuryeler)</small><b>' + s.paket.toLocaleString('tr-TR') + '</b></div><div><small>Bu ay çalışma saati</small><b>' + s.saat.toLocaleString('tr-TR') + '</b></div><div class="hl"><small>Hizmet başlangıcı</small><b>' + YK.fmtDate(c.baslangic) + '</b></div></div>' +
+      '<section class="card flush"><div class="card-head pad"><h2>' + I('motor') + 'Bu işletmede çalışan kuryeler</h2></div>' +
+      (couriers.length ? '<div class="table-wrap"><table class="tbl"><thead><tr><th>Kurye</th><th>Telefon</th><th class="hide-md">Model</th><th>Durum</th><th></th></tr></thead><tbody>' + couriers.map(e => '<tr data-emp="' + e.id + '"><td><div class="who">' + avatar(e) + '<b>' + esc(e.adSoyad) + '</b></div></td><td class="nowrap">' + esc(e.telefon || '') + '</td><td class="hide-md">' + esc(e.calismaModeli || '') + '</td><td>' + empBadge(e.durum) + '</td><td class="acts"><button class="btn btn-light sm" data-unassign="' + e.id + '">Kaldır</button></td></tr>').join('') + '</tbody></table></div>'
+        : empty('motor', 'Henüz kurye atanmadı', '“Kurye ata” ile bu işletmede çalışacak kuryeleri seçin.')) + '</section></div></div>';
+    hydrate(view);
+    $('#editCust').onclick = () => custForm(c, null, rerender);
+    $$('tr[data-emp]', view).forEach(tr => tr.onclick = e => { if (e.target.closest('[data-unassign]')) return; location.hash = '#calisan/' + tr.dataset.emp; });
+    $$('[data-unassign]', view).forEach(b => b.onclick = () => { const e = YK.update('employees', b.dataset.unassign, { musteriId: '' }); YK.log(e.adSoyad + ' – ' + c.isletmeAdi + ' atamasından çıkarıldı'); toast('Kurye atamadan çıkarıldı'); rerender(); });
+    const la = $('[data-app]', view); if (la) la.onclick = e => { e.preventDefault(); openApp(la.dataset.app); };
+    $('#assign').onclick = () => {
+      const emps = YK.list('employees').filter(e => e.durum !== 'Ayrıldı').sort((a, b) => (a.adSoyad || '').localeCompare(b.adSoyad || '', 'tr'));
+      if (!emps.length) { toast('Önce çalışan ekleyin', 'err'); return; }
+      const body = document.createElement('div');
+      body.innerHTML = '<p class="muted small">Seçilen kuryeler bu işletmeye atanır (başka işletmeye atanmışsa buraya taşınır).</p><div class="docs">' + emps.map(e => '<label class="doc"><input type="checkbox" value="' + e.id + '"' + (e.musteriId === id ? ' checked' : '') + '><span>' + esc(e.adSoyad) + (e.musteriId && e.musteriId !== id ? ' <small class="muted">(' + esc(custName(e.musteriId)) + ')</small>' : '') + '</span></label>').join('') + '</div>';
+      modal({ title: c.isletmeAdi + ' – kurye ata', body: body, wide: true, actions: [{ label: 'Vazgeç' }, { label: I('check') + 'Kaydet', cls: 'btn-dark', onClick: mm => {
+        const sel = $$('input:checked', body).map(i => i.value);
+        YK.saveList('employees', YK.list('employees').map(e => sel.includes(e.id) ? Object.assign({}, e, { musteriId: id }) : (e.musteriId === id ? Object.assign({}, e, { musteriId: '' }) : e)));
+        YK.log(c.isletmeAdi + ' için kurye ataması güncellendi (' + sel.length + ' kurye)'); mm.close(); toast('Atama güncellendi'); rerender();
+      } }] });
+    };
+    $('#delCust').onclick = async () => {
+      if (!(await confirmBox(c.isletmeAdi + ' müşteri kaydı silinsin mi? Atanmış kuryelerin ataması kaldırılır.'))) return;
+      YK.saveList('employees', YK.list('employees').map(e => e.musteriId === id ? Object.assign({}, e, { musteriId: '' }) : e));
+      YK.remove('customers', id); YK.log(c.isletmeAdi + ' müşteri kaydı silindi'); toast('Müşteri silindi'); location.hash = '#musteriler';
+    };
+  }
+
+  /* =================== Genel arama =================== */
+  (function () {
+    const q = $('#gq'), res = $('#gres');
+    let items = [], idx = 0;
+    function run() {
+      const v = lower(q.value.trim()); if (v.length < 2) { res.hidden = true; return; }
+      const has = arr => lower(arr.join(' ')).indexOf(v) >= 0;
+      items = [];
+      YK.list('applications').forEach(a => { if (has([a.ref, appName(a), a.data.telefon, a.data.yetkili])) items.push({ ic: a.type === 'kurye' ? 'motor' : 'magaza', t: appName(a), s: (a.type === 'kurye' ? 'Kurye başvurusu' : 'İşletme talebi') + ' · ' + (a.ref || ''), go: () => { location.hash = '#basvurular/' + a.type; setTimeout(() => openApp(a.id), 80); } }); });
+      YK.list('customers').forEach(c => { if (has([c.isletmeAdi, c.yetkili, c.telefon])) items.push({ ic: 'bina', t: c.isletmeAdi, s: 'Müşteri · ' + (c.yetkili || ''), go: () => { location.hash = '#musteri/' + c.id; } }); });
+      YK.list('employees').forEach(e => { if (has([e.adSoyad, e.telefon, e.plaka, e.tc])) items.push({ ic: 'kullanici', t: e.adSoyad, s: 'Çalışan · ' + (e.telefon || ''), go: () => { location.hash = '#calisan/' + e.id; } }); });
+      items = items.slice(0, 10); idx = 0;
+      res.innerHTML = items.length ? items.map((x, i) => '<button data-i="' + i + '" class="' + (i === 0 ? 'on' : '') + '">' + I(x.ic) + '<span><b>' + esc(x.t) + '</b><small>' + esc(x.s) + '</small></span></button>').join('') : '<p class="muted small">Sonuç bulunamadı.</p>';
+      res.hidden = false;
+      $$('button', res).forEach(b => b.onmousedown = e => { e.preventDefault(); pick(+b.dataset.i); });
+    }
+    function pick(i) { const x = items[i]; if (!x) return; res.hidden = true; q.value = ''; q.blur(); x.go(); }
+    q.addEventListener('input', run);
+    q.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); idx = (idx + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % Math.max(items.length, 1); $$('button', res).forEach((b, i) => b.classList.toggle('on', i === idx)); }
+      if (e.key === 'Enter') { e.preventDefault(); pick(idx); }
+      if (e.key === 'Escape') { res.hidden = true; q.blur(); }
+    });
+    q.addEventListener('blur', () => setTimeout(() => { res.hidden = true; }, 150));
+    document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !$('#app').hidden) { e.preventDefault(); q.focus(); q.select(); } });
+  })();
+
+  /* =================== Kayıtlar =================== */
+  const KAZANC = ['Vardiya', 'Hakediş', 'Prim'], ODENEN = ['Ödeme', 'Avans'];
+  function summary(recs) {
+    const s = { paket: 0, saat: 0, kazanc: 0, odenen: 0, kesinti: 0, adet: recs.length };
+    recs.forEach(r => {
+      s.paket += num(r.paket); s.saat += num(r.saat); const t = num(r.tutar);
+      if (KAZANC.includes(r.tur)) s.kazanc += t; else if (ODENEN.includes(r.tur)) s.odenen += t; else if (r.tur === 'Kesinti') s.kesinti += t;
+    });
+    s.bakiye = s.kazanc - s.odenen - s.kesinti; return s;
+  }
+  function sumCards(s, label) {
+    return '<div class="sum-cards"><div><small>Paket</small><b>' + s.paket.toLocaleString('tr-TR') + '</b></div><div><small>Çalışma saati</small><b>' + s.saat.toLocaleString('tr-TR') + '</b></div>' +
+      '<div><small>Hakediş + prim</small><b>' + YK.fmtMoney(s.kazanc) + '</b></div><div><small>Ödenen + avans</small><b>' + YK.fmtMoney(s.odenen) + '</b></div>' +
+      '<div><small>Kesinti</small><b>' + YK.fmtMoney(s.kesinti) + '</b></div><div class="hl"><small>Bakiye · ' + esc(label) + '</small><b>' + YK.fmtMoney(s.bakiye) + '</b></div></div>';
+  }
+  const TYPE_COLORS = { 'Vardiya': '#2563eb', 'Hakediş': '#16a34a', 'Prim': '#16a34a', 'Ödeme': '#7c3aed', 'Avans': '#d97706', 'Kesinti': '#dc2626', 'İzin': '#0891b2', 'Kaza / Hasar': '#dc2626', 'Uyarı': '#dc2626', 'Not': '#6b7280' };
+  function recTable(recs, withEmp) {
+    if (!recs.length) return empty('liste', 'Kayıt yok', 'Bu dönem için kayıt bulunmuyor. Vardiya, hakediş, ödeme, avans, izin gibi kayıtları buradan tutabilirsiniz.');
+    const emps = {}; YK.list('employees').forEach(e => emps[e.id] = e);
+    return '<div class="table-wrap"><table class="tbl"><thead><tr><th>Tarih</th>' + (withEmp ? '<th>Çalışan</th>' : '') + '<th>Tür</th><th class="num">Paket</th><th class="num hide-sm">Saat</th><th class="num">Tutar</th><th class="hide-md">Açıklama</th><th></th></tr></thead><tbody>' +
+      recs.map(r => '<tr><td class="nowrap">' + YK.fmtDate(r.tarih) + '</td>' + (withEmp ? '<td><a href="#calisan/' + r.empId + '" class="link">' + esc(emps[r.empId] ? emps[r.empId].adSoyad : '(silinmiş)') + '</a></td>' : '') +
+        '<td><span class="st" style="--c:' + (TYPE_COLORS[r.tur] || '#6b7280') + '">' + esc(r.tur) + '</span></td><td class="num">' + (r.paket ? esc(r.paket) : '—') + '</td><td class="num hide-sm">' + (r.saat ? esc(r.saat) : '—') + '</td>' +
+        '<td class="num">' + (r.tutar ? (r.tur === 'Kesinti' || ODENEN.includes(r.tur) ? '−' : '') + YK.fmtMoney(r.tutar) : '—') + '</td><td class="hide-md"><small>' + esc(r.aciklama || '') + '</small></td>' +
+        '<td class="acts"><button class="icon-btn sm" data-er="' + r.id + '" title="Düzenle" aria-label="Düzenle">' + I('kalem') + '</button><button class="icon-btn sm" data-dr="' + r.id + '" title="Sil" aria-label="Sil">' + I('cop') + '</button></td></tr>').join('') +
+      '</tbody></table></div><div class="tbl-foot">' + recs.length + ' kayıt</div>';
+  }
+  function bindRecTable(root, redraw) {
+    $$('[data-er]', root).forEach(b => b.onclick = () => recordForm(YK.get('records', b.dataset.er), null, redraw));
+    $$('[data-dr]', root).forEach(b => b.onclick = async () => { if (await confirmBox('Bu kayıt silinsin mi?')) { const r = YK.get('records', b.dataset.dr); YK.remove('records', b.dataset.dr); YK.log('Kayıt silindi: ' + (r ? r.tur + ' ' + YK.fmtDate(r.tarih) : '')); toast('Kayıt silindi'); redraw(); } });
+  }
+  function recFields(empId) {
+    const emps = YK.list('employees').filter(e => e.durum !== 'Ayrıldı' || e.id === empId).sort((a, b) => (a.adSoyad || '').localeCompare(b.adSoyad || '', 'tr'));
+    return [
+      { name: 'empId', label: 'Çalışan', type: 'emp', required: true, emps: emps },
+      { name: 'tarih', label: 'Tarih', type: 'date', required: true, def: today() },
+      { name: 'tur', label: 'Kayıt türü', type: 'select', options: YK.RECORD_TYPES.map(t => t.key), def: 'Vardiya', required: true },
+      { name: 'paket', label: 'Teslim edilen paket', type: 'number', placeholder: '0' },
+      { name: 'saat', label: 'Çalışma saati', type: 'number', placeholder: '0' },
+      { name: 'tutar', label: 'Tutar (₺)', type: 'number', placeholder: '0', hint: 'Vardiya/Hakediş/Prim kazanç; Ödeme/Avans ödenen; Kesinti düşülen tutar olarak hesaplanır.' },
+      { name: 'aciklama', label: 'Açıklama', type: 'textarea', full: true, rows: 2 }
+    ];
+  }
+  function recordForm(rec, empId, onSaved, preset) {
+    const fields = recFields(rec ? rec.empId : empId);
+    const data = Object.assign({ empId: empId || '' }, preset || {}, rec || {});
+    if (!fields[0].emps.length) { toast('Önce bir çalışan ekleyin', 'err'); return; }
+    const body = document.createElement('div');
+    body.innerHTML = formHTML(fields.slice(1), data);
+    const g = $('.f-grid', body);
+    const empSel = document.createElement('label'); empSel.className = 'fld full';
+    empSel.innerHTML = '<span>Çalışan <i>*</i></span><select name="empId" required><option value="">Seçiniz</option>' + fields[0].emps.map(e => '<option value="' + e.id + '"' + (e.id === data.empId ? ' selected' : '') + '>' + esc(e.adSoyad) + (e.durum !== 'Aktif' ? ' (' + esc(e.durum) + ')' : '') + '</option>').join('') + '</select>';
+    g.prepend(empSel);
+    // Kayıt türüne göre ilgisiz alanları soluklaştır
+    const tur = body.querySelector('[name=tur]');
+    const sync = () => { const t = tur.value, money = !['İzin', 'Uyarı', 'Not'].includes(t), work = ['Vardiya', 'Hakediş', 'Prim'].includes(t); body.querySelector('[name=paket]').closest('.fld').classList.toggle('dim', !work); body.querySelector('[name=saat]').closest('.fld').classList.toggle('dim', !work); body.querySelector('[name=tutar]').closest('.fld').classList.toggle('dim', !money); };
+    tur.onchange = sync; sync();
+    modal({
+      title: rec ? 'Kaydı düzenle' : 'Yeni kayıt', body: body,
+      actions: [{ label: 'Vazgeç' }, {
+        label: I('check') + 'Kaydet', cls: 'btn-dark', onClick: m => {
+          const d = readForm(body, fields); if (!d) return;
+          if (['paket', 'saat', 'tutar'].some(k => d[k] && num(d[k]) < 0)) { toast('Negatif değer girilemez', 'err'); return; }
+          const ok = rec ? YK.update('records', rec.id, d) : YK.add('records', d);
+          if (!ok) return;
+          const en = (YK.get('employees', d.empId) || {}).adSoyad || '';
+          YK.log((rec ? 'Kayıt güncellendi: ' : 'Kayıt eklendi: ') + d.tur + ' – ' + en + (d.tutar ? ' (' + YK.fmtMoney(d.tutar) + ')' : ''));
+          m.close(); toast(rec ? 'Kayıt güncellendi' : 'Kayıt eklendi'); if (onSaved) onSaved();
+        }
+      }]
+    });
+  }
+
+  function payModal(e, amount, onSaved) {
+    recordForm(null, e.id, onSaved, { tur: 'Ödeme', tutar: String(Math.round(amount * 100) / 100), aciklama: 'Bakiye ödemesi' });
+  }
+
+  function puantajModal(onSaved) {
+    const emps = YK.list('employees').filter(e => e.durum === 'Aktif').sort((a, b) => (a.adSoyad || '').localeCompare(b.adSoyad || '', 'tr'));
+    if (!emps.length) { toast('Aktif çalışan yok. Önce çalışan ekleyin.', 'err'); return; }
+    const body = document.createElement('div');
+    body.innerHTML = '<div class="toolbar"><label class="month">Tarih <input type="date" id="pDate" value="' + today() + '"></label><label class="month">Paket başı ücret (₺) <input type="number" min="0" step="any" id="pRate" placeholder="Opsiyonel" style="width:110px"></label><span class="muted small">Ücret girilirse tutar otomatik hesaplanır. Boş satırlar kaydedilmez.</span></div>' +
+      '<div class="table-wrap"><table class="tbl puantaj"><thead><tr><th>Çalışan</th><th>Paket</th><th>Saat</th><th>Tutar (₺)</th><th class="hide-sm">Not</th></tr></thead><tbody>' +
+      emps.map(e => '<tr data-e="' + e.id + '"><td><div class="who">' + avatar(e, 'sm') + '<b>' + esc(e.adSoyad) + '</b></div></td><td><input type="number" min="0" data-k="paket"></td><td><input type="number" min="0" step="any" data-k="saat"></td><td><input type="number" min="0" step="any" data-k="tutar"></td><td class="hide-sm"><input data-k="aciklama"></td></tr>').join('') +
+      '</tbody><tfoot><tr><th>Toplam</th><th id="tP">0</th><th id="tS">0</th><th id="tT">0 ₺</th><th class="hide-sm"></th></tr></tfoot></table></div>';
+    hydrate(body);
+    const tot = () => { let p = 0, s = 0, t = 0; $$('tr[data-e]', body).forEach(tr => { p += num($('[data-k=paket]', tr).value); s += num($('[data-k=saat]', tr).value); t += num($('[data-k=tutar]', tr).value); }); $('#tP', body).textContent = p; $('#tS', body).textContent = s; $('#tT', body).textContent = YK.fmtMoney(t); };
+    body.addEventListener('input', ev => {
+      const rate = num($('#pRate', body).value);
+      if (rate && (ev.target.dataset.k === 'paket' || ev.target.id === 'pRate')) $$('tr[data-e]', body).forEach(tr => { const p = num($('[data-k=paket]', tr).value); if (p) $('[data-k=tutar]', tr).value = Math.round(p * rate * 100) / 100; });
+      tot();
+    });
+    modal({
+      title: 'Günlük puantaj (vardiya girişi)', body: body, wide: true,
+      actions: [{ label: 'Vazgeç' }, {
+        label: I('check') + 'Kaydet', cls: 'btn-dark', onClick: m => {
+          const tarih = $('#pDate', body).value; if (!tarih) { toast('Tarih seçin', 'err'); return; }
+          const recs = YK.list('records');
+          const exists = emps.filter(e => recs.some(r => r.empId === e.id && r.tarih === tarih && r.tur === 'Vardiya')).length;
+          if (exists && !confirm(exists + ' çalışan için bu tarihte zaten vardiya kaydı var. Yine de eklensin mi?')) return;
+          let n = 0;
+          $$('tr[data-e]', body).forEach(tr => {
+            const r = { empId: tr.dataset.e, tarih: tarih, tur: 'Vardiya' };
+            $$('input', tr).forEach(i => { r[i.dataset.k] = i.value.trim(); });
+            if (r.paket || r.saat || r.tutar || r.aciklama) { r.id = YK.uid(); r.createdAt = new Date().toISOString(); recs.unshift(r); n++; }
+          });
+          if (!n) { toast('Hiçbir satır doldurulmadı', 'err'); return; }
+          if (YK.saveList('records', recs)) { YK.log(YK.fmtDate(tarih) + ' tarihli puantaj girildi (' + n + ' kişi)'); m.close(); toast(n + ' vardiya kaydı eklendi'); if (onSaved) onSaved(); else if (location.hash === '#kayitlar') rerender(); }
+        }
+      }]
+    });
+  }
+
+  // Haftalık / dönemsel hakediş raporu
+  function payrollModal() {
+    const d = new Date(); const dow = (d.getDay() + 6) % 7; // Pazartesi = 0
+    let from = addDays(today(), -dow - 7), to = addDays(from, 6);
+    const body = document.createElement('div');
+    const m = modal({ title: 'Hakediş raporu', body: body, wide: true, noFocus: true, actions: [{ label: I('indir') + 'CSV', onClick: () => csv() }, { label: I('yazdir') + 'Yazdır', cls: 'btn-dark', onClick: () => print() }] });
+    let rows = [];
+    function calc() {
+      const recs = YK.list('records'), emps = YK.list('employees');
+      rows = emps.map(e => {
+        const mine = recs.filter(r => r.empId === e.id);
+        const per = summary(mine.filter(r => r.tarih >= from && r.tarih <= to));
+        return { e: e, s: per, total: summary(mine).bakiye };
+      }).filter(x => x.s.adet || x.total).sort((a, b) => b.s.kazanc - a.s.kazanc);
+    }
+    function draw() {
+      calc();
+      const T = rows.reduce((a, x) => { ['paket', 'saat', 'kazanc', 'odenen', 'kesinti', 'bakiye'].forEach(k => a[k] += x.s[k]); a.total += x.total; return a; }, { paket: 0, saat: 0, kazanc: 0, odenen: 0, kesinti: 0, bakiye: 0, total: 0 });
+      body.innerHTML = '<div class="toolbar"><label class="month">Başlangıç <input type="date" id="rFrom" value="' + from + '"></label><label class="month">Bitiş <input type="date" id="rTo" value="' + to + '"></label><div class="seg sm"><button data-p="lw">Geçen hafta</button><button data-p="tw">Bu hafta</button><button data-p="tm">Bu ay</button></div></div>' +
+        (rows.length ? '<div class="table-wrap"><table class="tbl"><thead><tr><th>Çalışan</th><th class="num">Paket</th><th class="num hide-sm">Saat</th><th class="num">Hakediş</th><th class="num hide-sm">Ödenen</th><th class="num hide-sm">Kesinti</th><th class="num">Dönem bakiye</th><th class="num">Toplam bakiye</th><th></th></tr></thead><tbody>' +
+          rows.map(x => '<tr><td><div class="who">' + avatar(x.e, 'sm') + '<b>' + esc(x.e.adSoyad) + '</b></div></td><td class="num">' + x.s.paket + '</td><td class="num hide-sm">' + x.s.saat + '</td><td class="num">' + YK.fmtMoney(x.s.kazanc) + '</td><td class="num hide-sm">' + YK.fmtMoney(x.s.odenen) + '</td><td class="num hide-sm">' + YK.fmtMoney(x.s.kesinti) + '</td><td class="num"><b>' + YK.fmtMoney(x.s.bakiye) + '</b></td><td class="num">' + YK.fmtMoney(x.total) + '</td><td class="acts">' + (x.total > 0 ? '<button class="btn btn-yellow sm" data-pay="' + x.e.id + '">Öde</button>' : '') + '</td></tr>').join('') +
+          '</tbody><tfoot><tr><th>Toplam</th><th class="num">' + T.paket + '</th><th class="num hide-sm">' + T.saat + '</th><th class="num">' + YK.fmtMoney(T.kazanc) + '</th><th class="num hide-sm">' + YK.fmtMoney(T.odenen) + '</th><th class="num hide-sm">' + YK.fmtMoney(T.kesinti) + '</th><th class="num">' + YK.fmtMoney(T.bakiye) + '</th><th class="num">' + YK.fmtMoney(T.total) + '</th><th></th></tr></tfoot></table></div>'
+          : empty('hesap', 'Bu dönemde kayıt yok', 'Seçilen tarih aralığında vardiya/hakediş kaydı bulunmuyor.')) +
+        '<p class="muted small mt">“Öde” butonu, çalışanın toplam kalan bakiyesi kadar bir Ödeme kaydı oluşturur (kaydetmeden önce tutarı düzenleyebilirsiniz).</p>';
+      $('#rFrom', body).onchange = e => { from = e.target.value; draw(); };
+      $('#rTo', body).onchange = e => { to = e.target.value; draw(); };
+      $$('[data-p]', body).forEach(b => b.onclick = () => {
+        const dw = (new Date().getDay() + 6) % 7;
+        if (b.dataset.p === 'lw') { from = addDays(today(), -dw - 7); to = addDays(from, 6); }
+        if (b.dataset.p === 'tw') { from = addDays(today(), -dw); to = addDays(from, 6); }
+        if (b.dataset.p === 'tm') { from = thisMonth() + '-01'; to = addDays(isoDay(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)), -1); }
+        draw();
+      });
+      $$('[data-pay]', body).forEach(b => b.onclick = () => { const x = rows.find(r => r.e.id === b.dataset.pay); payModal(x.e, x.total, () => { draw(); if (location.hash === '#kayitlar') rerender(); }); });
+      hydrate(body);
+    }
+    function csv() {
+      YK.download('hakedis-' + from + '_' + to + '.csv', YK.toCSV(rows, [
+        { label: 'Çalışan', get: x => x.e.adSoyad }, { label: 'IBAN', get: x => x.e.iban }, { label: 'Paket', get: x => x.s.paket }, { label: 'Saat', get: x => x.s.saat },
+        { label: 'Hakediş', get: x => x.s.kazanc }, { label: 'Ödenen', get: x => x.s.odenen }, { label: 'Kesinti', get: x => x.s.kesinti }, { label: 'Dönem bakiye', get: x => x.s.bakiye }, { label: 'Toplam bakiye', get: x => x.total }]), 'text/csv;charset=utf-8');
+    }
+    function print() {
+      printDoc('Hakediş raporu', '<h1>Hakediş raporu</h1><p class="sub">' + YK.fmtDate(from) + ' – ' + YK.fmtDate(to) + '</p><table><tr><th>Çalışan</th><th>IBAN</th><th class="n">Paket</th><th class="n">Saat</th><th class="n">Hakediş</th><th class="n">Ödenen</th><th class="n">Kesinti</th><th class="n">Dönem bakiye</th><th class="n">Toplam bakiye</th></tr>' +
+        rows.map(x => '<tr><td>' + esc(x.e.adSoyad) + '</td><td>' + esc(x.e.iban || '') + '</td><td class="n">' + x.s.paket + '</td><td class="n">' + x.s.saat + '</td><td class="n">' + YK.fmtMoney(x.s.kazanc) + '</td><td class="n">' + YK.fmtMoney(x.s.odenen) + '</td><td class="n">' + YK.fmtMoney(x.s.kesinti) + '</td><td class="n">' + YK.fmtMoney(x.s.bakiye) + '</td><td class="n"><b>' + YK.fmtMoney(x.total) + '</b></td></tr>').join('') + '</table>');
+    }
+    draw();
+    return m;
+  }
+
+  function viewRecords() {
+    const st = state.recs = Object.assign({ emp: '', tur: '', month: thisMonth(), q: '' }, state.recs);
+    setTop('Kayıtlar & Puantaj', '<button class="btn btn-light" id="csvRecs">' + I('indir') + '<span class="hide-sm">CSV</span></button><button class="btn btn-light" id="payroll">' + I('hesap') + '<span class="hide-sm">Hakediş raporu</span></button><button class="btn btn-light" id="puantaj">' + I('takvim') + '<span class="hide-sm">Günlük puantaj</span></button><button class="btn btn-yellow" id="addRec">' + I('arti') + 'Yeni kayıt</button>');
+    const emps = YK.list('employees').sort((a, b) => (a.adSoyad || '').localeCompare(b.adSoyad || '', 'tr'));
+    view.innerHTML = '<div class="toolbar">' +
+      '<select id="fEmp" class="sel"><option value="">Tüm çalışanlar</option>' + emps.map(e => '<option value="' + e.id + '"' + (st.emp === e.id ? ' selected' : '') + '>' + esc(e.adSoyad) + '</option>').join('') + '</select>' +
+      '<select id="fTur" class="sel"><option value="">Tüm türler</option>' + YK.RECORD_TYPES.map(t => '<option' + (st.tur === t.key ? ' selected' : '') + '>' + t.key + '</option>').join('') + '</select>' +
+      '<label class="month">Dönem <input type="month" id="fMonth" value="' + esc(st.month) + '"></label><button class="link-btn" id="allTime">Tüm zamanlar</button>' +
+      '<label class="search">' + I('ara') + '<input id="fQ" placeholder="Açıklamada ara…" value="' + esc(st.q) + '"></label></div>' +
+      '<div id="recSum"></div><section class="card flush"><div id="recTable"></div></section>';
+    const filtered = () => {
+      const q = lower(st.q);
+      return YK.list('records').filter(r => (!st.emp || r.empId === st.emp) && (!st.tur || r.tur === st.tur) && (!st.month || (r.tarih || '').slice(0, 7) === st.month) && (!q || lower(r.aciklama).indexOf(q) >= 0))
+        .sort((x, y) => (y.tarih || '').localeCompare(x.tarih || '') || (y.createdAt || '').localeCompare(x.createdAt || ''));
+    };
+    function draw() { const rows = filtered(); $('#recSum').innerHTML = sumCards(summary(rows), monthLabel(st.month)); $('#recTable').innerHTML = recTable(rows, true); bindRecTable($('#recTable'), draw); }
+    $('#fEmp').onchange = e => { st.emp = e.target.value; draw(); };
+    $('#fTur').onchange = e => { st.tur = e.target.value; draw(); };
+    $('#fMonth').onchange = e => { st.month = e.target.value; draw(); };
+    $('#allTime').onclick = () => { st.month = ''; $('#fMonth').value = ''; draw(); };
+    $('#fQ').oninput = e => { st.q = e.target.value; draw(); };
+    $('#addRec').onclick = () => recordForm(null, st.emp, draw);
+    $('#puantaj').onclick = () => puantajModal(draw);
+    $('#payroll').onclick = () => payrollModal();
+    $('#csvRecs').onclick = () => {
+      const em = {}; YK.list('employees').forEach(e => em[e.id] = e.adSoyad);
+      YK.download('kayitlar-' + (st.month || 'tum') + '.csv', YK.toCSV(filtered(), [
+        { label: 'Tarih', get: r => YK.fmtDate(r.tarih) }, { label: 'Çalışan', get: r => em[r.empId] || '' }, { label: 'Tür', key: 'tur' },
+        { label: 'Paket', key: 'paket' }, { label: 'Saat', key: 'saat' }, { label: 'Tutar', key: 'tutar' }, { label: 'Açıklama', key: 'aciklama' }]), 'text/csv;charset=utf-8');
+    };
+    draw();
+  }
+
+  /* =================== Site İçeriği =================== */
+  const T = (k, l, ta) => ({ k: k, l: l, ta: !!ta });
+  const SECTION_LABELS = [
+    ['Genel', [['marquee', 'Kayan yazı bandı'], ['stats', 'Sarı istatistik bandı'], ['about', 'Hakkımızda']]],
+    ['İşletmeler için', [['services', 'Hizmetlerimiz'], ['business', 'İşletme avantajları'], ['bizSolutions', 'Hizmet modelleri & sektörler'], ['bizSteps', 'Nasıl çalışır (4 adım)'], ['bizForm', 'İşletme talep formu']]],
+    ['Kuryeler için', [['courier', 'Kurye ol (avantajlar, şartlar, süreç)'], ['calc', 'Kazanç hesaplayıcı'], ['courForm', 'Kurye başvuru formu']]],
+    ['Ortak', [['testimonials', 'Yorumlar (boşsa gizlenir)'], ['refs', 'Referanslar / Galeri'], ['regions', 'Hizmet bölgeleri (boşsa gizlenir)'], ['faq', 'SSS'], ['contact', 'İletişim']]]
+  ];
+  const CONTENT_TABS = [
+    { id: 'genel', group: 'Genel', label: 'Genel & İletişim', blocks: [
+      { type: 'images', title: 'Logolar', items: [['logo', 'Logo (açık zemin / üst menü)'], ['logo_dark', 'Logo (koyu zemin / alt bilgi)']] },
+      { type: 'settings', title: 'İletişim bilgileri', items: [T('phone', 'Telefon'), T('whatsapp', 'WhatsApp numarası (ör. 905321234567)'), T('email', 'E-posta'), T('address', 'Açık adres'), T('hours', 'Çalışma saatleri'), T('instagram', 'Instagram bağlantısı (https://…)'), T('facebook', 'Facebook bağlantısı (https://…)'), T('linkedin', 'LinkedIn bağlantısı (https://…)'), T('map_embed', 'Google Haritalar yerleştirme kodu (iframe) — boşsa iletişim görseli gösterilir', 1)] },
+      { type: 'settings', title: 'Başvuru bildirimleri', note: 'Web3Forms (web3forms.com) üzerinden ücretsiz bir “Access Key” alıp girerseniz, sitede gönderilen her talep ve başvuru e-posta adresinize de gelir. Site internette yayınlandığında farklı cihazlardan gelenleri kaçırmamanızı sağlar.', items: [T('notify_key', 'Web3Forms erişim anahtarı (Access Key)'), { k: 'wa_forward', l: 'Form gönderiminden sonra “WhatsApp ile ilet” butonunu göster', bool: true }] },
+      { type: 'texts', title: 'Genel metinler', items: [T('slogan', 'Slogan'), T('top_note', 'Üst duyuru bandı (boş bırakılırsa gizlenir)'), T('footer_text', 'Alt bilgi açıklaması', 1)] }
+    ] },
+    { id: 'bolumler', group: 'Genel', label: 'Bölümler & Bant', blocks: [
+      { type: 'sections', title: 'Sitede gösterilecek bölümler' },
+      { type: 'list', key: 'marquee', title: 'Kayan yazı bandı (işletmelere yönelik hizmetler önerilir)', item: 'ifade', plain: true },
+      { type: 'texts', title: 'Mobil alt buton çubuğu', items: [T('mobile_cta1', '1. buton (işletme → talep formu)'), T('mobile_cta2', '2. buton (kurye → başvuru formu)')] }
+    ] },
+    { id: 'hero', group: 'Genel', label: 'Ana Bölüm', blocks: [
+      { type: 'images', title: 'Görsel', items: [['hero', 'Ana bölüm görseli']] },
+      { type: 'texts', title: 'Başlık ve açıklama', items: [T('hero_badge', 'Üst etiket'), T('hero_title', 'Başlık – 1. satır'), T('hero_title_highlight', 'Başlık – sarı 2. satır'), T('hero_text', 'Açıklama', 1), T('hero_chip1', 'Görsel etiketi 1'), T('hero_chip2', 'Görsel etiketi 2')] },
+      { type: 'texts', title: 'İki yol kartı: İşletme / Kurye', items: [T('path_biz_label', 'İşletme kartı başlığı'), T('path_biz_btn', 'İşletme kartı buton yazısı'), T('path_biz_text', 'İşletme kartı açıklaması', 1), T('path_cour_label', 'Kurye kartı başlığı'), T('path_cour_btn', 'Kurye kartı buton yazısı'), T('path_cour_text', 'Kurye kartı açıklaması', 1)] },
+      { type: 'list', key: 'stats', title: 'Sarı istatistik bandı (ortak – sayılar sayarak gösterilir)', item: 'istatistik', review: 'stats', fields: [['value', 'Değer'], ['label', 'Açıklama']] }
+    ] },
+    { id: 'hakkimizda', group: 'Genel', label: 'Hakkımızda', blocks: [
+      { type: 'images', title: 'Görsel', items: [['about', 'Hakkımızda görseli']] },
+      { type: 'texts', title: 'Metinler', items: [T('about_kicker', 'Küçük etiket'), T('about_title', 'Başlık'), T('about_text', 'Şirket hikâyesi (paragrafları boş satırla ayırın)', 1), T('about_mission_title', 'Misyon başlığı'), T('about_mission', 'Misyon', 1), T('about_vision_title', 'Vizyon başlığı'), T('about_vision', 'Vizyon', 1), T('about_values_title', 'Değerler başlığı')] },
+      { type: 'list', key: 'values', title: 'Değerlerimiz', item: 'değer', fields: [['icon', 'İkon', 'icon'], ['title', 'Başlık'], ['desc', 'Açıklama', 'ta']] }
+    ] },
+    { id: 'isletme', group: 'İşletmeler', label: 'Hizmetler & Avantajlar', blocks: [
+      { type: 'texts', title: 'Bölüm bandı', items: [T('biz_zone_title', 'Bant başlığı'), T('biz_zone_text', 'Bant açıklaması')] },
+      { type: 'texts', title: 'Hizmetler başlığı', items: [T('services_kicker', 'Küçük etiket'), T('services_title', 'Başlık'), T('services_text', 'Açıklama', 1)] },
+      { type: 'list', key: 'services', title: 'Hizmet kartları', item: 'hizmet', fields: [['icon', 'İkon', 'icon'], ['title', 'Başlık'], ['desc', 'Açıklama', 'ta']] },
+      { type: 'images', title: 'Avantajlar görselleri', items: [['business', 'Avantajlar bölümü görseli'], ['business_sticker', 'Yuvarlak sticker']] },
+      { type: 'texts', title: 'Avantajlar metinleri', items: [T('business_kicker', 'Küçük etiket'), T('business_title', 'Başlık'), T('business_text', 'Açıklama', 1), T('business_cta', 'Buton yazısı')] },
+      { type: 'list', key: 'businessBenefits', title: 'İşletme avantajları', item: 'avantaj', fields: [['icon', 'İkon', 'icon'], ['title', 'Başlık'], ['desc', 'Açıklama', 'ta']] }
+    ] },
+    { id: 'cozumler', group: 'İşletmeler', label: 'Çözümler & Adımlar', blocks: [
+      { type: 'texts', title: 'Hizmet modelleri başlığı', items: [T('bizmodels_kicker', 'Küçük etiket'), T('bizmodels_title', 'Başlık'), T('bizmodels_text', 'Açıklama', 1)] },
+      { type: 'list', key: 'bizModels', title: 'Hizmet modelleri', item: 'model', fields: [['icon', 'İkon', 'icon'], ['title', 'Başlık'], ['desc', 'Açıklama', 'ta'], ['tag', 'Öne çıkan etiket (opsiyonel)']] },
+      { type: 'texts', title: 'Sektörler', items: [T('sectors_title', 'Sektörler başlığı')] },
+      { type: 'list', key: 'sectors', title: 'Hizmet verilen sektörler', item: 'sektör', grid: true, fields: [['icon', 'İkon', 'icon'], ['title', 'Sektör adı']] },
+      { type: 'texts', title: 'Nasıl çalışır', items: [T('bizsteps_title', 'Başlık')] },
+      { type: 'list', key: 'bizSteps', title: 'İşletme süreç adımları', item: 'adım', fields: [['title', 'Başlık'], ['desc', 'Açıklama']] }
+    ] },
+    { id: 'isletmeform', group: 'İşletmeler', label: 'Talep Formu', blocks: [
+      { type: 'images', title: 'Görsel', items: [['bizform', 'Talep formu yan görseli']] },
+      { type: 'texts', title: 'Metinler', items: [T('bizform_kicker', 'Küçük etiket'), T('bizform_title', 'Başlık'), T('bizform_text', 'Açıklama', 1), T('bizform_p1', 'Madde 1'), T('bizform_p2', 'Madde 2'), T('bizform_p3', 'Madde 3'), T('bizform_success_title', 'Gönderim sonrası başlık'), T('bizform_success_text', 'Gönderim sonrası mesaj', 1)] },
+      { type: 'formopts', forms: ['isletme'], title: 'Talep formu açılır liste seçenekleri' }
+    ] },
+    { id: 'kurye', group: 'Kuryeler', label: 'Kurye Ol', blocks: [
+      { type: 'texts', title: 'Bölüm bandı', items: [T('cour_zone_title', 'Bant başlığı'), T('cour_zone_text', 'Bant açıklaması')] },
+      { type: 'images', title: 'Görsel', items: [['courier', 'Kurye Ol bölümü görseli']] },
+      { type: 'texts', title: 'Metinler', items: [T('courier_kicker', 'Küçük etiket'), T('courier_title', 'Başlık'), T('courier_text', 'Açıklama', 1), T('req_title', 'Şartlar başlığı'), T('models_title', 'Çalışma modelleri başlığı'), T('steps_title', 'Süreç başlığı')] },
+      { type: 'list', key: 'courierBenefits', title: 'Kurye avantajları', item: 'avantaj', fields: [['icon', 'İkon', 'icon'], ['title', 'Başlık'], ['desc', 'Açıklama', 'ta']] },
+      { type: 'list', key: 'requirements', title: 'Başvuru şartları', item: 'şart', plain: true },
+      { type: 'list', key: 'workModels', title: 'Çalışma modelleri', item: 'model', fields: [['title', 'Başlık'], ['hours', 'Saatler'], ['desc', 'Açıklama', 'ta'], ['tag', 'Öne çıkan etiket (opsiyonel)']] },
+      { type: 'list', key: 'steps', title: 'Kurye başvuru süreci adımları', item: 'adım', fields: [['title', 'Başlık'], ['desc', 'Açıklama']] }
+    ] },
+    { id: 'kazanc', group: 'Kuryeler', label: 'Kazanç Hesaplayıcı', blocks: [
+      { type: 'calc', title: 'Hesaplama ayarları' },
+      { type: 'texts', title: 'Metinler', items: [T('calc_kicker', 'Küçük etiket'), T('calc_title', 'Başlık'), T('calc_text', 'Açıklama', 1), T('calc_note', 'Uyarı notu (tahmini olduğunu belirtin)', 1)] },
+      { type: 'images', title: 'Görsel', items: [['calc', 'Hesaplayıcı yan görseli']] }
+    ] },
+    { id: 'kuryeform', group: 'Kuryeler', label: 'Başvuru Formu', blocks: [
+      { type: 'images', title: 'Görsel', items: [['courform', 'Başvuru formu yan görseli']] },
+      { type: 'texts', title: 'Metinler', items: [T('courform_kicker', 'Küçük etiket'), T('courform_title', 'Başlık'), T('courform_text', 'Açıklama', 1), T('courform_p1', 'Madde 1'), T('courform_p2', 'Madde 2'), T('courform_p3', 'Madde 3'), T('courform_success_title', 'Gönderim sonrası başlık'), T('courform_success_text', 'Gönderim sonrası mesaj', 1)] },
+      { type: 'formopts', forms: ['kurye'], title: 'Başvuru formu açılır liste seçenekleri' }
+    ] },
+    { id: 'yorum', group: 'Ortak', label: 'Yorumlar', blocks: [
+      { type: 'texts', title: 'Bölüm başlığı', items: [T('testimonials_kicker', 'Küçük etiket'), T('testimonials_title', 'Başlık')] },
+      { type: 'list', key: 'testimonials', title: 'Yorumlar — yalnızca izin aldığınız gerçek yorumları ekleyin', item: 'yorum', grid: true, fields: [['type', 'Yorum sahibi', 'select', [['isletme', 'İşletme / müşteri'], ['kurye', 'Kurye']]], ['name', 'Ad Soyad / İşletme'], ['role', 'Ünvan (ör. Restoran sahibi)'], ['rating', 'Puan (1–5)', 'rating'], ['text', 'Yorum', 'ta'], ['photo', 'Fotoğraf (opsiyonel)', 'img']] }
+    ] },
+    { id: 'ref', group: 'Ortak', label: 'Galeri', blocks: [
+      { type: 'texts', title: 'Bölüm başlığı', items: [T('refs_kicker', 'Küçük etiket'), T('refs_title', 'Başlık'), T('refs_text', 'Açıklama', 1)] },
+      { type: 'list', key: 'gallery', title: 'Galeri görselleri (başlıklar görsel açıklaması olarak SEO’ya da katkı sağlar)', item: 'görsel', grid: true, fields: [['src', 'Görsel', 'img'], ['title', 'Başlık']] }
+    ] },
+    { id: 'bolge', group: 'Ortak', label: 'Bölgeler', blocks: [
+      { type: 'texts', title: 'Bölüm metinleri', items: [T('regions_kicker', 'Küçük etiket'), T('regions_title', 'Başlık'), T('regions_text', 'Açıklama', 1)] },
+      { type: 'list', key: 'regions', title: 'Bölgeler (ilçe / semt) — yerel aramalarda görünürlüğü artırır', item: 'bölge', plain: true }
+    ] },
+    { id: 'sss', group: 'Ortak', label: 'SSS', blocks: [
+      { type: 'texts', title: 'Bölüm başlığı', items: [T('faq_kicker', 'Küçük etiket'), T('faq_title', 'Başlık')] },
+      { type: 'list', key: 'faq', title: 'Sorular (sitede İşletmeler / Kuryeler sekmelerinde gösterilir)', item: 'soru', fields: [['cat', 'Kime yönelik', 'select', [['isletme', 'İşletmeler'], ['kurye', 'Kuryeler'], ['genel', 'Her ikisi']]], ['q', 'Soru'], ['a', 'Cevap', 'ta']] }
+    ] },
+    { id: 'iletisim', group: 'Ortak', label: 'İletişim & KVKK', blocks: [
+      { type: 'images', title: 'Görsel', items: [['contact', 'İletişim görseli (harita kodu girilmezse gösterilir)']] },
+      { type: 'texts', title: 'İletişim metinleri', items: [T('contact_kicker', 'Küçük etiket'), T('contact_title', 'Başlık'), T('contact_text', 'Açıklama', 1)] },
+      { type: 'texts', title: 'KVKK', items: [T('kvkk_text', 'Onay kutusu metni', 1), T('kvkk_title', 'Aydınlatma metni başlığı'), T('kvkk_full', 'Aydınlatma metni (hukukçunuza kontrol ettirmeniz önerilir)', 1)] }
+    ] },
+    { id: 'seo', group: 'Yayın', label: 'SEO', blocks: [
+      { type: 'seo', title: 'SEO puanı ve Google önizlemesi' },
+      { type: 'texts', title: 'Arama sonucu başlığı ve açıklaması', items: [T('seo_title', 'Sayfa başlığı (title) — 50–60 karakter önerilir'), T('seo_description', 'Meta açıklama — 140–160 karakter önerilir', 1)] },
+      { type: 'settings', title: 'Site adresi ve anahtar kelimeler', items: [T('site_url', 'Sitenin tam adresi (ör. https://yakindakurye.com)'), T('seo_keywords', 'Anahtar kelimeler (virgülle)', 1), { k: 'noindex', l: 'Siteyi arama motorlarından gizle (yalnızca test aşamasında açın)', bool: true, def: false }] },
+      { type: 'images', title: 'Sosyal medya paylaşım görseli', items: [['og', 'Paylaşım görseli (boşsa ana görsel kullanılır, 1200×630 önerilir)']] },
+      { type: 'settings', title: 'Yerel SEO (Google Haritalar & yerel aramalar)', note: 'Koordinatları Google Haritalar’da şubenize sağ tıklayarak kopyalayabilirsiniz.', items: [T('city', 'İl'), T('district', 'İlçe'), T('postal', 'Posta kodu'), T('geo_lat', 'Enlem (ör. 39.9208)'), T('geo_lng', 'Boylam (ör. 32.8541)'), T('opening_hours', 'Açılış saatleri (schema biçimi, ör. Mo-Su 00:00-23:59)'), T('price_range', 'Fiyat aralığı (opsiyonel, ör. ₺₺)')] },
+      { type: 'settings', title: 'Google İş Arama — kurye iş ilanı', note: 'Açık olduğunda kurye alımınız Google’ın iş arama sonuçlarında çıkabilecek şekilde yapısal veri olarak eklenir.', items: [{ k: 'job_enabled', l: 'Kurye iş ilanı yapısal verisini ekle', bool: true }, T('job_title', 'İlan başlığı'), T('job_salary', 'Aylık tahmini ücret (₺, opsiyonel)'), T('job_posted', 'İlan tarihi (YYYY-AA-GG, boşsa ayın 1’i)')] },
+      { type: 'settings', title: 'Google araçları', note: 'Search Console: “HTML etiketi” doğrulamasındaki content değerini girin. Analytics: G- ile başlayan ölçüm kimliği girilirse ziyaretçilere çerez onayı sorulur ve onay verenler ölçülür.', items: [T('gsc_verify', 'Google Search Console doğrulama kodu'), T('ga_id', 'Google Analytics 4 ölçüm kimliği (G-XXXXXXX)')] }
+    ] },
+    { id: 'yayin', group: 'Yayın', label: 'Yayınla', blocks: [{ type: 'publish', title: 'Değişiklikleri sitede yayınla' }] }
+  ];
+
+  function viewContent(tabId) {
+    let draft = YK.getContent();
+    const tab = CONTENT_TABS.find(t => t.id === tabId) || CONTENT_TABS[0];
+    const isPub = tab.id === 'yayin';
+    setTop(tab.id === 'seo' ? 'SEO' : 'Site İçeriği', '<a href="index.html" target="_blank" class="btn btn-light">' + I('goz') + '<span class="hide-sm">Önizle</span></a>' + (isPub ? '' : '<button class="btn btn-light" id="cUndo" disabled>Geri al</button><button class="btn btn-yellow" id="cSave" disabled>' + I('check') + 'Kaydet</button>') + '<a href="#icerik/yayin" class="btn btn-dark' + (YK.hasUnpublished() ? ' attn' : '') + '">' + I('gonder') + 'Yayınla</a>',
+      tab.id === 'seo' ? 'Arama motorları ve sosyal medya için ayarlar' : 'Metinler, görseller ve bölümler · ' + tab.label);
+    const groups = []; CONTENT_TABS.forEach(t => { let g = groups.find(x => x.n === t.group); if (!g) groups.push(g = { n: t.group, t: [] }); g.t.push(t); });
+    view.innerHTML = '<nav class="ctabs">' + groups.map(g => '<div class="ctg"><span>' + esc(g.n) + '</span><div>' + g.t.map(t => '<a href="#icerik/' + t.id + '" class="' + (t === tab ? 'on' : '') + '">' + t.label + (t.id === 'yayin' && YK.hasUnpublished() ? ' <i class="dotr"></i>' : '') + '</a>').join('') + '</div></div>').join('') + '</nav>' +
+      (YK.hasUnpublished() && !isPub ? '<div class="alert">' + I('uyari') + '<div>Kaydettiğiniz değişiklikler şu an <b>yalnızca bu tarayıcıda</b> görünüyor. Ziyaretçilerin görmesi için <a href="#icerik/yayin">Yayınla</a> adımını tamamlayın.</div></div>' : '') +
+      '<div id="cBody"></div>';
+    const setDirty = v => { dirty = v; if (isPub) return; $('#cSave').disabled = !v; $('#cUndo').disabled = !v; $('#cSave').classList.toggle('pulse', v); };
+    const save = () => { if (!dirty) return; if (YK.saveContent(draft)) { setDirty(false); YK.log('Site içeriği güncellendi (' + tab.label + ')'); toast('Kaydedildi — yayına almak için “Yayınla”'); updateBadges(); } };
+    if (!isPub) { $('#cSave').onclick = save; $('#cUndo').onclick = () => { draft = YK.getContent(); setDirty(false); draw(); }; }
+    view.onkeydown = e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(); } };
+
+    function draw() {
+      const box = $('#cBody'); box.innerHTML = '';
+      tab.blocks.forEach(b => {
+        const sec = document.createElement('section'); sec.className = 'card';
+        sec.innerHTML = '<div class="card-head"><h2>' + esc(b.title) + '</h2></div>' + (b.note ? '<p class="muted small">' + esc(b.note) + '</p>' : '');
+        if (b.type === 'texts' || b.type === 'settings') {
+          const src = b.type === 'texts' ? draft.texts : draft.settings;
+          const g = document.createElement('div'); g.className = 'f-grid';
+          b.items.forEach(it => {
+            const l = document.createElement('label');
+            if (it.bool) {
+              const on = it.def === false ? src[it.k] === true : src[it.k] !== false;
+              l.className = 'switch full'; l.innerHTML = '<input type="checkbox"' + (on ? ' checked' : '') + '><span class="sw"></span><span>' + esc(it.l) + '</span>';
+              $('input', l).onchange = e => { src[it.k] = e.target.checked; setDirty(true); if (b.title.indexOf('Site adresi') === 0) drawSeo(); };
+            } else {
+              l.className = 'fld' + (it.ta ? ' full' : '');
+              l.innerHTML = '<span>' + esc(it.l) + '</span>' + (it.ta ? '<textarea rows="' + (it.k === 'kvkk_full' || it.k === 'about_text' ? 8 : 3) + '"></textarea>' : '<input>') + '<small class="cnt"></small>';
+              const inp = $('input,textarea', l), cnt = $('.cnt', l); inp.value = src[it.k] || '';
+              const lim = { seo_title: [30, 60], seo_description: [120, 160] }[it.k];
+              const showCnt = () => { if (lim) { const n = inp.value.length; cnt.textContent = n + ' karakter' + (n < lim[0] ? ' · kısa' : n > lim[1] ? ' · uzun, Google kısaltabilir' : ' · ideal'); cnt.className = 'cnt ' + (n >= lim[0] && n <= lim[1] ? 'good' : 'warn'); } };
+              inp.oninput = () => { src[it.k] = inp.value; setDirty(true); showCnt(); if (tab.id === 'seo') drawSeo(); }; showCnt();
+            }
+            g.appendChild(l);
+          });
+          sec.appendChild(g);
+        } else if (b.type === 'images') {
+          const g = document.createElement('div'); g.className = 'img-grid';
+          b.items.forEach(([k, l]) => {
+            const c = document.createElement('div'); c.className = 'img-card';
+            c.innerHTML = '<div class="img-prev' + (k === 'logo_dark' ? ' dark' : '') + '">' + (draft.images[k] ? '<img data-src="' + esc(draft.images[k]) + '" alt="">' : '<span class="muted small">Seçilmedi</span>') + '</div><b>' + esc(l) + '</b><div class="img-btns"><button class="btn btn-light sm" data-c>' + I('gorsel') + 'Değiştir</button>' + (draft.images[k] !== YK.DEFAULT_CONTENT.images[k] ? '<button class="link-btn" data-r>Varsayılana dön</button>' : '') + '</div>';
+            $('[data-c]', c).onclick = () => pickImage(src => { draft.images[k] = src; setDirty(true); draw(); });
+            const r = $('[data-r]', c); if (r) r.onclick = () => { draft.images[k] = YK.DEFAULT_CONTENT.images[k]; setDirty(true); draw(); };
+            g.appendChild(c);
+          });
+          sec.appendChild(g);
+        } else if (b.type === 'list') {
+          sec.appendChild(listEditor(b, draft, () => { if (b.review) draft.reviewed = Object.assign({}, draft.reviewed, { [b.review]: true }); setDirty(true); }, draw));
+        } else if (b.type === 'sections') {
+          const g = document.createElement('div'); g.className = 'sec-groups';
+          SECTION_LABELS.forEach(([gn, items]) => {
+            const col = document.createElement('div'); col.className = 'sec-group'; col.innerHTML = '<h4>' + esc(gn) + '</h4>';
+            items.forEach(([k, l]) => {
+              const s = document.createElement('label'); s.className = 'switch';
+              s.innerHTML = '<input type="checkbox"' + (draft.sections[k] !== false ? ' checked' : '') + '><span class="sw"></span><span>' + esc(l) + '</span>';
+              $('input', s).onchange = e => { draft.sections[k] = e.target.checked; setDirty(true); };
+              col.appendChild(s);
+            });
+            g.appendChild(col);
+          });
+          sec.appendChild(g);
+        } else if (b.type === 'calc') {
+          const k = draft.calc;
+          const g = document.createElement('div'); g.className = 'f-grid';
+          [['perPackage', 'Paket başı kazanç (₺)'], ['defPackages', 'Varsayılan günlük paket'], ['minPackages', 'En az günlük paket'], ['maxPackages', 'En çok günlük paket'], ['defDays', 'Varsayılan haftalık gün (1–7)']].forEach(([key, l]) => {
+            const f = document.createElement('label'); f.className = 'fld';
+            f.innerHTML = '<span>' + esc(l) + '</span><input type="number" min="0" step="any" value="' + esc(k[key]) + '">';
+            $('input', f).oninput = e => { k[key] = Number(e.target.value) || 0; k.configured = true; setDirty(true); prev(); };
+            g.appendChild(f);
+          });
+          const p = document.createElement('div'); p.className = 'calc-prev';
+          const prev = () => { const d = (k.defPackages || 0) * (k.perPackage || 0), w = d * (k.defDays || 0); p.innerHTML = 'Önizleme: günde <b>' + (k.defPackages || 0) + '</b> paket × <b>' + YK.fmtMoney(k.perPackage) + '</b> = <b>' + YK.fmtMoney(d) + '</b> / gün · <b>' + YK.fmtMoney(w) + '</b> / hafta · <b>' + YK.fmtMoney(w * 52 / 12) + '</b> / ay' + (k.configured ? '' : ' <span class="pill red">Örnek değer — gerçek ücretinizi girin</span>'); };
+          prev(); sec.appendChild(g); sec.appendChild(p);
+        } else if (b.type === 'formopts') {
+          const wrap = document.createElement('div'); wrap.className = 'fo-grid';
+          (b.forms || ['kurye', 'isletme']).forEach(t => YK.FORMS[t].fields.filter(f => f.type === 'select' && f.name !== 'il').forEach(f => {
+            const key = t + '.' + f.name, cur = (draft.formOptions[key] && draft.formOptions[key].length ? draft.formOptions[key] : f.options);
+            const bx = document.createElement('label'); bx.className = 'fld';
+            bx.innerHTML = '<span>' + esc(f.label) + '</span><textarea rows="4">' + esc(cur.join('\n')) + '</textarea><small>Her satıra bir seçenek yazın.</small>';
+            $('textarea', bx).oninput = e => { draft.formOptions[key] = e.target.value.split('\n').map(x => x.trim()).filter(Boolean); setDirty(true); };
+            wrap.appendChild(bx);
+          }));
+          sec.appendChild(wrap);
+        } else if (b.type === 'seo') {
+          sec.id = 'seoBox'; sec.classList.add('seo-card');
+        } else if (b.type === 'publish') {
+          sec.appendChild(publishPanel());
+        }
+        box.appendChild(sec);
+      });
+      hydrate(box);
+      drawSeo();
+    }
+    function drawSeo() {
+      const sec = $('#seoBox'); if (!sec) return;
+      const t = draft.texts, s = draft.settings;
+      const title = t.seo_title || t.site_title || '', desc = t.seo_description || '';
+      const url = (s.site_url || 'https://alanadiniz.com').replace(/\/+$/, '');
+      const checks = [
+        [title.length >= 30 && title.length <= 60, 'Başlık uzunluğu ideal (30–60 karakter)', title.length + ' karakter'],
+        [desc.length >= 120 && desc.length <= 160, 'Meta açıklama uzunluğu ideal (120–160)', desc.length + ' karakter'],
+        [/kurye/i.test(title) && /kurye/i.test(desc), 'Başlık ve açıklamada ana anahtar kelime (“kurye”) geçiyor', ''],
+        [!!s.city && (title + desc).toLocaleLowerCase('tr-TR').indexOf(s.city.toLocaleLowerCase('tr-TR')) >= 0, 'Başlık/açıklamada şehir adı geçiyor (yerel arama için)', s.city || 'il girilmedi'],
+        [/^https:\/\//.test(s.site_url || ''), 'Site adresi (https) girildi — kanonik URL ve sitemap için', ''],
+        [!!(s.geo_lat && s.geo_lng), 'Konum koordinatları girildi (Google Haritalar)', ''],
+        [!!s.district || draft.regions.filter(Boolean).length > 0, 'İlçe veya hizmet bölgeleri girildi', ''],
+        [!!s.gsc_verify, 'Google Search Console doğrulaması eklendi', ''],
+        [draft.faq.length >= 4, 'SSS bölümünde en az 4 soru var (zengin sonuç)', draft.faq.length + ' soru'],
+        [draft.gallery.every(g => g.title), 'Tüm galeri görsellerinin başlığı (alt metni) var', ''],
+        [!s.noindex, 'Site arama motorlarına açık', ''],
+        [!YK.hasUnpublished(), 'Son değişiklikler yayınlandı', '']
+      ];
+      const score = Math.round(checks.filter(c => c[0]).length / checks.length * 100);
+      sec.innerHTML = '<div class="card-head"><h2>' + I('ara') + 'SEO puanı ve Google önizlemesi</h2></div><div class="seo-grid"><div class="seo-score" style="--p:' + score + '"><b>' + score + '</b><span>/ 100</span></div>' +
+        '<div class="serp"><small>Google arama sonucu önizlemesi</small><div class="serp-box"><span class="serp-url">' + esc(url.replace(/^https?:\/\//, '')) + '</span><span class="serp-title">' + esc(title.length > 62 ? title.slice(0, 60) + '…' : title) + '</span><span class="serp-desc">' + esc(desc.length > 162 ? desc.slice(0, 158) + '…' : desc) + '</span></div></div></div>' +
+        '<ul class="seo-list">' + checks.map(c => '<li class="' + (c[0] ? 'ok' : '') + '"><span class="sc">' + I(c[0] ? 'check' : 'uyari') + '</span><span>' + esc(c[1]) + '</span><small>' + esc(c[2]) + '</small></li>').join('') + '</ul>' +
+        '<div class="btn-row mt"><button class="btn btn-light sm" id="dlSitemap">' + I('indir') + 'sitemap.xml indir</button><button class="btn btn-light sm" id="dlRobots">' + I('indir') + 'robots.txt indir</button></div><p class="muted small">Bu iki dosyayı sitenin ana klasörüne yükleyin, ardından Google Search Console’da sitemap adresini gönderin.</p>';
+      $('#dlSitemap', sec).onclick = () => { if (!s.site_url) return toast('Önce site adresini girin', 'err'); YK.download('sitemap.xml', YK.sitemapXML(s.site_url), 'application/xml'); };
+      $('#dlRobots', sec).onclick = () => YK.download('robots.txt', YK.robotsTXT(s.site_url, s.noindex), 'text/plain');
+    }
+    draw();
+  }
+
+  function publishPanel() {
+    const box = document.createElement('div');
+    const pending = YK.hasUnpublished();
+    box.innerHTML = '<div class="pub-state ' + (pending ? 'warn' : 'ok') + '">' + I(pending ? 'uyari' : 'check') + '<div><b>' + (pending ? 'Yayınlanmamış değişiklikleriniz var' : 'Site güncel') + '</b><p>' + (pending ? 'Panelde kaydettiğiniz içerik şu an yalnızca bu tarayıcıda görünüyor.' : 'Panel içeriği ile yayındaki içerik aynı.') + '</p></div></div>' +
+      '<ol class="pub-steps"><li><b>Yayın dosyasını indirin</b><span>Aşağıdaki butonla <code>content.js</code> dosyası iner. Yüklediğiniz görseller dosyanın içine eklenir.</span></li>' +
+      '<li><b>Dosyayı yerine koyun</b><span>İnen dosyayı sitenizin <code>assets/js/</code> klasöründeki <code>content.js</code> ile değiştirin (bilgisayarınızda ve hosting’e yüklerken).</span></li>' +
+      '<li><b>Siteyi yükleyin</b><span>Hosting’e (FTP / dosya yöneticisi) yükleyin. SEO sekmesindeki <code>sitemap.xml</code> ve <code>robots.txt</code> dosyalarını da ana klasöre koyun.</span></li></ol>' +
+      '<div class="btn-row"><button class="btn btn-yellow btn-lg" id="pubDl">' + I('indir') + 'content.js indir</button></div>' +
+      '<p class="muted small mt">Not: Başvurular, müşteriler, çalışanlar ve kayıtlar bu dosyaya <b>eklenmez</b>; yalnızca site içeriği yayınlanır.</p>';
+    $('#pubDl', box).onclick = async () => {
+      try {
+        const txt = await YK.buildPublishFile();
+        YK.download('content.js', txt, 'text/javascript;charset=utf-8');
+        try { localStorage.setItem('yk_last_publish', new Date().toISOString()); } catch (e) {}
+        YK.log('Yayın dosyası (content.js) indirildi'); toast('content.js indirildi — assets/js klasörüne koyun');
+      } catch (e) { toast('Yayın dosyası oluşturulamadı', 'err'); }
+    };
+    return box;
+  }
+
+  function listEditor(b, draft, changed, redraw) {
+    const arr = draft[b.key];
+    const wrap = document.createElement('div'); wrap.className = 'list-ed' + (b.grid ? ' grid' : '');
+    arr.forEach((item, i) => {
+      const row = document.createElement('div'); row.className = 'le-item';
+      const ctr = '<div class="le-ctrl"><span class="le-n">' + (i + 1) + '</span><button class="icon-btn sm" data-u title="Yukarı" aria-label="Yukarı"' + (i ? '' : ' disabled') + '>' + I('yukari') + '</button><button class="icon-btn sm" data-d title="Aşağı" aria-label="Aşağı"' + (i < arr.length - 1 ? '' : ' disabled') + '>' + I('asagi') + '</button><button class="icon-btn sm danger" data-x title="Sil" aria-label="Sil">' + I('cop') + '</button></div>';
+      if (b.plain) {
+        row.innerHTML = '<input class="le-plain">' + ctr; row.classList.add('plain');
+        const inp = $('input', row); inp.value = item; inp.oninput = () => { arr[i] = inp.value; changed(); };
+      } else {
+        row.innerHTML = '<div class="le-fields"></div>' + ctr;
+        const fbox = $('.le-fields', row);
+        b.fields.forEach(([k, l, t]) => {
+          const fl = document.createElement('label'); fl.className = 'fld' + (t === 'ta' || t === 'img' ? ' full' : '');
+          if (t === 'icon') {
+            fl.innerHTML = '<span>' + esc(l) + '</span><div class="icon-pick"><span class="ip-cur">' + I(item[k]) + '</span><select>' + YK.ICON_CHOICES.map(n => '<option' + (n === item[k] ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></div>';
+            const s = $('select', fl); s.onchange = () => { item[k] = s.value; $('.ip-cur', fl).innerHTML = I(s.value); changed(); };
+          } else if (t === 'select') {
+            const o = b.fields.find(f => f[0] === k)[3];
+            if (!item[k]) item[k] = o[0][0];
+            fl.innerHTML = '<span>' + esc(l) + '</span><select>' + o.map(([v, lab]) => '<option value="' + v + '"' + (item[k] === v ? ' selected' : '') + '>' + esc(lab) + '</option>').join('') + '</select>';
+            const s2 = $('select', fl); s2.onchange = () => { item[k] = s2.value; changed(); };
+          } else if (t === 'rating') {
+            fl.innerHTML = '<span>' + esc(l) + '</span><select>' + [5, 4, 3, 2, 1].map(n => '<option value="' + n + '"' + (String(item[k] || 5) === String(n) ? ' selected' : '') + '>' + '★'.repeat(n) + '</option>').join('') + '</select>';
+            const s = $('select', fl); s.onchange = () => { item[k] = s.value; changed(); };
+          } else if (t === 'img') {
+            fl.innerHTML = '<span>' + esc(l) + '</span><div class="le-img">' + (item[k] ? '<img data-src="' + esc(item[k]) + '" alt="">' : '<div class="le-noimg">' + I('gorsel') + '</div>') + '<div class="img-btns"><button type="button" class="btn btn-light sm" data-pick>' + I('gorsel') + (item[k] ? 'Değiştir' : 'Seç') + '</button>' + (item[k] && b.key !== 'gallery' ? '<button type="button" class="link-btn" data-clear>Kaldır</button>' : '') + '</div></div>';
+            $('[data-pick]', fl).onclick = () => pickImage(src => { item[k] = src; changed(); redraw(); });
+            const cl = $('[data-clear]', fl); if (cl) cl.onclick = () => { item[k] = ''; changed(); redraw(); };
+          } else {
+            fl.innerHTML = '<span>' + esc(l) + '</span>' + (t === 'ta' ? '<textarea rows="2"></textarea>' : '<input>');
+            const inp = $('input,textarea', fl); inp.value = item[k] || ''; inp.oninput = () => { item[k] = inp.value; changed(); };
+          }
+          fbox.appendChild(fl);
+        });
+      }
+      $('[data-u]', row).onclick = () => { arr.splice(i - 1, 0, arr.splice(i, 1)[0]); changed(); redraw(); };
+      $('[data-d]', row).onclick = () => { arr.splice(i + 1, 0, arr.splice(i, 1)[0]); changed(); redraw(); };
+      $('[data-x]', row).onclick = () => { arr.splice(i, 1); changed(); redraw(); };
+      wrap.appendChild(row);
+    });
+    const add = document.createElement('button'); add.className = 'btn btn-light add-btn'; add.innerHTML = I('arti') + 'Yeni ' + esc(b.item) + ' ekle';
+    add.onclick = () => {
+      const blank = () => { if (b.plain) return ''; const o = {}; b.fields.forEach(([k, , t]) => { o[k] = t === 'icon' ? 'paket' : t === 'rating' ? '5' : t === 'select' ? b.fields.find(f => f[0] === k)[3][0][0] : ''; }); return o; };
+      if (b.key === 'gallery') pickImage(src => { arr.push({ src: src, title: '' }); changed(); redraw(); });
+      else { arr.push(blank()); changed(); redraw(); }
+    };
+    wrap.appendChild(add);
+    return wrap;
+  }
+
+  /* Görsel seçici */
+  function pickImage(cb) {
+    const body = document.createElement('div');
+    body.innerHTML = '<div class="pick-top"><div class="seg" id="pkSeg"><button class="on" data-t="up">Yüklenenler</button><button data-t="lib">Hazır görseller</button></div><label class="btn btn-yellow">' + I('yukle') + 'Bilgisayardan yükle<input type="file" accept="image/*" multiple hidden id="pkFile"></label></div><div class="drop" id="pkDrop">' + I('yukle') + ' Görselleri buraya sürükleyip bırakabilirsiniz</div><div class="pick-grid" id="pkGrid"></div>';
+    const m = modal({ title: 'Görsel seç', body: body, wide: true, noFocus: true });
+    let tab = 'up';
+    async function draw() {
+      const g = $('#pkGrid', body);
+      if (tab === 'lib') {
+        g.innerHTML = YK.BUNDLED_IMAGES.map(x => '<button class="pk" data-src="' + esc(x.src) + '"><img src="' + esc(x.src) + '" alt="" loading="lazy"><span>' + esc(x.title) + '</span></button>').join('');
+      } else {
+        const items = (await YK.media.all()).filter(Boolean).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+        g.innerHTML = items.length ? items.map(x => '<div class="pk-wrap"><button class="pk" data-src="media:' + x.id + '"><img src="' + x.data + '" alt=""><span>' + esc(x.name || '') + '</span></button><button class="icon-btn sm danger pk-del" data-del="' + x.id + '" title="Kalıcı sil" aria-label="Kalıcı sil">' + I('cop') + '</button></div>').join('')
+          : '<div class="empty small">' + I('gorsel') + '<p>Henüz yüklenmiş görsel yok. “Bilgisayardan yükle” ile görsel ekleyin ya da “Hazır görseller” sekmesinden seçin.</p></div>';
+      }
+      $$('.pk', g).forEach(b => b.onclick = () => { cb(b.dataset.src); m.close(); });
+      $$('[data-del]', g).forEach(b => b.onclick = async () => { if (await confirmBox('Görsel kalıcı olarak silinsin mi? Sitede kullanılıyorsa görünmez hale gelir.')) { await YK.media.del(b.dataset.del); draw(); } });
+    }
+    async function upload(files) {
+      files = files.filter(f => /^image\//.test(f.type)); if (!files.length) return;
+      for (const f of files) { if (f.size > 15e6) { toast(f.name + ' çok büyük (15 MB üstü)', 'err'); continue; } try { await YK.media.put(await YK.fileToDataUrl(f, 1600), f.name); } catch (er) { toast(f.name + ' yüklenemedi', 'err'); } }
+      toast(files.length + ' görsel yüklendi'); YK.log(files.length + ' görsel yüklendi'); tab = 'up'; $$('#pkSeg button', body).forEach(x => x.classList.toggle('on', x.dataset.t === 'up')); draw();
+    }
+    $$('#pkSeg button', body).forEach(b => b.onclick = () => { tab = b.dataset.t; $$('#pkSeg button', body).forEach(x => x.classList.toggle('on', x === b)); draw(); });
+    $('#pkFile', body).onchange = e => { upload(Array.from(e.target.files || [])); e.target.value = ''; };
+    const drop = $('#pkDrop', body);
+    ['dragenter', 'dragover'].forEach(ev => body.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('on'); }));
+    ['dragleave', 'drop'].forEach(ev => body.addEventListener(ev, e => { e.preventDefault(); if (ev === 'drop' || e.target === body) drop.classList.remove('on'); }));
+    body.addEventListener('drop', e => upload(Array.from(e.dataTransfer.files || [])));
+    draw();
+  }
+
+  /* =================== Ayarlar =================== */
+  function viewSettings() {
+    setTop('Ayarlar');
+    const c = YK.auth.creds();
+    let lastBackup = null; try { lastBackup = localStorage.getItem('yk_last_backup'); } catch (e) {}
+    let usage = 0; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); usage += (localStorage.getItem(k) || '').length; } } catch (e) {}
+    const logs = YK.getLog();
+    view.innerHTML =
+      '<div class="grid-2">' +
+      '<section class="card"><div class="card-head"><h2>Giriş bilgileri</h2></div><form id="pwForm" class="f-grid one">' +
+      '<label class="fld"><span>Kullanıcı adı</span><input name="user" value="' + esc(c.user) + '" required autocomplete="username"></label>' +
+      '<label class="fld"><span>Mevcut şifre</span><input name="old" type="password" required autocomplete="current-password"></label>' +
+      '<label class="fld"><span>Yeni şifre (en az 8 karakter, harf ve rakam)</span><input name="pw" type="password" required minlength="8" autocomplete="new-password"><span class="pw-meter"><i id="pwBar"></i></span></label>' +
+      '<label class="fld"><span>Yeni şifre (tekrar)</span><input name="pw2" type="password" required autocomplete="new-password"></label>' +
+      '<button class="btn btn-dark">Şifreyi güncelle</button></form><p class="muted small mt">Güvenlik: 60 dakika işlem yapılmazsa oturum kapanır; 5 hatalı denemede giriş 1 dakika kilitlenir.</p></section>' +
+      '<section class="card"><div class="card-head"><h2>Yedekleme</h2>' + (lastBackup ? '<span class="pill">Son yedek: ' + YK.fmtDate(lastBackup, true) + '</span>' : '<span class="pill red">Hiç yedek alınmadı</span>') + '</div><p class="muted">Tüm başvuruları, çalışanları, kayıtları, site içeriğini ve yüklenen görselleri tek bir dosyaya yedekleyin. Başka bir bilgisayara/tarayıcıya taşımak için de kullanabilirsiniz.</p>' +
+      '<div class="btn-row"><button class="btn btn-dark" id="bExport">' + I('indir') + 'Yedek indir</button><label class="btn btn-light">' + I('yukle') + 'Yedekten geri yükle<input type="file" accept=".json,application/json" id="bImport" hidden></label></div>' +
+      '<p class="muted small mt">Kullanılan yerel depolama: ~' + (usage * 2 / 1048576).toFixed(2) + ' MB (tarayıcı sınırı genellikle 5–10 MB; görseller ayrı depolanır).</p>' +
+      '<div class="card-head mt"><h2>Deneme verisi</h2></div><p class="muted">Paneli denemek için örnek başvuru, çalışan ve kayıtlar ekler.</p><button class="btn btn-light" id="bDemo">' + I('arti') + 'Örnek veri yükle</button></section>' +
+      '</div>' +
+      '<section class="card"><div class="card-head"><h2>' + I('gecmis') + ' İşlem geçmişi</h2><span class="pill">' + logs.length + ' kayıt</span></div>' +
+      (logs.length ? '<ul class="log tall">' + logs.slice(0, 100).map(l => '<li><span>' + esc(l.text) + '</span><small>' + YK.fmtDate(l.t, true) + '</small></li>').join('') + '</ul>' : '<p class="muted small">Henüz işlem yok.</p>') + '</section>' +
+      '<section class="card danger-zone"><div class="card-head"><h2>Tehlikeli işlemler</h2></div><div class="btn-row">' +
+      '<button class="btn btn-danger-ghost" id="rContent">Site içeriğini varsayılana döndür</button>' +
+      '<button class="btn btn-danger-ghost" id="rApps">Tüm başvuruları sil</button>' +
+      '<button class="btn btn-danger-ghost" id="rRecs">Tüm kayıtları sil</button>' +
+      '<button class="btn btn-danger" id="rAll">Tüm verileri sil</button></div></section>' +
+      '<section class="card"><div class="card-head"><h2>Veriler nerede saklanıyor?</h2></div><p class="muted">Bu sürümde tüm veriler bu tarayıcının yerel depolamasında tutulur. Site ve panel aynı tarayıcıda açıldığında başvurular panele anında düşer. Site internette yayınlandığında farklı cihazlardan gelen başvuruları kaçırmamak için <a class="link" href="#icerik/genel">Genel & İletişim › Başvuru bildirimleri</a> bölümünden e-posta bildirimini kurun. Düzenli olarak “Yedek indir” ile yedek almanız önerilir.</p></section>';
+
+    const f = $('#pwForm');
+    f.pw.oninput = () => { const v = f.pw.value; let s = 0; if (v.length >= 8) s++; if (/[A-ZÇĞİÖŞÜ]/.test(v) && /[a-zçğıöşü]/.test(v)) s++; if (/\d/.test(v)) s++; if (/[^\wçğıöşüÇĞİÖŞÜ]/.test(v) || v.length >= 12) s++; const bar = $('#pwBar'); bar.style.width = s * 25 + '%'; bar.style.background = ['#dc2626', '#dc2626', '#d97706', '#65a30d', '#16a34a'][s]; };
+    f.onsubmit = e => {
+      e.preventDefault();
+      if (!YK.auth.check(c.user, f.old.value)) return toast('Mevcut şifre hatalı', 'err');
+      if (f.pw.value.length < 8 || !/\d/.test(f.pw.value) || !/\D/.test(f.pw.value)) return toast('Yeni şifre en az 8 karakter olmalı ve harf + rakam içermeli', 'err');
+      if (f.pw.value !== f.pw2.value) return toast('Yeni şifreler eşleşmiyor', 'err');
+      YK.auth.set(f.user.value, f.pw.value); YK.log('Panel giriş bilgileri değiştirildi'); toast('Giriş bilgileri güncellendi'); rerender();
+    };
+    $('#bExport').onclick = async () => { const d = await YK.exportAll(); YK.download('yakinda-kurye-yedek-' + today() + '.json', JSON.stringify(d), 'application/json'); try { localStorage.setItem('yk_last_backup', new Date().toISOString()); } catch (er) {} YK.log('Yedek indirildi'); toast('Yedek indirildi'); rerender(); };
+    $('#bImport').onchange = e => {
+      const file = e.target.files[0]; if (!file) return;
+      const fr = new FileReader();
+      fr.onload = async () => {
+        try { const d = JSON.parse(fr.result); if (!(await confirmBox('Mevcut veriler yedekteki verilerle değiştirilecek. Devam edilsin mi?', 'Geri yükle'))) return; await YK.importAll(d); YK.log('Yedekten geri yükleme yapıldı'); toast('Yedek geri yüklendi'); rerender(); }
+        catch (er) { toast('Yedek dosyası okunamadı', 'err'); }
+      };
+      fr.readAsText(file); e.target.value = '';
+    };
+    $('#bDemo').onclick = () => { loadDemo(); YK.log('Örnek veriler yüklendi'); toast('Örnek veriler eklendi'); location.hash = '#panel'; };
+    $('#rContent').onclick = async () => { if (await confirmBox('Site metinleri, görselleri ve listeler varsayılana dönsün mü?', 'Sıfırla')) { YK.resetContent(); YK.log('Site içeriği sıfırlandı'); toast('Site içeriği sıfırlandı'); } };
+    $('#rApps').onclick = async () => { if (await confirmBox('Tüm başvurular kalıcı olarak silinsin mi?')) { YK.saveList('applications', []); YK.log('Tüm başvurular silindi'); updateBadges(); toast('Başvurular silindi'); } };
+    $('#rRecs').onclick = async () => { if (await confirmBox('Tüm kayıtlar (vardiya, ödeme vb.) kalıcı olarak silinsin mi?')) { YK.saveList('records', []); YK.log('Tüm kayıtlar silindi'); toast('Kayıtlar silindi'); } };
+    $('#rAll').onclick = async () => {
+      if (!(await confirmBox('Başvurular, müşteriler, çalışanlar, kayıtlar ve site içeriği tamamen silinecek. Önce yedek almanız önerilir. Devam edilsin mi?', 'Hepsini sil'))) return;
+      ['applications', 'employees', 'records', 'customers'].forEach(k => YK.saveList(k, [])); YK.resetContent(); YK.log('Tüm veriler silindi'); updateBadges(); toast('Tüm veriler silindi'); rerender();
+    };
+  }
+
+  function loadDemo() {
+    const d = n => addDays(today(), -n);
+    const iso = (n, h) => { const x = new Date(); x.setDate(x.getDate() - n); x.setHours(h || 10, 15); return x.toISOString(); };
+    const apps = YK.list('applications');
+    [
+      { type: 'kurye', status: 'yeni', createdAt: iso(0, 9), data: { adSoyad: 'Emre Örnek', telefon: '0532 000 00 01', eposta: '', dogumTarihi: '1998-04-12', il: 'Ankara', ilce: 'Çankaya', ehliyet: 'A2', motor: 'Kendi motorum var', calismaModeli: 'Tam zamanlı', deneyim: '1 – 3 yıl', kaynak: 'Sosyal medya', mesaj: 'Hafta içi her gün çalışabilirim.' } },
+      { type: 'kurye', status: 'inceleniyor', createdAt: iso(1, 14), data: { adSoyad: 'Burak Deneme', telefon: '0533 000 00 02', dogumTarihi: '2001-09-03', il: 'Ankara', ilce: 'Yenimahalle', ehliyet: 'A1', motor: 'Motorum yok – şirket motoru istiyorum', calismaModeli: 'Yarı zamanlı (akşam)', deneyim: 'Deneyimim yok', kaynak: 'Arkadaş tavsiyesi' } },
+      { type: 'isletme', status: 'yeni', createdAt: iso(0, 11), data: { isletmeAdi: 'Örnek Burger', sektor: 'Restoran / Kafe', yetkili: 'Selin Test', telefon: '0312 000 00 03', il: 'Ankara', ilce: 'Keçiören', gunlukPaket: '50 – 100', kuryeSayisi: '3', calismaSaatleri: '11:00 – 23:00', hizmetModeli: 'Vardiyalı / saatlik', baslangic: 'Hemen', adres: 'Örnek Mah. Deneme Sok. No:5' } },
+      { type: 'isletme', status: 'gorusme', createdAt: iso(3, 16), data: { isletmeAdi: 'Deneme Eczanesi', sektor: 'Eczane', yetkili: 'Kaan Örnek', telefon: '0312 000 00 04', il: 'Ankara', ilce: 'Etimesgut', gunlukPaket: '0 – 20', kuryeSayisi: '1', calismaSaatleri: '09:00 – 19:00' } }
+    ].forEach(a => { a.id = YK.uid(); a.ref = YK.refNo(); a.notes = []; a.kvkk = true; apps.push(a); });
+    apps.sort((a, b) => b.createdAt.localeCompare(a.createdAt)); YK.saveList('applications', apps);
+
+    const custs = [
+      { isletmeAdi: 'Deneme Pide Salonu', sektor: 'Restoran / Kafe', yetkili: 'Murat Örnek', telefon: '0312 000 00 20', durum: 'Aktif', hizmetModeli: 'Vardiyalı / saatlik', baslangic: d(90), kuryeSayisi: '2', calismaSaatleri: '11:00 – 23:00', ucret: 'Örnek koşul', il: 'Ankara', ilce: 'Çankaya' },
+      { isletmeAdi: 'Örnek Market', sektor: 'Market', yetkili: 'Zeynep Deneme', telefon: '0312 000 00 21', durum: 'Deneme', hizmetModeli: 'Paket başı', baslangic: d(5), kuryeSayisi: '1', il: 'Ankara', ilce: 'Keçiören' }
+    ].map(c => YK.add('customers', c));
+    const emps = [
+      { adSoyad: 'Ali Örnek', telefon: '0530 000 00 10', gorev: 'Moto Kurye', calismaModeli: 'Tam zamanlı', durum: 'Aktif', baslangic: d(120), bolge: 'Çankaya', musteriId: custs[0].id, il: 'Ankara', ilce: 'Çankaya', ehliyet: 'A2', motor: 'Kendi motoru', plaka: '06 ABC 001', ekipman: 'Çanta, kask, mont', sigortaBitis: addDays(today(), 12), evrak: YK.EMP_DOCS.slice(0, 7) },
+      { adSoyad: 'Veli Deneme', telefon: '0530 000 00 11', gorev: 'Moto Kurye', calismaModeli: 'Tam zamanlı', durum: 'Aktif', baslangic: d(60), bolge: 'Keçiören', musteriId: custs[1].id, il: 'Ankara', ilce: 'Keçiören', ehliyet: 'A', motor: 'Şirket motoru', plaka: '06 ABC 002', ekipman: 'Çanta, kask', evrak: YK.EMP_DOCS.slice() },
+      { adSoyad: 'Can Test', telefon: '0530 000 00 12', gorev: 'Moto Kurye', calismaModeli: 'Yarı zamanlı (akşam)', durum: 'İzinli', baslangic: d(30), bolge: 'Yenimahalle', il: 'Ankara', ilce: 'Yenimahalle', ehliyet: 'A1', motor: 'Kendi motoru', plaka: '06 ABC 003', muayeneBitis: addDays(today(), -3), evrak: YK.EMP_DOCS.slice(0, 3) }
+    ].map(e => YK.add('employees', e));
+    const recs = YK.list('records');
+    for (let i = 0; i < 12; i++) emps.slice(0, 2).forEach((e, j) => recs.push({ id: YK.uid(), createdAt: new Date().toISOString(), empId: e.id, tarih: d(i), tur: 'Vardiya', paket: String(18 + ((i * 7 + j * 5) % 14)), saat: '10', tutar: String(1100 + ((i * 3 + j) % 5) * 60), aciklama: '' }));
+    recs.push({ id: YK.uid(), createdAt: new Date().toISOString(), empId: emps[0].id, tarih: d(2), tur: 'Avans', tutar: '1500', aciklama: 'Nakit avans' });
+    recs.push({ id: YK.uid(), createdAt: new Date().toISOString(), empId: emps[1].id, tarih: d(7), tur: 'Ödeme', tutar: '7500', aciklama: 'Haftalık ödeme' });
+    recs.push({ id: YK.uid(), createdAt: new Date().toISOString(), empId: emps[2].id, tarih: d(1), tur: 'İzin', aciklama: 'Yıllık izin – 5 gün' });
+    YK.saveList('records', recs);
+  }
+
+  /* Başlat */
+  if (YK.auth.isLogged()) showApp(); else showLogin();
+})();

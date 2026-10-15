@@ -144,6 +144,7 @@
     $('#loginTitle').textContent = setup ? 'İlk kurulum' : 'Yönetim Paneli';
     $('#loginSub').textContent = setup ? 'Sunucu bağlantısı hazır. Panel için yönetici hesabınızı oluşturun.' : 'Devam etmek için giriş yapın.';
     $('#pass2Row').hidden = !setup; f.pass2.required = setup;
+    $('#codeRow').hidden = !setup; f.code.required = setup;
     f.pass.autocomplete = setup ? 'new-password' : 'current-password';
     btn.textContent = setup ? 'Hesabı oluştur ve giriş yap' : 'Giriş Yap';
     $('#loginMode').innerHTML = R.on ? I('kalkan') + '<span><b>Sunucu modu</b> · başvurular ve tüm veriler sunucuda saklanır</span>'
@@ -162,7 +163,7 @@
         }
         btn.disabled = true; btn.classList.add('loading');
         try {
-          await (setup ? YK.server.setupAdmin(user, pass) : YK.server.login(user, pass));
+          await (setup ? YK.server.setupAdmin(user, pass, f.code.value) : YK.server.login(user, pass));
           await YK.server.pull();
           f.reset(); showErr(''); showApp();
         } catch (er) { showErr(er.message); f.pass.value = ''; f.pass.focus(); }
@@ -284,8 +285,12 @@
   function bindMigrate(root) {
     const go = $('#migrGo', root), no = $('#migrNo', root);
     if (go) go.onclick = async () => {
+      const ld = YK.server.localData() || {};
+      // Sunucuda da site içeriği taslağı varsa hangisinin kullanılacağını sor
+      const useLocal = !!ld.content && YK.server.hasDraft() &&
+        confirm('Bu tarayıcıdaki site içeriği taslağı, sunucudaki taslağın yerine geçsin mi?\n\nTamam: bu tarayıcıdaki taslak kullanılır.\nİptal: sunucudaki içerik korunur (başvuru, müşteri, çalışan ve kayıtlar yine aktarılır).');
       go.disabled = true; go.classList.add('loading');
-      try { await YK.server.migrateLocal(); toast('Yerel veriler sunucuya aktarıldı'); } catch (e) { toast(e.message, 'err'); }
+      try { await YK.server.migrateLocal(useLocal); toast('Yerel veriler sunucuya aktarıldı'); } catch (e) { toast(e.message, 'err'); }
       rerender();
     };
     if (no) no.onclick = async () => { if (await confirmBox('Bu tarayıcıdaki yerel kopyalar silinsin mi? Sunucudaki veriler etkilenmez.', 'Sil')) { await YK.server.clearLocal(); toast('Yerel kopyalar silindi'); rerender(); } };

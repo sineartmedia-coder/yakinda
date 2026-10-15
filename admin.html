@@ -29,6 +29,7 @@
         <label class="fld"><span>Kullanıcı adı</span><input name="user" autocomplete="username" autocapitalize="off" spellcheck="false" required></label>
         <label class="fld"><span>Şifre</span><span class="pw-wrap"><input name="pass" type="password" autocomplete="current-password" required><button type="button" class="pw-eye" id="pwEye" aria-label="Şifreyi göster"><span data-i="goz"></span></button></span></label>
         <label class="fld" id="pass2Row" hidden><span>Şifre (tekrar)</span><input name="pass2" type="password" autocomplete="new-password"></label>
+        <label class="fld" id="codeRow" hidden><span>Kurulum kodu</span><input name="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD-1234"><small>Güvenlik için: hosting dosya yöneticisinde <b>api/data/kurulum-kodu.php</b> dosyasını açın, “KOD:” satırındaki kodu yazın.</small></label>
         <p class="login-err" id="loginErr" role="alert" hidden></p>
         <button class="btn btn-dark btn-block btn-lg" id="loginBtn">Giriş Yap</button>
         <p class="login-mode" id="loginMode"></p>

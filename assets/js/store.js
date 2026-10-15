@@ -493,14 +493,21 @@
   /* ---------- Sunucu bağlantısı ---------- */
   const API = 'api/index.php';
   const emit = (name, detail) => { try { window.dispatchEvent(new CustomEvent('yk:' + name, { detail: detail || {} })); } catch (e) {} };
-  // e.offline = sunucu yok (statik hosting / dosyadan açma); e.status = HTTP kodu
+  // e.absent = bu adreste sunucu (PHP) yok: dosyadan açma veya statik hosting → yerel mod
+  // e.offline = sunucudan geçerli yanıt alınamadı (bağlantı kopması, güvenlik duvarı, çökme)
+  // e.status = HTTP kodu
   function api(action, body) {
-    if (location.protocol === 'file:') { const e = new Error('Sunucu yok'); e.offline = true; return Promise.reject(e); }
+    if (location.protocol === 'file:') { const e = new Error('Sunucu yok'); e.offline = e.absent = true; return Promise.reject(e); }
     const o = { method: body === undefined ? 'GET' : 'POST', credentials: 'same-origin', cache: 'no-store', headers: { 'X-YK': '1', Accept: 'application/json' } };
     if (body !== undefined) { o.headers['Content-Type'] = 'application/json'; o.body = JSON.stringify(body); }
     return fetch(API + '?a=' + action, o).then(r => r.text().then(t => {
       let j = null; try { j = JSON.parse(t); } catch (e) {}
-      if (!j || typeof j !== 'object') { const e = new Error('Sunucuya ulaşılamadı'); e.offline = true; e.status = r.status; throw e; }
+      if (!j || typeof j !== 'object') {
+        const e = new Error(r.status >= 500 ? 'Sunucuda teknik bir sorun oluştu.' : 'Sunucudan geçerli yanıt alınamadı.'); e.offline = true; e.status = r.status;
+        // Statik hostingler PHP dosyasını bulamaz (404), POST'u desteklemez (405/501) ya da dosyayı düz metin olarak verir (200)
+        e.absent = [404, 405, 501].indexOf(r.status) >= 0 || r.status === 200;
+        throw e;
+      }
       if (!r.ok || j.ok === false) {
         const e = new Error(j.error || ('Sunucu hatası (' + r.status + ')')); e.status = r.status; e.code = j.code || ''; e.data = j;
         if (r.status === 401 && remote.logged) { remote.logged = false; emit('auth'); }
@@ -512,7 +519,7 @@
 
   // Bekleyen değişiklikler sırayla sunucuya gönderilir; hata olursa tekrar denenir
   const ops = [];
-  let busy = false, retryT = null;
+  let busy = false, retryT = null, dropped = 0;
   function queue(key, val) {
     const coll = SYNC[key], prev = mem[key];
     mem[key] = clone(val);
@@ -544,7 +551,8 @@
       ops.shift(); busy = false; remote.error = ''; emit('sync', syncState()); flush();
     }, e => {
       busy = false;
-      if (e.status && e.status >= 400 && e.status < 500 && [401, 408, 429].indexOf(e.status) < 0) { ops.shift(); remote.error = 'Bir değişiklik sunucu tarafından reddedildi: ' + e.message; emit('sync', syncState()); flush(); return; }
+      // Sunucunun açıkça reddettiği (JSON hata yanıtı) değişiklik sıradan çıkarılır; diğer hatalar tekrar denenir
+      if (!e.offline && e.status >= 400 && e.status < 500 && [401, 408, 429].indexOf(e.status) < 0) { ops.shift(); dropped++; remote.error = 'Bir değişiklik kaydedilemedi: ' + e.message; emit('sync', syncState()); flush(); return; }
       remote.error = e.status === 401 ? 'Oturum kapandı' : 'Sunucuya kaydedilemedi, tekrar deneniyor…';
       emit('sync', syncState());
       if (e.status !== 401) retryT = setTimeout(flush, 6000);
@@ -554,7 +562,7 @@
   function applyPull(j) {
     LIST_COLLS.forEach(c => { if (Array.isArray(j[c])) mem['yk_' + c] = j[c]; });
     if ('log' in j) mem[KEYS.log] = Array.isArray(j.log) ? j.log : [];
-    if ('draft' in j) mem[KEYS.content] = j.draft || null;
+    if ('draft' in j) { mem[KEYS.content] = j.draft || null; if (j.draft) ls.set('yk_preview', j.draft); else ls.del('yk_preview'); }
     if ('settings' in j) mem[KEYS.server] = j.settings || {};
     if (j.published && typeof j.published === 'object') window.YK_PUBLISHED = j.published;
     if ('mail' in j) remote.mail = !!j.mail;
@@ -586,7 +594,7 @@
         return j;
       }, e => {
         // Sunucu var ama yanlış yapılandırılmış (ör. api/data klasörüne yazma izni yok)
-        if (!e.offline) remote.problem = e.message;
+        if (!e.absent) remote.problem = e.network ? 'Sunucuya ulaşılamadı; internet bağlantınızı kontrol edip sayfayı yenileyin.' : e.message;
         return null;
       });
     },
@@ -595,15 +603,16 @@
       const before = ops.length ? (flush(), waitSync().catch(() => {})) : Promise.resolve();
       return before.then(() => api('pull')).then(j => { applyPull(j); poll(); return j; });
     },
-    setupAdmin(user, pass) { return api('setup', { user: user, pass: pass }).then(j => { remote.setup = false; remote.logged = true; remote.user = j.user; return j; }); },
+    setupAdmin(user, pass, code) { return api('setup', { user: user, pass: pass, code: code || '' }).then(j => { remote.setup = false; remote.logged = true; remote.user = j.user; return j; }); },
     login(user, pass) { return api('login', { user: user, pass: pass }).then(j => { remote.logged = true; remote.user = j.user; return j; }); },
     logout() { clearInterval(pollT); return api('logout', {}).catch(() => {}).then(() => { remote.logged = false; LIST_COLLS.forEach(c => { delete mem['yk_' + c]; }); }); },
     password(user, old, pass) { return api('password', { user: user, old: old, pass: pass }).then(j => { remote.user = j.user; return j; }); },
     publish(content) {
-      const c = clone(content); delete c.reviewed;
-      return api('publish', { content: c }).then(j => { window.YK_PUBLISHED = clone(c); mem[KEYS.content] = clone(content); ls.set('yk_preview', content); remote.publishedAt = j.at; return j; });
+      const c = clone(content);
+      return api('publish', { content: c }).then(j => { delete c.reviewed; window.YK_PUBLISHED = c; mem[KEYS.content] = clone(content); ls.set('yk_preview', content); remote.publishedAt = j.at; return j; });
     },
     refresh: pollNow,
+    hasDraft: () => !!mem[KEYS.content],
     pending: () => ops.length,
     state: syncState,
     retry: flush,
@@ -614,11 +623,14 @@
       n.content = !!ls.get(KEYS.content); if (n.content) any = true;
       return any ? n : null;
     },
-    // Yerel verileri sunucudakilere ekler (aynı kayıtlar güncellenir), sonra yereli temizler
-    migrateLocal() {
+    // Yerel verileri sunucudakilere ekler (aynı kayıtlar güncellenir), sonra yereli temizler.
+    // useLocalContent: sunucuda da taslak varsa yerel site içeriği taslağı onun yerine geçsin mi?
+    // Herhangi bir görsel yüklenemez ya da değişiklik reddedilirse yerel kopya silinmez.
+    migrateLocal(useLocalContent) {
       const local = { content: ls.get(KEYS.content), log: ls.get(KEYS.log) || [] };
       LIST_COLLS.forEach(c => { local[c] = ls.get('yk_' + c) || []; });
       return localMedia().then(items => uploadMedia(items)).then(map => {
+        if (map.failed) throw new Error(map.failed + ' görsel sunucuya yüklenemedi; yerel veriler silinmedi. Tekrar deneyin.');
         const fix = o => rewriteMedia(o, map);
         LIST_COLLS.forEach(c => {
           const cur = load('yk_' + c, []), byId = {}; cur.forEach((x, i) => { byId[x.id] = i; });
@@ -626,7 +638,7 @@
           if (c === 'applications') cur.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
           save('yk_' + c, cur);
         });
-        if (local.content && !mem[KEYS.content]) save(KEYS.content, fix(local.content));
+        if (local.content && (!mem[KEYS.content] || useLocalContent)) save(KEYS.content, fix(local.content));
         log('Bu tarayıcıdaki yerel veriler sunucuya aktarıldı');
         return waitSync();
       }).then(() => server.clearLocal());
@@ -638,10 +650,17 @@
       return localMedia().then(items => Promise.all(items.map(m => idb('readwrite', s => s.delete(m.id)).catch(() => {}))));
     }
   };
+  // Bekleyen değişikliklerin hepsi sunucuya ulaşınca çözülür; biri reddedilirse hata verir
   function waitSync() {
+    const d0 = dropped;
     return new Promise((res, rej) => {
       const t0 = Date.now();
-      (function check() { if (!ops.length) return res(); if (Date.now() - t0 > 60000) return rej(new Error('Sunucuya kaydetme zaman aşımına uğradı')); setTimeout(check, 300); })();
+      (function check() {
+        if (dropped > d0) return rej(new Error(remote.error || 'Bazı değişiklikler sunucuya kaydedilemedi'));
+        if (!ops.length) return res();
+        if (Date.now() - t0 > 60000) return rej(new Error('Sunucuya kaydetme zaman aşımına uğradı'));
+        setTimeout(check, 300);
+      })();
     });
   }
   // 'media:<id>' referanslarını yeni adreslerle değiştirir
@@ -649,10 +668,22 @@
     if (o == null || !Object.keys(map).length) return o;
     return JSON.parse(JSON.stringify(o).replace(/"media:([a-z0-9]+)"/g, (m, id) => map[id] ? JSON.stringify(map[id]) : '""'));
   }
+  // Yerel görselleri sunucuya yükler; SVG'ler PNG'ye çevrilir. map.failed = yüklenemeyen sayısı
   function uploadMedia(items) {
-    const map = {};
-    return items.reduce((p, m) => p.then(() => m && m.data && m.data.indexOf('data:image/') === 0 && m.data.indexOf('svg') < 0
-      ? api('upload', { data: m.data, name: m.name || 'görsel' }).then(j => { map[m.id] = j.item.src; }).catch(() => {}) : null), Promise.resolve()).then(() => map);
+    const map = {}; let failed = 0;
+    return items.reduce((p, m) => p.then(() => {
+      if (!m || !m.data || m.data.indexOf('data:image/') !== 0) return null;
+      return (m.data.indexOf('data:image/svg') === 0 ? svgToPng(m.data) : Promise.resolve(m.data))
+        .then(data => api('upload', { data: data, name: m.name || 'görsel' }))
+        .then(j => { map[m.id] = j.item.src; }, () => { failed++; });
+    }), Promise.resolve()).then(() => { Object.defineProperty(map, 'failed', { value: failed }); return map; });
+  }
+  function svgToPng(url) {
+    return new Promise((res, rej) => {
+      const im = new Image();
+      im.onload = () => { const c = document.createElement('canvas'); c.width = im.naturalWidth || 800; c.height = im.naturalHeight || 800; c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL('image/png')); };
+      im.onerror = rej; im.src = url;
+    });
   }
 
   // Site formları: sunucu varsa oraya gönderilir
@@ -792,8 +823,8 @@
     // Görseli kaydeder, sitede kullanılacak adresi döndürür
     put(dataUrl, name) {
       if (remote.on) {
-        if (/^data:image\/svg/.test(dataUrl)) return Promise.reject(new Error('SVG görseller desteklenmiyor. PNG veya JPG yükleyin.'));
-        return api('upload', { data: dataUrl, name: name || 'görsel' }).then(j => j.item.src);
+        return (/^data:image\/svg/.test(dataUrl) ? svgToPng(dataUrl) : Promise.resolve(dataUrl))
+          .then(d => api('upload', { data: d, name: name || 'görsel' })).then(j => j.item.src);
       }
       const item = { id: uid(), data: dataUrl, name: name || 'görsel', createdAt: new Date().toISOString() };
       return idb('readwrite', s => s.put(item)).then(() => 'media:' + item.id)

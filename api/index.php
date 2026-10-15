@@ -75,6 +75,7 @@ function ensure_data(): void {
   if (!is_file($ht)) @file_put_contents($ht, "<IfModule mod_authz_core.c>\n  Require all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\n  Deny from all\n</IfModule>\n");
   if (!is_file(YK_DATA . '/index.html')) @file_put_contents(YK_DATA . '/index.html', '');
   if (!is_dir(YK_DATA . '/sessions')) @mkdir(YK_DATA . '/sessions', 0750);
+  if (!is_file(YK_DATA . '/sessions/index.html')) @file_put_contents(YK_DATA . '/sessions/index.html', '');
 }
 function store_path(string $name): string { return YK_DATA . '/' . preg_replace('/[^a-z_]/', '', $name) . '.php'; }
 function read_store(string $name, $def) {
@@ -112,6 +113,8 @@ function start_session(): void {
   ini_set('session.use_strict_mode', '1');
   ini_set('session.use_only_cookies', '1');
   ini_set('session.gc_maxlifetime', '28800');
+  ini_set('session.gc_probability', '1');
+  ini_set('session.gc_divisor', '100');
   $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
   session_name('YKPANEL');
   session_set_cookie_params(['lifetime' => 0, 'path' => '/', 'secure' => $https, 'httponly' => true, 'samesite' => 'Strict']);
@@ -123,6 +126,19 @@ function start_session(): void {
 function logged(): bool { return !empty($_SESSION['user']); }
 function require_auth(): void { if (!logged()) fail('Oturum süresi doldu. Lütfen yeniden giriş yapın.', 401, 'auth'); }
 function auth_data(): ?array { $a = read_store('auth', null); return is_array($a) && !empty($a['hash']) ? $a : null; }
+// İlk kurulum kodu: yalnızca hosting dosya yöneticisinden okunabilir (api/data/kurulum-kodu.php).
+// Böylece yönetici hesabını siteyi yükleyen kişiden başkası oluşturamaz.
+function setup_code_file(): string { return YK_DATA . '/kurulum-kodu.php'; }
+function setup_code(): string {
+  $f = setup_code_file(); $m = [];
+  if (is_file($f) && preg_match('/KOD:\s*([A-Z0-9]{4}-[A-Z0-9]{4})/', (string) file_get_contents($f), $m)) return $m[1];
+  $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; $c = '';
+  for ($i = 0; $i < 8; $i++) $c .= $chars[random_int(0, strlen($chars) - 1)];
+  $code = substr($c, 0, 4) . '-' . substr($c, 4);
+  write_file_atomic($f, YK_GUARD . "Yakında Kurye yönetim paneli — ilk kurulum kodu\nKOD: {$code}\n\nBu kodu admin.html'deki ilk kurulum ekranına yazın.\nYönetici hesabı oluşturulunca bu dosya otomatik silinir.\n");
+  return $code;
+}
+function norm_code(string $c): string { return preg_replace('/[^A-Z0-9]/', '', strtoupper($c)) ?? ''; }
 function valid_password(string $pw): bool { return mb_strlen($pw) >= 8 && preg_match('/\d/', $pw) && preg_match('/\D/', $pw); }
 
 // IP başına deneme sınırı (giriş ve form gönderimi)
@@ -262,17 +278,23 @@ if ($method === 'POST') {
 }
 
 ensure_data();
-start_session();
+// Ziyaretçi form gönderiminde oturum açılmaz (gereksiz oturum dosyası oluşmasın)
+if ($a !== 'submit') start_session();
 
 switch ($a) {
 
-  case 'status':
-    out(['version' => YK_VERSION, 'setup' => auth_data() === null, 'logged' => logged(), 'user' => $_SESSION['user'] ?? '']);
+  case 'status': {
+    $setup = auth_data() === null;
+    if ($setup) setup_code();
+    out(['version' => YK_VERSION, 'setup' => $setup, 'logged' => logged(), 'user' => $_SESSION['user'] ?? '']);
+  }
 
   case 'setup': {
     if ($method !== 'POST') fail('POST gerekli.', 405);
     if (auth_data() !== null) fail('Yönetici hesabı zaten oluşturulmuş. Giriş yapın.', 409, 'exists');
+    if (!throttle('setup', 8, 600)) fail('Çok fazla deneme yapıldı. 10 dakika sonra tekrar deneyin.', 429, 'locked');
     $b = body();
+    if (!hash_equals(norm_code(setup_code()), norm_code((string) ($b['code'] ?? '')))) fail('Kurulum kodu hatalı. Kodu hosting dosya yöneticisinde api/data/kurulum-kodu.php dosyasında bulabilirsiniz.', 403, 'badcode');
     $user = str($b['user'] ?? '', 40); $pw = (string) ($b['pass'] ?? '');
     if ($user === '' || !preg_match('/^[\p{L}\p{N}._@-]{3,40}$/u', $user)) fail('Kullanıcı adı en az 3 karakter olmalı (boşluk içermemeli).');
     if (!valid_password($pw)) fail('Şifre en az 8 karakter olmalı ve harf ile rakam içermeli.');
@@ -282,6 +304,8 @@ switch ($a) {
       return true;
     });
     if (!$created) fail('Yönetici hesabı zaten oluşturulmuş. Giriş yapın.', 409, 'exists');
+    @unlink(setup_code_file());
+    throttle_reset('setup');
     session_regenerate_id(true);
     $_SESSION['user'] = $user; $_SESSION['seen'] = time();
     add_log('Yönetici hesabı oluşturuldu');
@@ -412,7 +436,7 @@ switch ($a) {
     if (!isset(YK_FORMS[$type])) fail('Geçersiz form.', 400);
     // Bot tuzağı: gizli alan doluysa kaydetmeden başarılı görün
     if (trim((string) ($b['website'] ?? '')) !== '') out(['ref' => ref_no()]);
-    if (!throttle('submit', 6, 600)) fail('Kısa sürede çok fazla gönderim yapıldı. Lütfen biraz sonra tekrar deneyin veya bizi arayın.', 429, 'rate');
+    if (!throttle('submit', 15, 600)) fail('Kısa sürede çok fazla gönderim yapıldı. Lütfen biraz sonra tekrar deneyin veya bizi arayın.', 429, 'rate');
     $def = YK_FORMS[$type];
     $in = is_array($b['data'] ?? null) ? $b['data'] : [];
     $data = [];

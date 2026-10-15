@@ -411,9 +411,10 @@
 
       // 1) Sunucu varsa başvuru doğrudan yönetim paneline kaydedilir
       YK.submitForm(type, data, bot).then(j => finish(j.ref), e2 => {
-        if (!e2.offline) {
+        if (!e2.absent) {
           if (e2.code === 'dup') return stop(dupMsg(e2.data && e2.data.ref));
-          return stop((e2.status >= 500 ? 'Teknik bir sorun nedeniyle başvurunuz şu an alınamadı.' : esc(e2.message)) + contactHint);
+          if (e2.network) return stop('Bağlantı kurulamadı, başvurunuz gönderilmedi. İnternet bağlantınızı kontrol edip tekrar deneyin.' + contactHint);
+          return stop((e2.offline || e2.status >= 500 ? 'Teknik bir sorun nedeniyle başvurunuz şu an alınamadı. Lütfen biraz sonra tekrar deneyin.' : esc(e2.message)) + contactHint);
         }
         // 2) Sunucu yoksa (statik hosting) bu tarayıcıya kaydedilir; e-posta / WhatsApp ile iletilir
         if (bot) return setTimeout(() => finish(YK.refNo()), 500);

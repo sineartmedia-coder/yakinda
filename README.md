@@ -31,10 +31,11 @@ Panelin sol alt köşesinde hangi modda çalıştığı yazar.
 ## Hostinge yükleme (sunucu modu)
 
 1. Bu klasördeki **tüm dosyaları** (gizli `.htaccess` dosyaları ve `api`, `uploads` klasörleri dahil) hostingdeki `public_html` klasörüne yükleyin.
-2. **Hemen** `https://alanadiniz.com/admin.html` adresini açın. Panel "İlk kurulum" ekranını gösterir. Kullanıcı adı ve şifre belirleyip yönetici hesabını oluşturun.
-   > İlk kurulumu yükledikten hemen sonra yapın: hesap oluşturulana kadar bu ekran herkese açıktır.
-3. Panelde **Genel Bakış → Yayına hazırlık kontrol listesi**'ni tamamlayın: telefon, WhatsApp, adres, e-posta, kazanç ücreti, SEO alan adı ve bildirim e-postası.
-4. **Site İçeriği → Yayınla → Sitede yayınla** ile değişiklikleri yayına alın.
+2. `https://alanadiniz.com/admin.html` adresini açın. Panel "İlk kurulum" ekranını gösterir.
+3. Hosting dosya yöneticisinde (cPanel → Dosya Yöneticisi) `api/data/kurulum-kodu.php` dosyasını açın. "KOD:" satırındaki kodu (ör. `ABCD-1234`) ekrandaki "Kurulum kodu" alanına yazın, kullanıcı adı ve şifre belirleyip yönetici hesabını oluşturun.
+   > Bu kod sayesinde yönetici hesabını yalnızca hosting'e erişimi olan kişi oluşturabilir. Hesap oluşturulunca kod dosyası kendiliğinden silinir.
+4. Panelde **Genel Bakış → Yayına hazırlık kontrol listesi**'ni tamamlayın: telefon, WhatsApp, adres, e-posta, kazanç ücreti, SEO alan adı ve bildirim e-postası.
+5. **Site İçeriği → Yayınla → Sitede yayınla** ile değişiklikleri yayına alın.
 
 **Klasör izinleri:** `api/` klasöründe `data` adında bir klasör otomatik oluşturulur. Bu klasör, `uploads/`, `assets/js/` ve site ana klasörü PHP tarafından yazılabilir olmalıdır (cPanel'de genellikle varsayılan olarak öyledir; değilse klasör iznini 755 yapın). Bir izin sorunu varsa panel giriş ekranında açıkça yazar.
 
@@ -66,7 +67,7 @@ Panelin sol alt köşesinde hangi modda çalıştığı yazar.
 ## Güvenlik ve yedekleme
 
 - Başvuru verileri `api/data` klasöründe, tarayıcıdan doğrudan açılamayan `.php` dosyalarında tutulur. Bu klasör **asla GitHub'a yüklenmez** (`.gitignore`).
-- Formlarda bot tuzağı, IP başına gönderim sınırı, aynı telefonla 24 saatte tek başvuru, 18 yaş ve alan kontrolleri vardır; bu kontroller sunucuda da yapılır.
+- Formlarda bot tuzağı, IP başına gönderim sınırı (10 dakikada 15), aynı telefonla 24 saatte tek başvuru, 18 yaş ve alan kontrolleri vardır; bu kontroller sunucuda da yapılır.
 - Panel 60 dakika işlem yapılmazsa oturumu kapatır.
 - **Ayarlar → Yedek indir** ile düzenli yedek alın. Sunucu modunda yüklenen görseller `uploads/` klasöründe durur; hosting yedeğinize dahil edin.
 

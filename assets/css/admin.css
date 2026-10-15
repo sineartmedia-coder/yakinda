@@ -678,3 +678,10 @@ body.side-open { overflow: hidden; }
   #segType { display: flex; width: 100%; }
   #segType a { flex: 1; text-align: center; padding: 7px 6px; font-size: .78rem; }
 }
+@media (max-width: 640px) {
+  .tbl th, .tbl td { padding: 10px 8px; }
+  .tbl th:first-child, .tbl td:first-child { padding-left: 12px; }
+  .who { gap: 8px; }
+  .who .av:not(.av-sm) { width: 32px; height: 32px; font-size: .72rem; }
+  .st { padding: 3px 8px; }
+}

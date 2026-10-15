@@ -17,7 +17,7 @@
   const initials = n => (n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toLocaleUpperCase('tr-TR');
   const num = v => Number(String(v || '').replace(',', '.')) || 0;
   const telHref = t => 'tel:' + String(t || '').replace(/[^\d+]/g, '');
-  const waHref = t => { let d = String(t || '').replace(/\D/g, ''); if (d[0] === '0') d = '9' + d; return 'https://wa.me/' + d; };
+  const waHref = t => 'https://wa.me/' + YK.waNumber(t);
   const lower = s => String(s || '').toLocaleLowerCase('tr-TR');
   const typeLabel = t => t === 'kurye' ? 'Kurye' : 'İşletme';
 
@@ -95,6 +95,16 @@
     if (!ok) { toast('Zorunlu alanları doldurun', 'err'); const b = root.querySelector('.bad'); if (b) b.focus(); }
     return ok ? d : null;
   }
+  // Telefon alanlarını 05xx xxx xx xx biçiminde tutar
+  function bindTel(root) {
+    $$('input[type=tel]', root).forEach(t => {
+      t.inputMode = 'tel';
+      t.addEventListener('input', () => {
+        let d = t.value.replace(/\D/g, ''); if (d.indexOf('90') === 0 && d.length > 11) d = d.slice(2); if (d && d[0] !== '0') d = '0' + d; d = d.slice(0, 11);
+        t.value = [d.slice(0, 4), d.slice(4, 7), d.slice(7, 9), d.slice(9, 11)].filter(Boolean).join(' ');
+      });
+    });
+  }
   function hydrate(root) { $$('img[data-src]', root || document).forEach(im => YK.setImg(im, im.dataset.src)); }
   function avatar(e, size) {
     return '<span class="av' + (size ? ' av-' + size : '') + '">' + (e.foto ? '<img data-src="' + esc(e.foto) + '" alt="">' : esc(initials(e.adSoyad))) + '</span>';
@@ -120,50 +130,104 @@
   const docCount = e => (e.evrak || []).filter(d => YK.EMP_DOCS.indexOf(d) >= 0).length;
 
   /* =================== Giriş & oturum =================== */
+  const R = YK.remote;
   const IDLE_MIN = 60;
   let lastAct = Date.now();
   ['click', 'keydown', 'mousemove', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { lastAct = Date.now(); }, { passive: true }));
-  setInterval(() => { if (YK.auth.isLogged() && !$('#app').hidden && Date.now() - lastAct > IDLE_MIN * 60000 && !dirty) { YK.auth.logout(); showLogin(); toast('Güvenlik için oturum kapatıldı', 'err'); } }, 60000);
+  setInterval(() => { if (YK.auth.isLogged() && !$('#app').hidden && Date.now() - lastAct > IDLE_MIN * 60000 && !dirty) doLogout('Güvenlik için oturum kapatıldı (60 dk işlem yapılmadı).'); }, 60000);
 
   let fails = 0, lockUntil = 0;
   try { lockUntil = Number(sessionStorage.getItem('yk_lock')) || 0; } catch (e) {}
-  function showLogin() {
+  function showLogin(msg) {
     $('#login').hidden = false; $('#app').hidden = true; $$('.m-wrap').forEach(m => m.remove());
-    const f = $('#loginForm');
-    f.onsubmit = e => {
+    const f = $('#loginForm'), setup = R.on && R.setup, errEl = $('#loginErr'), btn = $('#loginBtn');
+    $('#loginTitle').textContent = setup ? 'İlk kurulum' : 'Yönetim Paneli';
+    $('#loginSub').textContent = setup ? 'Sunucu bağlantısı hazır. Panel için yönetici hesabınızı oluşturun.' : 'Devam etmek için giriş yapın.';
+    $('#pass2Row').hidden = !setup; f.pass2.required = setup;
+    f.pass.autocomplete = setup ? 'new-password' : 'current-password';
+    btn.textContent = setup ? 'Hesabı oluştur ve giriş yap' : 'Giriş Yap';
+    $('#loginMode').innerHTML = R.on ? I('kalkan') + '<span><b>Sunucu modu</b> · başvurular ve tüm veriler sunucuda saklanır</span>'
+      : R.problem ? I('uyari') + '<span><b>Sunucu bulundu ama çalışmıyor:</b> ' + esc(R.problem) + ' Bu sorun giderilene kadar panel yerel modda açılır.</span>'
+      : I('uyari') + '<span><b>Yerel mod</b> · veriler yalnızca bu tarayıcıda saklanır (sunucu/PHP bulunamadı)</span>';
+    $('#loginMode').className = 'login-mode ' + (R.on ? 'on' : 'off');
+    const showErr = m => { errEl.textContent = m; errEl.hidden = !m; };
+    showErr(msg || '');
+    f.onsubmit = async e => {
       e.preventDefault();
-      if (Date.now() < lockUntil) { $('#loginErr').textContent = 'Çok fazla hatalı deneme. ' + Math.ceil((lockUntil - Date.now()) / 1000) + ' sn sonra tekrar deneyin.'; $('#loginErr').hidden = false; return; }
-      if (YK.auth.check(f.user.value, f.pass.value)) { fails = 0; YK.auth.login(); YK.log('Panele giriş yapıldı'); f.reset(); $('#loginErr').hidden = true; showApp(); }
+      const user = f.user.value.trim(), pass = f.pass.value;
+      if (R.on) {
+        if (setup) {
+          if (pass !== f.pass2.value) return showErr('Şifreler eşleşmiyor.');
+          if (pass.length < 8 || !/\d/.test(pass) || !/\D/.test(pass)) return showErr('Şifre en az 8 karakter olmalı ve harf ile rakam içermeli.');
+        }
+        btn.disabled = true; btn.classList.add('loading');
+        try {
+          await (setup ? YK.server.setupAdmin(user, pass) : YK.server.login(user, pass));
+          await YK.server.pull();
+          f.reset(); showErr(''); showApp();
+        } catch (er) { showErr(er.message); f.pass.value = ''; f.pass.focus(); }
+        finally { btn.disabled = false; btn.classList.remove('loading'); }
+        return;
+      }
+      if (Date.now() < lockUntil) return showErr('Çok fazla hatalı deneme. ' + Math.ceil((lockUntil - Date.now()) / 1000) + ' sn sonra tekrar deneyin.');
+      if (YK.auth.check(user, pass)) { fails = 0; YK.auth.login(); YK.log('Panele giriş yapıldı'); f.reset(); showErr(''); showApp(); }
       else {
         fails++; if (fails >= 5) { lockUntil = Date.now() + 60000; fails = 0; try { sessionStorage.setItem('yk_lock', lockUntil); } catch (er) {} }
-        $('#loginErr').textContent = 'Kullanıcı adı veya şifre hatalı.'; $('#loginErr').hidden = false; f.pass.value = ''; f.pass.focus();
+        showErr('Kullanıcı adı veya şifre hatalı.'); f.pass.value = ''; f.pass.focus();
       }
     };
-    setTimeout(() => f.user.focus(), 50);
+    setTimeout(() => (setup || !f.user.value ? f.user : f.pass).focus(), 50);
   }
-  function showApp() { $('#login').hidden = true; $('#app').hidden = false; lastAct = Date.now(); const u = YK.auth.creds().user; $('#suName').textContent = u; $('.su-av').textContent = (u[0] || 'A').toLocaleUpperCase('tr-TR'); route(); }
+  function showApp() {
+    $('#login').hidden = true; $('#app').hidden = false; lastAct = Date.now();
+    const u = YK.auth.creds().user; $('#suName').textContent = u; $('.su-av').textContent = (u[0] || 'A').toLocaleUpperCase('tr-TR');
+    knownNew = newCount(); renderSync(); route();
+  }
+  async function doLogout(msg) {
+    if (R.on) await YK.server.logout(); else YK.auth.logout();
+    history.replaceState(null, '', location.pathname); lastHash = ''; dirty = false;
+    showLogin(msg);
+    if (msg) toast(msg, 'err');
+  }
   $('#pwEye').onclick = () => { const p = $('#loginForm').pass; p.type = p.type === 'password' ? 'text' : 'password'; $('#pwEye').innerHTML = I(p.type === 'password' ? 'goz' : 'kapat'); };
-  $('#logout').onclick = () => { if (!leaveOk()) return; YK.auth.logout(); location.hash = ''; showLogin(); };
+  $('#logout').onclick = () => {
+    if (!leaveOk()) return;
+    if (R.on && YK.server.pending() && !confirm('Sunucuya henüz kaydedilmemiş değişiklikler var. Yine de çıkış yapılsın mı?')) return;
+    doLogout();
+  };
+
+  // Sunucu kayıt durumu (kenar menüde)
+  function renderSync() {
+    const el = $('#syncState'); if (!el) return;
+    if (!R.on) { el.className = 'sync local'; el.innerHTML = I('uyari') + '<span><b>Yerel mod</b><small>Veriler bu tarayıcıda</small></span>'; el.title = 'Sunucu (PHP) bulunamadı. Başvurular ve veriler yalnızca bu tarayıcıda saklanır.'; return; }
+    const st = YK.server.state();
+    el.className = 'sync ' + (st.error ? 'err' : st.pending ? 'busy' : 'ok');
+    el.innerHTML = I(st.error ? 'uyari' : st.pending ? 'gecmis' : 'check') + '<span><b>' + (st.error ? 'Kaydedilemedi' : st.pending ? 'Kaydediliyor…' : 'Sunucuya kaydedildi') + '</b><small>' + esc(st.error || 'Sunucu modu · veriler güvende') + '</small></span>' + (st.error ? '<button class="link-btn" id="syncRetry">Tekrar dene</button>' : '');
+    el.title = '';
+    const rb = $('#syncRetry'); if (rb) rb.onclick = () => YK.server.retry();
+  }
+  window.addEventListener('yk:sync', renderSync);
+  window.addEventListener('yk:auth', () => { if (!$('#app').hidden) showLogin('Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın; kaydedilmeyi bekleyen değişiklikler giriş yapınca gönderilir.'); });
 
   /* =================== Canlı bildirim =================== */
-  // Site aynı tarayıcıda açıkken gelen başvuruyu anında bildirir
-  let knownNew = newCount();
+  // Yeni başvuru gelince bildirir (sunucu modunda 30 sn'de bir kontrol edilir; yerel modda aynı tarayıcıdaki site sekmesinden)
+  let knownNew = 0;
   function beep() { try { const c = new (window.AudioContext || window.webkitAudioContext)(); [0, .18].forEach(t => { const o = c.createOscillator(), g = c.createGain(); o.frequency.value = 880; g.gain.setValueAtTime(.12, c.currentTime + t); g.gain.exponentialRampToValueAtTime(.001, c.currentTime + t + .15); o.connect(g); g.connect(c.destination); o.start(c.currentTime + t); o.stop(c.currentTime + t + .16); }); } catch (e) {} }
-  window.addEventListener('storage', e => {
+  function onAppsChanged() {
     if (!YK.auth.isLogged() || $('#app').hidden) return;
-    if (e.key === 'yk_applications') {
-      const n = newCount();
-      if (n > knownNew) { const a = YK.list('applications')[0]; toast('Yeni ' + typeLabel(a.type).toLocaleLowerCase('tr-TR') + ' başvurusu: ' + appName(a), 'info'); beep(); }
-      knownNew = n; updateBadges();
-      if (/^#?(panel|basvurular)?$/.test(location.hash.replace('#', '')) && !$('.m-wrap') && !dirty) rerender();
-    }
-  });
+    const n = newCount();
+    if (n > knownNew) { const a = YK.list('applications').filter(x => x.status === 'yeni')[0]; if (a) { toast('Yeni ' + (a.type === 'kurye' ? 'kurye başvurusu' : 'işletme talebi') + ': ' + appName(a), 'info'); beep(); } }
+    knownNew = n; updateBadges();
+    if (/^#?(panel|basvurular(\/.*)?)?$/.test(location.hash.replace('#', '')) && !$('.m-wrap') && !dirty) rerender();
+  }
+  window.addEventListener('storage', e => { if (!R.on && e.key === 'yk_applications') onAppsChanged(); });
+  window.addEventListener('yk:remote', e => { if (e.detail.key === 'yk_applications') onAppsChanged(); });
 
   /* =================== Yönlendirme =================== */
   const ROUTES = { panel: viewPanel, basvurular: viewApps, musteriler: viewCustomers, musteri: viewCustomer, calisanlar: viewEmps, calisan: viewEmp, kayitlar: viewRecords, icerik: viewContent, ayarlar: viewSettings };
   let dirty = false, lastHash = location.hash, skip = false;
   function leaveOk() { return !dirty || confirm('Kaydedilmemiş değişiklikler var. Çıkmak istediğinize emin misiniz?'); }
-  window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+  window.addEventListener('beforeunload', e => { if (dirty || (R.on && YK.server.pending())) { e.preventDefault(); e.returnValue = ''; } });
   window.addEventListener('hashchange', () => {
     if (skip) { skip = false; return; }
     if (!leaveOk()) { skip = true; location.hash = lastHash; return; }
@@ -180,6 +244,7 @@
     $('#gres').hidden = true; $('#gq').value = '';
     document.body.classList.remove('side-open');
     updateBadges(); knownNew = newCount();
+    if (R.on && (parts[0] === 'panel' || parts[0] === 'basvurular')) YK.server.refresh();
     view.innerHTML = '';
     fn(decodeURIComponent(parts[1] || ''));
     hydrate(view);
@@ -194,6 +259,7 @@
     const c = YK.getContent(), D = YK.DEFAULT_CONTENT, s = c.settings;
     let lastBackup = null; try { lastBackup = localStorage.getItem('yk_last_backup'); } catch (e) {}
     return [
+      { ok: R.on, t: 'Siteyi PHP destekli bir hostinge yükleyin (başvuruların panele düşmesi için sunucu modu)', href: '#ayarlar' },
       { ok: !YK.auth.isDefault(), t: 'Panel şifresini değiştirin', href: '#ayarlar' },
       { ok: s.phone && s.phone !== D.settings.phone, t: 'Gerçek telefon numaranızı girin', href: '#icerik/genel' },
       { ok: s.whatsapp && s.whatsapp !== D.settings.whatsapp, t: 'WhatsApp numaranızı girin', href: '#icerik/genel' },
@@ -201,15 +267,33 @@
       { ok: s.email && s.email !== D.settings.email || !!(c.reviewed || {}).email, t: 'E-posta adresini kontrol edin', href: '#icerik/genel', confirm: 'email' },
       { ok: !!c.calc.configured || c.sections.calc === false, t: 'Kazanç hesaplayıcıdaki paket ücretini ayarlayın', href: '#icerik/kazanc' },
       { ok: !!(c.reviewed || {}).stats, t: 'İstatistik bandındaki değerleri doğrulayın', href: '#icerik/hero', confirm: 'stats' },
-      { ok: !!s.notify_key, t: 'Başvurular için e-posta bildirimini kurun (önerilir)', href: '#icerik/genel' },
+      { ok: !!s.notify_key || (R.on && !!YK.serverSettings().notify_email), t: 'Yeni başvurular için e-posta bildirimini kurun (önerilir)', href: R.on ? '#ayarlar' : '#icerik/genel' },
       { ok: !!s.site_url, t: 'SEO: sitenizin alan adını girin (ör. https://yakindakurye.com)', href: '#icerik/seo' },
-      { ok: !YK.hasUnpublished(), t: 'Site değişikliklerini yayınlayın (content.js)', href: '#icerik/yayin' },
+      { ok: !YK.hasUnpublished(), t: 'Site değişikliklerini yayınlayın', href: '#icerik/yayin' },
       { ok: lastBackup && Date.now() - new Date(lastBackup) < 7 * 864e5, t: 'Son 7 gün içinde yedek alın', href: '#ayarlar' }
     ];
   }
 
+  function migrateCard() {
+    const ld = R.on && YK.server.localData();
+    if (!ld) return '';
+    const parts = [['applications', 'başvuru'], ['customers', 'müşteri'], ['employees', 'çalışan'], ['records', 'kayıt']].filter(([k]) => ld[k]).map(([k, l]) => ld[k] + ' ' + l);
+    if (ld.content) parts.push('site içeriği taslağı');
+    return '<div class="alert migr">' + I('yukle') + '<div><b>Bu tarayıcıda yerel modda kaydedilmiş veriler bulundu:</b> ' + esc(parts.join(', ')) + '. Sunucuya aktarırsanız tüm cihazlardan erişebilirsiniz; aynı kayıtlar güncellenir, hiçbir şey kopyalanmaz.<div class="btn-row mt"><button class="btn btn-dark sm" id="migrGo">' + I('yukle') + 'Sunucuya aktar</button><button class="link-btn" id="migrNo">Aktarmadan bu tarayıcıdan sil</button></div></div></div>';
+  }
+  function bindMigrate(root) {
+    const go = $('#migrGo', root), no = $('#migrNo', root);
+    if (go) go.onclick = async () => {
+      go.disabled = true; go.classList.add('loading');
+      try { await YK.server.migrateLocal(); toast('Yerel veriler sunucuya aktarıldı'); } catch (e) { toast(e.message, 'err'); }
+      rerender();
+    };
+    if (no) no.onclick = async () => { if (await confirmBox('Bu tarayıcıdaki yerel kopyalar silinsin mi? Sunucudaki veriler etkilenmez.', 'Sil')) { await YK.server.clearLocal(); toast('Yerel kopyalar silindi'); rerender(); } };
+  }
+  const previewHref = () => R.on ? 'index.html?onizleme=1' : 'index.html';
+
   function viewPanel() {
-    setTop('Genel Bakış', '<a href="index.html" target="_blank" class="btn btn-light">' + I('dis') + '<span class="hide-sm">Siteyi aç</span></a>');
+    setTop('Genel Bakış', '<a href="index.html" target="_blank" rel="noopener" class="btn btn-light">' + I('dis') + '<span class="hide-sm">Siteyi aç</span></a>');
     const apps = YK.list('applications'), emps = YK.list('employees'), recs = YK.list('records');
     const m = thisMonth();
     const newApps = apps.filter(a => a.status === 'yeni').length;
@@ -246,7 +330,7 @@
       (l.length ? '<ul class="mini-list">' + l.map(a => '<li data-app="' + a.id + '"><span class="type-dot ' + a.type + '">' + esc(initials(appName(a))) + '</span><div><b>' + esc(appName(a)) + '</b><small>' + esc(t === 'kurye' ? [a.data.ilce, a.data.calismaModeli].filter(Boolean).join(' · ') : [a.data.sektor, a.data.ilce].filter(Boolean).join(' · ')) + ' · ' + YK.fmtDate(a.createdAt, true) + '</small></div>' + badge(a.status) + '</li>').join('') + '</ul>'
         : empty(t === 'kurye' ? 'motor' : 'magaza', t === 'kurye' ? 'Henüz kurye başvurusu yok' : 'Henüz işletme talebi yok', 'Sitedeki ' + (t === 'kurye' ? 'kurye başvuru' : 'işletme talep') + ' formundan gelenler burada listelenir.')) + '</section>'; };
     view.innerHTML = '<section class="welcome"><div><small>' + new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '</small><h2>' + greet + ', ' + esc(YK.auth.creds().user) + '</h2><p>' + (nBiz + nCour ? '<b>' + nBiz + '</b> yeni işletme talebi ve <b>' + nCour + '</b> yeni kurye başvurusu sizi bekliyor.' : 'Bekleyen yeni başvuru yok. Her şey yolunda!') + '</p></div><div class="welcome-btns"><a href="#basvurular/isletme" class="btn btn-yellow">' + I('magaza') + 'İşletme talepleri</a><a href="#basvurular/kurye" class="btn btn-ghost-w">' + I('motor') + 'Kurye başvuruları</a></div></section>' + (YK.auth.isDefault() ? '<div class="alert">' + I('kalkan') + '<div><b>Varsayılan şifre kullanılıyor.</b> Güvenliğiniz için <a href="#ayarlar">Ayarlar</a> bölümünden şifrenizi değiştirin.</div></div>' : '') +
-      checkCard +
+      migrateCard() + checkCard +
       '<div class="kpis">' +
       kpi('magaza', 'Yeni işletme talebi', nBiz, '#basvurular/isletme', nBiz ? 'hot' : '', 'biz') +
       kpi('motor', 'Yeni kurye başvurusu', nCour, '#basvurular/kurye', nCour ? 'hot' : '', 'cour') +
@@ -276,6 +360,7 @@
     $$('[data-q]', view).forEach(a => a.onclick = e => { e.preventDefault(); const q = a.dataset.q; if (q === 'cust') custForm(null, null, c => { location.hash = '#musteri/' + c.id; }); else if (q === 'emp') empForm(null, null, () => { location.hash = '#calisanlar'; }); else if (q === 'puantaj') puantajModal(); else payrollModal(); });
     $$('[data-conf]', view).forEach(b => b.onclick = e => { e.preventDefault(); const c = YK.getContent(); c.reviewed = Object.assign({}, c.reviewed, { [b.dataset.conf]: true }); YK.saveContent(c); rerender(); });
     $$('#chartSeg button').forEach(b => b.onclick = () => { $$('#chartSeg button').forEach(x => x.classList.toggle('on', x === b)); $('#barsP').hidden = b.dataset.c !== 'p'; $('#barsA').hidden = b.dataset.c !== 'a'; });
+    bindMigrate(view);
   }
   function bar(v, max, d, unit) { return '<div class="bar" title="' + YK.fmtDate(d) + ': ' + v + ' ' + unit + '"><em>' + (v || '') + '</em><i style="height:' + Math.max(2, v / max * 100) + '%"></i><span>' + d.slice(8) + '</span></div>'; }
   function kpi(ic, label, val, href, cls, tone) { return '<a class="kpi ' + (cls || '') + ' tone-' + (tone || 'k') + '" href="' + href + '"><span class="kpi-ic">' + I(ic) + '</span><div><small>' + esc(label) + '</small><b>' + esc(val) + '</b></div></a>'; }
@@ -284,7 +369,7 @@
   function viewApps(type) {
     const st = state.apps = Object.assign({ status: '', q: '', sort: 'new', sel: {} }, state.apps);
     st.sel = {}; st.type = type === 'kurye' || type === 'isletme' ? type : '';
-    setTop(st.type === 'kurye' ? 'Kurye Başvuruları' : st.type === 'isletme' ? 'İşletme Talepleri' : 'Tüm Başvurular', '<button class="btn btn-light" id="csvApps">' + I('indir') + '<span class="hide-sm">Excel (CSV)</span></button>',
+    setTop(st.type === 'kurye' ? 'Kurye Başvuruları' : st.type === 'isletme' ? 'İşletme Talepleri' : 'Tüm Başvurular', '<button class="btn btn-light" id="csvApps">' + I('indir') + '<span class="hide-sm">Excel (CSV)</span></button><button class="btn btn-yellow" id="addApp">' + I('arti') + (st.type === 'kurye' ? 'Yeni başvuru' : st.type === 'isletme' ? 'Yeni talep' : 'Yeni kayıt') + '</button>',
       st.type === 'kurye' ? 'Kurye olmak için siteden başvuranlar' : st.type === 'isletme' ? 'Kurye hizmeti almak isteyen restoran ve işletmeler' : 'İşletme talepleri ve kurye başvuruları birlikte');
     view.innerHTML =
       '<div class="toolbar">' +
@@ -308,7 +393,7 @@
     function draw() {
       const rows = filtered();
       $('#appTable').innerHTML = rows.length ?
-        '<div class="table-wrap"><table class="tbl"><thead><tr><th class="cb"><input type="checkbox" id="selAll" aria-label="Tümünü seç"></th><th>Tarih</th><th>Tür</th><th>' + (st.type === 'kurye' ? 'Ad Soyad' : st.type === 'isletme' ? 'İşletme / Yetkili' : 'Ad / İşletme') + '</th><th>Telefon</th><th class="hide-md">Konum</th><th class="hide-md">Detay</th><th>Durum</th></tr></thead><tbody>' +
+        '<div class="table-wrap"><table class="tbl tbl-apps"><thead><tr><th class="cb"><input type="checkbox" id="selAll" aria-label="Tümünü seç"></th><th>Tarih</th><th>Tür</th><th>' + (st.type === 'kurye' ? 'Ad Soyad' : st.type === 'isletme' ? 'İşletme / Yetkili' : 'Ad / İşletme') + '</th><th>Telefon</th><th class="hide-md">Konum</th><th class="hide-md">Detay</th><th>Durum</th></tr></thead><tbody>' +
         rows.map(a => '<tr data-id="' + a.id + '" class="' + (a.seen ? '' : 'unseen') + '"><td class="cb"><input type="checkbox" data-sel="' + a.id + '"' + (st.sel[a.id] ? ' checked' : '') + ' aria-label="Seç"></td><td><b>' + YK.fmtDate(a.createdAt) + '</b><small>' + esc(a.ref || '') + (a.notified ? ' · ' + I('mail', 'tiny') : '') + '</small></td>' +
           '<td><span class="type-tag ' + a.type + '">' + typeLabel(a.type) + '</span></td>' +
           '<td><b>' + esc(appName(a)) + '</b>' + (a.type === 'isletme' ? '<small>' + esc(a.data.yetkili || '') + '</small>' : '') + ((a.notes || []).length ? '<small>' + I('belge', 'tiny') + ' ' + a.notes.length + ' not</small>' : '') + '</td>' +
@@ -331,6 +416,14 @@
       YK.download('basvurular-' + today() + '.csv', YK.toCSV(rows, cols), 'text/csv;charset=utf-8');
     };
     $('#csvApps').onclick = () => exportRows(filtered());
+    $('#addApp').onclick = () => {
+      const after = a => { updateBadges(); draw(); openApp(a.id, draw); };
+      if (st.type) return appForm(st.type, null, after);
+      const body = document.createElement('div');
+      body.innerHTML = '<p class="muted">Telefonla, WhatsApp’tan veya yüz yüze gelen kayıtları panele ekleyebilirsiniz. Kayıt türünü seçin:</p><div class="choice"><button class="q-btn" data-t="isletme">' + I('magaza') + 'İşletme talebi</button><button class="q-btn" data-t="kurye">' + I('motor') + 'Kurye başvurusu</button></div>';
+      const m = modal({ title: 'Yeni kayıt', body: body, noFocus: true });
+      $$('[data-t]', body).forEach(b => b.onclick = () => { m.close(); appForm(b.dataset.t, null, after); });
+    };
     $('#bulkCsv').onclick = () => { const ids = selIds(); exportRows(YK.list('applications').filter(a => ids.includes(a.id))); };
     $('#bulkSt').onchange = e => {
       const s = e.target.value; if (!s) return; const ids = selIds();
@@ -346,11 +439,35 @@
     draw();
   }
 
+  // Panelden başvuru ekleme / düzenleme
+  function appForm(type, app, onSaved) {
+    const def = YK.getForms()[type];
+    const body = document.createElement('div');
+    body.innerHTML = (app ? '' : '<p class="muted small">Kayıt “Yeni” durumunda eklenir; kaynak olarak “Panel” görünür.</p>') + formHTML(def.fields, app ? app.data : {});
+    bindTel(body);
+    modal({
+      title: app ? appName(app) + ' – bilgileri düzenle' : (type === 'kurye' ? 'Yeni kurye başvurusu' : 'Yeni işletme talebi'), body: body, wide: true,
+      actions: [{ label: 'Vazgeç' }, {
+        label: I('check') + 'Kaydet', cls: 'btn-dark', onClick: m => {
+          const d = readForm(body, def.fields); if (!d) return;
+          const bad = (name, msg) => { toast(msg, 'err'); const el = body.querySelector('[name="' + name + '"]'); el.classList.add('bad'); el.focus(); };
+          if (d.telefon.replace(/\D/g, '').length !== 11) return bad('telefon', 'Telefonu 05xx xxx xx xx biçiminde girin');
+          if (d.eposta && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.eposta)) return bad('eposta', 'Geçerli bir e-posta girin');
+          const saved = app ? YK.update('applications', app.id, { data: Object.assign({}, app.data, d) })
+            : YK.add('applications', { type: type, status: 'yeni', ref: YK.refNo(), data: d, kvkk: false, notes: [], source: 'panel', seen: true });
+          if (!saved) return;
+          YK.log(appName(saved) + (app ? ' kaydının bilgileri düzenlendi' : (type === 'kurye' ? ' kurye başvurusu' : ' işletme talebi') + ' panelden eklendi'));
+          m.close(); toast(app ? 'Bilgiler güncellendi' : 'Kayıt eklendi'); if (onSaved) onSaved(saved);
+        }
+      }]
+    });
+  }
+
   function printApp(a) {
     const def = YK.FORMS[a.type];
     printDoc(def.label + ' ' + (a.ref || ''), '<h1>' + esc(def.label) + ' — ' + esc(appName(a)) + '</h1><p class="sub">Başvuru No: ' + esc(a.ref || '') + ' · ' + YK.fmtDate(a.createdAt, true) + ' · Durum: ' + esc(statusOf(a.status).label) + '</p><table>' +
       def.fields.map(f => '<tr><th style="width:34%">' + esc(f.label) + '</th><td>' + esc(f.type === 'date' ? YK.fmtDate(a.data[f.name]) : a.data[f.name] || '—').replace(/\n/g, '<br>') + '</td></tr>').join('') +
-      '<tr><th>KVKK onayı</th><td>' + (a.kvkk ? 'Verildi' : '—') + '</td></tr></table>' +
+      '<tr><th>KVKK onayı</th><td>' + (a.kvkk ? 'Verildi (web formu)' : a.source === 'panel' ? 'Panelden eklendi' : '—') + '</td></tr></table>' +
       ((a.notes || []).length ? '<h1 style="margin-top:24px;font-size:16px">Notlar</h1><table>' + a.notes.map(n => '<tr><td style="width:24%">' + YK.fmtDate(n.t, true) + '</td><td>' + esc(n.text) + '</td></tr>').join('') + '</table>' : '') +
       '<div class="sign"><div>Başvuru sahibi</div><div>Yetkili</div></div>');
   }
@@ -366,7 +483,7 @@
       a = YK.get('applications', id);
       const age = a.data.dogumTarihi ? Math.floor((Date.now() - new Date(a.data.dogumTarihi)) / 31557600000) : null;
       body.innerHTML =
-        '<div class="app-head"><span class="type-tag ' + a.type + '">' + def.label + '</span><span class="muted">' + esc(a.ref || '') + ' · ' + YK.fmtDate(a.createdAt, true) + '</span>' + (age ? '<span class="pill">' + age + ' yaş</span>' : '') + (a.notified ? '<span class="pill">' + I('mail', 'tiny') + ' e-posta gönderildi</span>' : '') + '</div>' +
+        '<div class="app-head"><span class="type-tag ' + a.type + '">' + def.label + '</span><span class="muted">' + esc(a.ref || '') + ' · ' + YK.fmtDate(a.createdAt, true) + '</span>' + (a.source === 'panel' ? '<span class="pill">Panelden eklendi</span>' : '') + (age ? '<span class="pill">' + age + ' yaş</span>' : '') + (a.notified ? '<span class="pill">' + I('mail', 'tiny') + ' e-posta gönderildi</span>' : '') + '</div>' +
         '<div class="status-pick">' + YK.APP_STATUSES.map(s => '<button data-s="' + s.key + '" style="--c:' + s.color + '" class="' + (a.status === s.key ? 'on' : '') + '">' + s.label + '</button>').join('') + '</div>' +
         '<dl class="dl">' + def.fields.map(f => '<div' + (f.full ? ' class="full"' : '') + '><dt>' + esc(f.label) + '</dt><dd>' + (a.data[f.name] ? esc(f.type === 'date' ? YK.fmtDate(a.data[f.name]) : a.data[f.name]).replace(/\n/g, '<br>') : '<span class="muted">—</span>') + '</dd></div>').join('') + '</dl>' +
         (a.empId ? '<div class="alert ok">' + I('check') + '<div>Bu başvuru çalışan olarak eklendi. <a href="#calisan/' + a.empId + '" class="m-go">Çalışan kartını aç →</a></div></div>' : '') +
@@ -377,15 +494,16 @@
       const addNote = () => { const t = $('#noteTxt', body).value.trim(); if (!t) return; YK.update('applications', id, { notes: (a.notes || []).concat([{ t: new Date().toISOString(), text: t }]) }); render(); refresh(); };
       $('#noteBtn', body).onclick = addNote;
       $('#noteTxt', body).onkeydown = e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) addNote(); };
-      $$('[data-dn]', body).forEach(b => b.onclick = () => { const n = (a.notes || []).slice(); n.splice(+b.dataset.dn, 1); YK.update('applications', id, { notes: n }); render(); });
+      $$('[data-dn]', body).forEach(b => b.onclick = () => { const n = (a.notes || []).slice(); n.splice(+b.dataset.dn, 1); YK.update('applications', id, { notes: n }); render(); refresh(); });
       const go = $('.m-go', body); if (go) go.onclick = () => m.close();
     }
     render();
     const actions = [
       { label: I('cop') + '<span class="hide-sm">Sil</span>', cls: 'btn-danger-ghost', left: true, onClick: async mm => { if (await confirmBox('Bu başvuru kalıcı olarak silinsin mi?')) { YK.remove('applications', id); YK.log(appName(a) + ' başvurusu silindi'); mm.close(); toast('Başvuru silindi'); refresh(); } } },
       { label: I('yazdir') + '<span class="hide-sm">Yazdır</span>', onClick: () => printApp(YK.get('applications', id)) },
-      { label: I('telefon') + 'Ara', onClick: () => { location.href = telHref(a.data.telefon); } },
-      { label: I('whatsapp') + 'WhatsApp', onClick: () => window.open(waHref(a.data.telefon), '_blank', 'noopener') }
+      { label: I('kalem') + '<span class="hide-sm">Düzenle</span>', onClick: () => appForm(a.type, YK.get('applications', id), () => { render(); refresh(); }) },
+      { label: I('telefon') + 'Ara', onClick: () => { location.href = telHref(YK.get('applications', id).data.telefon); } },
+      { label: I('whatsapp') + 'WhatsApp', onClick: () => window.open(waHref(YK.get('applications', id).data.telefon), '_blank', 'noopener') }
     ];
     if (a.type === 'kurye' && !a.empId) actions.push({ label: I('kullanici') + 'Çalışan olarak ekle', cls: 'btn-yellow', onClick: mm => convertToEmp(id, mm) });
     if (a.type === 'isletme' && !a.custId) actions.push({ label: I('bina') + 'Müşteri olarak kaydet', cls: 'btn-yellow', onClick: mm => convertToCust(id, mm) });
@@ -458,6 +576,7 @@
       catch (er) { toast('Görsel yüklenemedi', 'err'); }
     };
     $('#pDel', body).onclick = () => { foto = ''; $('#pv', body).innerHTML = I('kullanici'); $('#pDel', body).hidden = true; };
+    bindTel(body);
     const tcIn = body.querySelector('[name=tc]'); tcIn.inputMode = 'numeric'; tcIn.oninput = () => { tcIn.value = tcIn.value.replace(/\D/g, '').slice(0, 11); };
     const ibIn = body.querySelector('[name=iban]'); ibIn.oninput = () => { const v = ibIn.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 26); ibIn.value = v.replace(/(.{4})/g, '$1 ').trim(); };
     modal({
@@ -520,7 +639,7 @@
       const n = allRecs.length;
       if (!(await confirmBox(e.adSoyad + ' silinsin mi?' + (n ? ' Çalışana ait ' + n + ' kayıt da silinecek.' : '')))) return;
       YK.saveList('records', YK.list('records').filter(r => r.empId !== id));
-      if (e.foto) YK.media.del(e.foto.slice(6));
+      if (e.foto) YK.media.del(e.foto);
       YK.remove('employees', id); YK.log(e.adSoyad + ' çalışan kaydı silindi'); toast('Çalışan silindi'); location.hash = '#calisanlar';
     };
     draw();
@@ -567,6 +686,7 @@
     const data = Object.assign({}, prefill || {}, cust || {});
     const body = document.createElement('div');
     body.innerHTML = formHTML(YK.CUST_FIELDS, data);
+    bindTel(body);
     modal({
       title: cust ? 'Müşteriyi düzenle' : 'Yeni müşteri işletme', body: body, wide: true,
       actions: [{ label: 'Vazgeç' }, {
@@ -867,7 +987,8 @@
       { type: 'images', title: 'Logolar', items: [['logo', 'Logo (açık zemin / üst menü)'], ['logo_dark', 'Logo (koyu zemin / alt bilgi)']] },
       { type: 'settings', title: 'İletişim bilgileri', items: [T('phone', 'Telefon'), T('whatsapp', 'WhatsApp numarası (ör. 905321234567)'), T('email', 'E-posta'), T('address', 'Açık adres'), T('hours', 'Çalışma saatleri'), T('instagram', 'Instagram bağlantısı (https://…)'), T('facebook', 'Facebook bağlantısı (https://…)'), T('linkedin', 'LinkedIn bağlantısı (https://…)'), T('map_embed', 'Google Haritalar yerleştirme kodu (iframe) — boşsa iletişim görseli gösterilir', 1)] },
       { type: 'settings', title: 'Başvuru bildirimleri', note: 'Web3Forms (web3forms.com) üzerinden ücretsiz bir “Access Key” alıp girerseniz, sitede gönderilen her talep ve başvuru e-posta adresinize de gelir. Site internette yayınlandığında farklı cihazlardan gelenleri kaçırmamanızı sağlar.', items: [T('notify_key', 'Web3Forms erişim anahtarı (Access Key)'), { k: 'wa_forward', l: 'Form gönderiminden sonra “WhatsApp ile ilet” butonunu göster', bool: true }] },
-      { type: 'texts', title: 'Genel metinler', items: [T('slogan', 'Slogan'), T('top_note', 'Üst duyuru bandı (boş bırakılırsa gizlenir)'), T('footer_text', 'Alt bilgi açıklaması', 1)] }
+      { type: 'texts', title: 'Genel metinler', items: [T('slogan', 'Slogan'), T('top_note', 'Üst duyuru bandı (boş bırakılırsa gizlenir)'), T('footer_text', 'Alt bilgi açıklaması', 1)] },
+      { type: 'texts', title: 'Buton yazıları', items: [T('nav_cta_biz', 'Üst menü – işletme butonu'), T('nav_cta_cour', 'Üst menü – kurye butonu'), T('wa_label', 'Form yanındaki WhatsApp bağlantısı')] }
     ] },
     { id: 'bolumler', group: 'Genel', label: 'Bölümler & Bant', blocks: [
       { type: 'sections', title: 'Sitede gösterilecek bölümler' },
@@ -886,7 +1007,7 @@
       { type: 'list', key: 'values', title: 'Değerlerimiz', item: 'değer', fields: [['icon', 'İkon', 'icon'], ['title', 'Başlık'], ['desc', 'Açıklama', 'ta']] }
     ] },
     { id: 'isletme', group: 'İşletmeler', label: 'Hizmetler & Avantajlar', blocks: [
-      { type: 'texts', title: 'Bölüm bandı', items: [T('biz_zone_title', 'Bant başlığı'), T('biz_zone_text', 'Bant açıklaması')] },
+      { type: 'texts', title: 'Bölüm bandı', items: [T('biz_zone_tag', 'Bant üst etiketi'), T('biz_zone_title', 'Bant başlığı'), T('biz_zone_text', 'Bant açıklaması')] },
       { type: 'texts', title: 'Hizmetler başlığı', items: [T('services_kicker', 'Küçük etiket'), T('services_title', 'Başlık'), T('services_text', 'Açıklama', 1)] },
       { type: 'list', key: 'services', title: 'Hizmet kartları', item: 'hizmet', fields: [['icon', 'İkon', 'icon'], ['title', 'Başlık'], ['desc', 'Açıklama', 'ta']] },
       { type: 'images', title: 'Avantajlar görselleri', items: [['business', 'Avantajlar bölümü görseli'], ['business_sticker', 'Yuvarlak sticker']] },
@@ -898,18 +1019,18 @@
       { type: 'list', key: 'bizModels', title: 'Hizmet modelleri', item: 'model', fields: [['icon', 'İkon', 'icon'], ['title', 'Başlık'], ['desc', 'Açıklama', 'ta'], ['tag', 'Öne çıkan etiket (opsiyonel)']] },
       { type: 'texts', title: 'Sektörler', items: [T('sectors_title', 'Sektörler başlığı')] },
       { type: 'list', key: 'sectors', title: 'Hizmet verilen sektörler', item: 'sektör', grid: true, fields: [['icon', 'İkon', 'icon'], ['title', 'Sektör adı']] },
-      { type: 'texts', title: 'Nasıl çalışır', items: [T('bizsteps_title', 'Başlık')] },
+      { type: 'texts', title: 'Nasıl çalışır', items: [T('bizsteps_kicker', 'Küçük etiket'), T('bizsteps_title', 'Başlık')] },
       { type: 'list', key: 'bizSteps', title: 'İşletme süreç adımları', item: 'adım', fields: [['title', 'Başlık'], ['desc', 'Açıklama']] }
     ] },
     { id: 'isletmeform', group: 'İşletmeler', label: 'Talep Formu', blocks: [
       { type: 'images', title: 'Görsel', items: [['bizform', 'Talep formu yan görseli']] },
-      { type: 'texts', title: 'Metinler', items: [T('bizform_kicker', 'Küçük etiket'), T('bizform_title', 'Başlık'), T('bizform_text', 'Açıklama', 1), T('bizform_p1', 'Madde 1'), T('bizform_p2', 'Madde 2'), T('bizform_p3', 'Madde 3'), T('bizform_success_title', 'Gönderim sonrası başlık'), T('bizform_success_text', 'Gönderim sonrası mesaj', 1)] },
+      { type: 'texts', title: 'Metinler', items: [T('bizform_kicker', 'Küçük etiket'), T('bizform_title', 'Başlık'), T('bizform_text', 'Açıklama', 1), T('bizform_p1', 'Madde 1'), T('bizform_p2', 'Madde 2'), T('bizform_p3', 'Madde 3'), T('bizform_btn', 'Gönder butonu yazısı'), T('bizform_success_title', 'Gönderim sonrası başlık'), T('bizform_success_text', 'Gönderim sonrası mesaj', 1)] },
       { type: 'formopts', forms: ['isletme'], title: 'Talep formu açılır liste seçenekleri' }
     ] },
     { id: 'kurye', group: 'Kuryeler', label: 'Kurye Ol', blocks: [
-      { type: 'texts', title: 'Bölüm bandı', items: [T('cour_zone_title', 'Bant başlığı'), T('cour_zone_text', 'Bant açıklaması')] },
+      { type: 'texts', title: 'Bölüm bandı', items: [T('cour_zone_tag', 'Bant üst etiketi'), T('cour_zone_title', 'Bant başlığı'), T('cour_zone_text', 'Bant açıklaması')] },
       { type: 'images', title: 'Görsel', items: [['courier', 'Kurye Ol bölümü görseli']] },
-      { type: 'texts', title: 'Metinler', items: [T('courier_kicker', 'Küçük etiket'), T('courier_title', 'Başlık'), T('courier_text', 'Açıklama', 1), T('req_title', 'Şartlar başlığı'), T('models_title', 'Çalışma modelleri başlığı'), T('steps_title', 'Süreç başlığı')] },
+      { type: 'texts', title: 'Metinler', items: [T('courier_kicker', 'Küçük etiket'), T('courier_title', 'Başlık'), T('courier_text', 'Açıklama', 1), T('courier_img_tag', 'Görsel üzerindeki etiket'), T('req_title', 'Şartlar başlığı'), T('req_btn', 'Şartlar altındaki buton'), T('models_title', 'Çalışma modelleri başlığı'), T('steps_title', 'Süreç başlığı')] },
       { type: 'list', key: 'courierBenefits', title: 'Kurye avantajları', item: 'avantaj', fields: [['icon', 'İkon', 'icon'], ['title', 'Başlık'], ['desc', 'Açıklama', 'ta']] },
       { type: 'list', key: 'requirements', title: 'Başvuru şartları', item: 'şart', plain: true },
       { type: 'list', key: 'workModels', title: 'Çalışma modelleri', item: 'model', fields: [['title', 'Başlık'], ['hours', 'Saatler'], ['desc', 'Açıklama', 'ta'], ['tag', 'Öne çıkan etiket (opsiyonel)']] },
@@ -917,12 +1038,12 @@
     ] },
     { id: 'kazanc', group: 'Kuryeler', label: 'Kazanç Hesaplayıcı', blocks: [
       { type: 'calc', title: 'Hesaplama ayarları' },
-      { type: 'texts', title: 'Metinler', items: [T('calc_kicker', 'Küçük etiket'), T('calc_title', 'Başlık'), T('calc_text', 'Açıklama', 1), T('calc_note', 'Uyarı notu (tahmini olduğunu belirtin)', 1)] },
+      { type: 'texts', title: 'Metinler', items: [T('calc_kicker', 'Küçük etiket'), T('calc_title', 'Başlık'), T('calc_text', 'Açıklama', 1), T('calc_note', 'Uyarı notu (tahmini olduğunu belirtin)', 1), T('calc_btn', 'Buton yazısı')] },
       { type: 'images', title: 'Görsel', items: [['calc', 'Hesaplayıcı yan görseli']] }
     ] },
     { id: 'kuryeform', group: 'Kuryeler', label: 'Başvuru Formu', blocks: [
       { type: 'images', title: 'Görsel', items: [['courform', 'Başvuru formu yan görseli']] },
-      { type: 'texts', title: 'Metinler', items: [T('courform_kicker', 'Küçük etiket'), T('courform_title', 'Başlık'), T('courform_text', 'Açıklama', 1), T('courform_p1', 'Madde 1'), T('courform_p2', 'Madde 2'), T('courform_p3', 'Madde 3'), T('courform_success_title', 'Gönderim sonrası başlık'), T('courform_success_text', 'Gönderim sonrası mesaj', 1)] },
+      { type: 'texts', title: 'Metinler', items: [T('courform_kicker', 'Küçük etiket'), T('courform_title', 'Başlık'), T('courform_text', 'Açıklama', 1), T('courform_p1', 'Madde 1'), T('courform_p2', 'Madde 2'), T('courform_p3', 'Madde 3'), T('courform_btn', 'Gönder butonu yazısı'), T('courform_success_title', 'Gönderim sonrası başlık'), T('courform_success_text', 'Gönderim sonrası mesaj', 1)] },
       { type: 'formopts', forms: ['kurye'], title: 'Başvuru formu açılır liste seçenekleri' }
     ] },
     { id: 'yorum', group: 'Ortak', label: 'Yorumlar', blocks: [
@@ -962,11 +1083,11 @@
     let draft = YK.getContent();
     const tab = CONTENT_TABS.find(t => t.id === tabId) || CONTENT_TABS[0];
     const isPub = tab.id === 'yayin';
-    setTop(tab.id === 'seo' ? 'SEO' : 'Site İçeriği', '<a href="index.html" target="_blank" class="btn btn-light">' + I('goz') + '<span class="hide-sm">Önizle</span></a>' + (isPub ? '' : '<button class="btn btn-light" id="cUndo" disabled>Geri al</button><button class="btn btn-yellow" id="cSave" disabled>' + I('check') + 'Kaydet</button>') + '<a href="#icerik/yayin" class="btn btn-dark' + (YK.hasUnpublished() ? ' attn' : '') + '">' + I('gonder') + 'Yayınla</a>',
+    setTop(tab.id === 'seo' ? 'SEO' : 'Site İçeriği', '<a href="' + previewHref() + '" target="_blank" rel="noopener" class="btn btn-light" title="Kaydedilmiş (yayınlanmamış) hali gösterir">' + I('goz') + '<span class="hide-sm">Önizle</span></a>' + (isPub ? '' : '<button class="btn btn-light" id="cUndo" disabled>Geri al</button><button class="btn btn-yellow" id="cSave" disabled>' + I('check') + 'Kaydet</button>') + '<a href="#icerik/yayin" class="btn btn-dark' + (YK.hasUnpublished() ? ' attn' : '') + '">' + I('gonder') + 'Yayınla</a>',
       tab.id === 'seo' ? 'Arama motorları ve sosyal medya için ayarlar' : 'Metinler, görseller ve bölümler · ' + tab.label);
     const groups = []; CONTENT_TABS.forEach(t => { let g = groups.find(x => x.n === t.group); if (!g) groups.push(g = { n: t.group, t: [] }); g.t.push(t); });
     view.innerHTML = '<nav class="ctabs">' + groups.map(g => '<div class="ctg"><span>' + esc(g.n) + '</span><div>' + g.t.map(t => '<a href="#icerik/' + t.id + '" class="' + (t === tab ? 'on' : '') + '">' + t.label + (t.id === 'yayin' && YK.hasUnpublished() ? ' <i class="dotr"></i>' : '') + '</a>').join('') + '</div></div>').join('') + '</nav>' +
-      (YK.hasUnpublished() && !isPub ? '<div class="alert">' + I('uyari') + '<div>Kaydettiğiniz değişiklikler şu an <b>yalnızca bu tarayıcıda</b> görünüyor. Ziyaretçilerin görmesi için <a href="#icerik/yayin">Yayınla</a> adımını tamamlayın.</div></div>' : '') +
+      (YK.hasUnpublished() && !isPub ? '<div class="alert">' + I('uyari') + '<div>' + (R.on ? 'Kaydettiğiniz değişiklikler henüz <b>sitede yayında değil</b>. <a href="' + previewHref() + '" target="_blank" rel="noopener">Önizleyin</a>, ardından <a href="#icerik/yayin">Yayınla</a> ile tek tıkla yayına alın.' : 'Kaydettiğiniz değişiklikler şu an <b>yalnızca bu tarayıcıda</b> görünüyor. Ziyaretçilerin görmesi için <a href="#icerik/yayin">Yayınla</a> adımını tamamlayın.') + '</div></div>' : '') +
       '<div id="cBody"></div>';
     const setDirty = v => { dirty = v; if (isPub) return; $('#cSave').disabled = !v; $('#cUndo').disabled = !v; $('#cSave').classList.toggle('pulse', v); };
     const save = () => { if (!dirty) return; if (YK.saveContent(draft)) { setDirty(false); YK.log('Site içeriği güncellendi (' + tab.label + ')'); toast('Kaydedildi — yayına almak için “Yayınla”'); updateBadges(); } };
@@ -1088,12 +1209,38 @@
   function publishPanel() {
     const box = document.createElement('div');
     const pending = YK.hasUnpublished();
-    box.innerHTML = '<div class="pub-state ' + (pending ? 'warn' : 'ok') + '">' + I(pending ? 'uyari' : 'check') + '<div><b>' + (pending ? 'Yayınlanmamış değişiklikleriniz var' : 'Site güncel') + '</b><p>' + (pending ? 'Panelde kaydettiğiniz içerik şu an yalnızca bu tarayıcıda görünüyor.' : 'Panel içeriği ile yayındaki içerik aynı.') + '</p></div></div>' +
-      '<ol class="pub-steps"><li><b>Yayın dosyasını indirin</b><span>Aşağıdaki butonla <code>content.js</code> dosyası iner. Yüklediğiniz görseller dosyanın içine eklenir.</span></li>' +
-      '<li><b>Dosyayı yerine koyun</b><span>İnen dosyayı sitenizin <code>assets/js/</code> klasöründeki <code>content.js</code> ile değiştirin (bilgisayarınızda ve hosting’e yüklerken).</span></li>' +
-      '<li><b>Siteyi yükleyin</b><span>Hosting’e (FTP / dosya yöneticisi) yükleyin. SEO sekmesindeki <code>sitemap.xml</code> ve <code>robots.txt</code> dosyalarını da ana klasöre koyun.</span></li></ol>' +
-      '<div class="btn-row"><button class="btn btn-yellow btn-lg" id="pubDl">' + I('indir') + 'content.js indir</button></div>' +
-      '<p class="muted small mt">Not: Başvurular, müşteriler, çalışanlar ve kayıtlar bu dosyaya <b>eklenmez</b>; yalnızca site içeriği yayınlanır.</p>';
+    const state = '<div class="pub-state ' + (pending ? 'warn' : 'ok') + '">' + I(pending ? 'uyari' : 'check') + '<div><b>' + (pending ? 'Yayınlanmamış değişiklikleriniz var' : 'Site güncel') + '</b><p>' +
+      (pending ? (R.on ? 'Kaydettiğiniz içerik henüz ziyaretçilere görünmüyor.' : 'Panelde kaydettiğiniz içerik şu an yalnızca bu tarayıcıda görünüyor.') : 'Panel içeriği ile yayındaki içerik aynı.') + '</p></div></div>';
+    if (R.on) {
+      box.innerHTML = state +
+        '<p class="muted">“Sitede yayınla” butonu; site içeriğini, arama motoru etiketlerini (başlık, açıklama, paylaşım görseli) ve alan adı girildiyse <code>sitemap.xml</code> / <code>robots.txt</code> dosyalarını sunucuda anında günceller.</p>' +
+        '<div class="btn-row"><a class="btn btn-light btn-lg" href="' + previewHref() + '" target="_blank" rel="noopener">' + I('goz') + 'Önce önizle</a><button class="btn btn-yellow btn-lg" id="pubGo"' + (pending ? '' : ' disabled') + '>' + I('gonder') + 'Sitede yayınla</button></div>' +
+        '<div id="pubRes"></div>' +
+        '<details class="pub-alt mt"><summary>Alternatif: content.js dosyasını indir</summary><p class="muted small">Sunucu dosyaya yazamıyorsa (izin hatası) indirilen <code>content.js</code> dosyasını FTP ile <code>assets/js/</code> klasörüne yükleyebilirsiniz.</p><button class="btn btn-light sm" id="pubDl">' + I('indir') + 'content.js indir</button></details>' +
+        '<p class="muted small mt">Not: Başvurular, müşteriler, çalışanlar ve kayıtlar yayınlanmaz; yalnızca site içeriği yayınlanır.</p>';
+      $('#pubGo', box).onclick = async () => {
+        const b = $('#pubGo', box); b.disabled = true; b.classList.add('loading');
+        try {
+          const j = await YK.server.publish(YK.getContent());
+          const r = j.result || {};
+          YK.log('Site içeriği yayınlandı'); toast('Site yayınlandı');
+          updateBadges(); rerender();
+          setTimeout(() => { const pr = $('#pubRes'); if (pr) pr.innerHTML = '<div class="alert ok mt">' + I('check') + '<div><b>Yayınlandı.</b> İçerik ' + (r.index ? '+ SEO etiketleri ' : '') + (r.sitemap ? '+ sitemap.xml ' : '') + 'güncellendi. Ziyaretçiler sayfayı yenilediğinde yeni hali görür.' + (r.index ? '' : ' <br><small>index.html’deki SEO etiketleri güncellenemedi (dosya izni); site içeriği yine de yayında.</small>') + '</div></div>'; }, 50);
+        } catch (e) {
+          b.disabled = false; b.classList.remove('loading');
+          $('#pubRes', box).innerHTML = '<div class="alert warn mt">' + I('uyari') + '<div><b>Yayınlanamadı.</b> ' + esc(e.message) + '</div></div>';
+          const d = $('.pub-alt', box); if (d) d.open = true;
+        }
+      };
+    } else {
+      box.innerHTML = state +
+        '<ol class="pub-steps"><li><b>Yayın dosyasını indirin</b><span>Aşağıdaki butonla <code>content.js</code> dosyası iner. Yüklediğiniz görseller dosyanın içine eklenir.</span></li>' +
+        '<li><b>Dosyayı yerine koyun</b><span>İnen dosyayı sitenizin <code>assets/js/</code> klasöründeki <code>content.js</code> ile değiştirin (bilgisayarınızda ve hosting’e yüklerken).</span></li>' +
+        '<li><b>Siteyi yükleyin</b><span>Hosting’e (FTP / dosya yöneticisi) yükleyin. SEO sekmesindeki <code>sitemap.xml</code> ve <code>robots.txt</code> dosyalarını da ana klasöre koyun.</span></li></ol>' +
+        '<div class="btn-row"><button class="btn btn-yellow btn-lg" id="pubDl">' + I('indir') + 'content.js indir</button></div>' +
+        '<div class="alert mt">' + I('kalkan') + '<div><b>İpucu:</b> Site PHP destekli bir hostingde çalıştığında panel otomatik olarak <b>sunucu modu</b>na geçer: “Yayınla” tek tıkla siteyi günceller ve başvurular her cihazdan panele düşer.</div></div>' +
+        '<p class="muted small mt">Not: Başvurular, müşteriler, çalışanlar ve kayıtlar bu dosyaya <b>eklenmez</b>; yalnızca site içeriği yayınlanır.</p>';
+    }
     $('#pubDl', box).onclick = async () => {
       try {
         const txt = await YK.buildPublishFile();
@@ -1167,8 +1314,11 @@
       if (tab === 'lib') {
         g.innerHTML = YK.BUNDLED_IMAGES.map(x => '<button class="pk" data-src="' + esc(x.src) + '"><img src="' + esc(x.src) + '" alt="" loading="lazy"><span>' + esc(x.title) + '</span></button>').join('');
       } else {
-        const items = (await YK.media.all()).filter(Boolean).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-        g.innerHTML = items.length ? items.map(x => '<div class="pk-wrap"><button class="pk" data-src="media:' + x.id + '"><img src="' + x.data + '" alt=""><span>' + esc(x.name || '') + '</span></button><button class="icon-btn sm danger pk-del" data-del="' + x.id + '" title="Kalıcı sil" aria-label="Kalıcı sil">' + I('cop') + '</button></div>').join('')
+        g.innerHTML = '<div class="empty small"><p>Yükleniyor…</p></div>';
+        let items = [];
+        try { items = (await YK.media.all()).filter(Boolean).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')); }
+        catch (e) { g.innerHTML = '<div class="empty small">' + I('uyari') + '<p>' + esc(e.message) + '</p></div>'; return; }
+        g.innerHTML = items.length ? items.map(x => '<div class="pk-wrap"><button class="pk" data-src="' + esc(x.src) + '"><img src="' + esc(x.url) + '" alt="" loading="lazy"><span>' + esc(x.name || '') + '</span></button><button class="icon-btn sm danger pk-del" data-del="' + esc(x.src) + '" title="Kalıcı sil" aria-label="Kalıcı sil">' + I('cop') + '</button></div>').join('')
           : '<div class="empty small">' + I('gorsel') + '<p>Henüz yüklenmiş görsel yok. “Bilgisayardan yükle” ile görsel ekleyin ya da “Hazır görseller” sekmesinden seçin.</p></div>';
       }
       $$('.pk', g).forEach(b => b.onclick = () => { cb(b.dataset.src); m.close(); });
@@ -1176,8 +1326,11 @@
     }
     async function upload(files) {
       files = files.filter(f => /^image\//.test(f.type)); if (!files.length) return;
-      for (const f of files) { if (f.size > 15e6) { toast(f.name + ' çok büyük (15 MB üstü)', 'err'); continue; } try { await YK.media.put(await YK.fileToDataUrl(f, 1600), f.name); } catch (er) { toast(f.name + ' yüklenemedi', 'err'); } }
-      toast(files.length + ' görsel yüklendi'); YK.log(files.length + ' görsel yüklendi'); tab = 'up'; $$('#pkSeg button', body).forEach(x => x.classList.toggle('on', x.dataset.t === 'up')); draw();
+      const drop2 = $('#pkDrop', body); drop2.classList.add('on'); drop2.textContent = 'Yükleniyor…';
+      let ok = 0;
+      for (const f of files) { if (f.size > 15e6) { toast(f.name + ' çok büyük (15 MB üstü)', 'err'); continue; } try { await YK.media.put(await YK.fileToDataUrl(f, 1600), f.name); ok++; } catch (er) { toast(f.name + ': ' + (er && er.message ? er.message : 'yüklenemedi'), 'err'); } }
+      drop2.classList.remove('on'); drop2.innerHTML = I('yukle') + ' Görselleri buraya sürükleyip bırakabilirsiniz';
+      if (ok) { toast(ok + ' görsel yüklendi'); YK.log(ok + ' görsel yüklendi'); } tab = 'up'; $$('#pkSeg button', body).forEach(x => x.classList.toggle('on', x.dataset.t === 'up')); draw();
     }
     $$('#pkSeg button', body).forEach(b => b.onclick = () => { tab = b.dataset.t; $$('#pkSeg button', body).forEach(x => x.classList.toggle('on', x === b)); draw(); });
     $('#pkFile', body).onchange = e => { upload(Array.from(e.target.files || [])); e.target.value = ''; };
@@ -1190,58 +1343,81 @@
 
   /* =================== Ayarlar =================== */
   function viewSettings() {
-    setTop('Ayarlar');
+    setTop('Ayarlar', '', R.on ? 'Sunucu modu · veriler sunucuda saklanıyor' : 'Yerel mod · veriler bu tarayıcıda saklanıyor');
     const c = YK.auth.creds();
     let lastBackup = null; try { lastBackup = localStorage.getItem('yk_last_backup'); } catch (e) {}
     let usage = 0; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); usage += (localStorage.getItem(k) || '').length; } } catch (e) {}
-    const logs = YK.getLog();
+    const logs = YK.getLog(), ss = YK.serverSettings();
+    const serverCard = R.on
+      ? '<section class="card"><div class="card-head"><h2>' + I('kalkan') + ' Sunucu ve bildirimler</h2><span class="pill green">Bağlı</span></div>' +
+        '<p class="muted">Site formlarından gelen tüm talep ve başvurular doğrudan sunucuya kaydedilir ve bu panelde görünür. Panel her cihazdan aynı veriyi gösterir.</p>' +
+        '<form id="srvForm" class="f-grid one"><label class="fld"><span>Yeni başvuru bildirim e-postası</span><input name="notify_email" type="email" placeholder="ornek@alanadiniz.com" value="' + esc(ss.notify_email || '') + '"><small>Her yeni talep/başvuruda bu adrese e-posta gönderilir' + (R.mail ? '' : ' (bu sunucuda PHP mail() kapalı görünüyor; Web3Forms anahtarını kullanabilirsiniz)') + '. Spam klasörünü de kontrol edin.</small></label><button class="btn btn-dark">' + I('check') + 'Kaydet</button></form></section>'
+      : '<section class="card"><div class="card-head"><h2>' + I('uyari') + ' Yerel mod</h2><span class="pill red">Sunucu yok</span></div>' +
+        '<p class="muted">Panel şu an sunucuya bağlı değil; veriler yalnızca bu tarayıcıda saklanıyor. Site internette yayınlandığında ziyaretçilerin başvuruları bu panele <b>düşmez</b> (e-posta bildirimi ve WhatsApp ile iletilir).</p>' +
+        '<p class="muted"><b>Sunucu modunu açmak için:</b> sitenin tüm dosyalarını (api klasörü dahil) PHP 7.4+ destekleyen bir hostinge yükleyin ve <code>admin.html</code> adresini açın. Panel sunucuyu otomatik algılar ve ilk girişte yönetici hesabı oluşturmanızı ister. Bu tarayıcıdaki verileri sonra tek tıkla sunucuya aktarabilirsiniz.</p></section>';
     view.innerHTML =
+      migrateCard() +
       '<div class="grid-2">' +
       '<section class="card"><div class="card-head"><h2>Giriş bilgileri</h2></div><form id="pwForm" class="f-grid one">' +
-      '<label class="fld"><span>Kullanıcı adı</span><input name="user" value="' + esc(c.user) + '" required autocomplete="username"></label>' +
+      '<label class="fld"><span>Kullanıcı adı</span><input name="user" value="' + esc(c.user) + '" required autocomplete="username" autocapitalize="off"></label>' +
       '<label class="fld"><span>Mevcut şifre</span><input name="old" type="password" required autocomplete="current-password"></label>' +
       '<label class="fld"><span>Yeni şifre (en az 8 karakter, harf ve rakam)</span><input name="pw" type="password" required minlength="8" autocomplete="new-password"><span class="pw-meter"><i id="pwBar"></i></span></label>' +
       '<label class="fld"><span>Yeni şifre (tekrar)</span><input name="pw2" type="password" required autocomplete="new-password"></label>' +
-      '<button class="btn btn-dark">Şifreyi güncelle</button></form><p class="muted small mt">Güvenlik: 60 dakika işlem yapılmazsa oturum kapanır; 5 hatalı denemede giriş 1 dakika kilitlenir.</p></section>' +
-      '<section class="card"><div class="card-head"><h2>Yedekleme</h2>' + (lastBackup ? '<span class="pill">Son yedek: ' + YK.fmtDate(lastBackup, true) + '</span>' : '<span class="pill red">Hiç yedek alınmadı</span>') + '</div><p class="muted">Tüm başvuruları, çalışanları, kayıtları, site içeriğini ve yüklenen görselleri tek bir dosyaya yedekleyin. Başka bir bilgisayara/tarayıcıya taşımak için de kullanabilirsiniz.</p>' +
+      '<button class="btn btn-dark">Şifreyi güncelle</button></form><p class="muted small mt">' + (R.on ? 'Şifreniz sunucuda şifrelenmiş (hash) olarak saklanır. 60 dakika işlem yapılmazsa oturum kapanır; 5 hatalı denemede giriş 5 dakika kilitlenir.' : 'Güvenlik: 60 dakika işlem yapılmazsa oturum kapanır; 5 hatalı denemede giriş 1 dakika kilitlenir.') + '</p></section>' +
+      serverCard + '</div>' +
+      '<div class="grid-2"><section class="card"><div class="card-head"><h2>Yedekleme</h2>' + (lastBackup ? '<span class="pill">Son yedek: ' + YK.fmtDate(lastBackup, true) + '</span>' : '<span class="pill red">Hiç yedek alınmadı</span>') + '</div><p class="muted">Tüm başvuruları, müşterileri, çalışanları, kayıtları ve site içeriğini tek bir dosyaya yedekleyin. ' + (R.on ? 'Yüklenen görseller sunucudaki <code>uploads</code> klasöründe kalır.' : 'Yüklenen görseller de yedeğe eklenir; başka bir bilgisayara/tarayıcıya taşımak için de kullanabilirsiniz.') + '</p>' +
       '<div class="btn-row"><button class="btn btn-dark" id="bExport">' + I('indir') + 'Yedek indir</button><label class="btn btn-light">' + I('yukle') + 'Yedekten geri yükle<input type="file" accept=".json,application/json" id="bImport" hidden></label></div>' +
-      '<p class="muted small mt">Kullanılan yerel depolama: ~' + (usage * 2 / 1048576).toFixed(2) + ' MB (tarayıcı sınırı genellikle 5–10 MB; görseller ayrı depolanır).</p>' +
-      '<div class="card-head mt"><h2>Deneme verisi</h2></div><p class="muted">Paneli denemek için örnek başvuru, çalışan ve kayıtlar ekler.</p><button class="btn btn-light" id="bDemo">' + I('arti') + 'Örnek veri yükle</button></section>' +
-      '</div>' +
+      (R.on ? '' : '<p class="muted small mt">Kullanılan yerel depolama: ~' + (usage * 2 / 1048576).toFixed(2) + ' MB (tarayıcı sınırı genellikle 5–10 MB; görseller ayrı depolanır).</p>') + '</section>' +
+      '<section class="card"><div class="card-head"><h2>Deneme verisi</h2></div><p class="muted">Paneli denemek için örnek başvuru, müşteri, çalışan ve kayıtlar ekler.' + (R.on ? ' <b>Sunucu modunda bu veriler gerçek verilerinizin yanına eklenir</b>; deneme sonrası silmeyi unutmayın.' : '') + '</p><button class="btn btn-light" id="bDemo">' + I('arti') + 'Örnek veri yükle</button></section></div>' +
       '<section class="card"><div class="card-head"><h2>' + I('gecmis') + ' İşlem geçmişi</h2><span class="pill">' + logs.length + ' kayıt</span></div>' +
       (logs.length ? '<ul class="log tall">' + logs.slice(0, 100).map(l => '<li><span>' + esc(l.text) + '</span><small>' + YK.fmtDate(l.t, true) + '</small></li>').join('') + '</ul>' : '<p class="muted small">Henüz işlem yok.</p>') + '</section>' +
-      '<section class="card danger-zone"><div class="card-head"><h2>Tehlikeli işlemler</h2></div><div class="btn-row">' +
-      '<button class="btn btn-danger-ghost" id="rContent">Site içeriğini varsayılana döndür</button>' +
+      '<section class="card danger-zone"><div class="card-head"><h2>Tehlikeli işlemler</h2></div><p class="muted small">Bu işlemler geri alınamaz. Önce yedek almanız önerilir.</p><div class="btn-row">' +
+      '<button class="btn btn-danger-ghost" id="rContent">Site içeriği taslağını sıfırla</button>' +
       '<button class="btn btn-danger-ghost" id="rApps">Tüm başvuruları sil</button>' +
       '<button class="btn btn-danger-ghost" id="rRecs">Tüm kayıtları sil</button>' +
-      '<button class="btn btn-danger" id="rAll">Tüm verileri sil</button></div></section>' +
-      '<section class="card"><div class="card-head"><h2>Veriler nerede saklanıyor?</h2></div><p class="muted">Bu sürümde tüm veriler bu tarayıcının yerel depolamasında tutulur. Site ve panel aynı tarayıcıda açıldığında başvurular panele anında düşer. Site internette yayınlandığında farklı cihazlardan gelen başvuruları kaçırmamak için <a class="link" href="#icerik/genel">Genel & İletişim › Başvuru bildirimleri</a> bölümünden e-posta bildirimini kurun. Düzenli olarak “Yedek indir” ile yedek almanız önerilir.</p></section>';
+      '<button class="btn btn-danger" id="rAll">Tüm verileri sil</button></div></section>';
 
     const f = $('#pwForm');
-    f.pw.oninput = () => { const v = f.pw.value; let s = 0; if (v.length >= 8) s++; if (/[A-ZÇĞİÖŞÜ]/.test(v) && /[a-zçğıöşü]/.test(v)) s++; if (/\d/.test(v)) s++; if (/[^\wçğıöşüÇĞİÖŞÜ]/.test(v) || v.length >= 12) s++; const bar = $('#pwBar'); bar.style.width = s * 25 + '%'; bar.style.background = ['#dc2626', '#dc2626', '#d97706', '#65a30d', '#16a34a'][s]; };
-    f.onsubmit = e => {
+    f.pw.oninput = () => { const v = f.pw.value; let sc = 0; if (v.length >= 8) sc++; if (/[A-ZÇĞİÖŞÜ]/.test(v) && /[a-zçğıöşü]/.test(v)) sc++; if (/\d/.test(v)) sc++; if (/[^\wçğıöşüÇĞİÖŞÜ]/.test(v) || v.length >= 12) sc++; const bar = $('#pwBar'); bar.style.width = sc * 25 + '%'; bar.style.background = ['#dc2626', '#dc2626', '#d97706', '#65a30d', '#16a34a'][sc]; };
+    f.onsubmit = async e => {
       e.preventDefault();
-      if (!YK.auth.check(c.user, f.old.value)) return toast('Mevcut şifre hatalı', 'err');
       if (f.pw.value.length < 8 || !/\d/.test(f.pw.value) || !/\D/.test(f.pw.value)) return toast('Yeni şifre en az 8 karakter olmalı ve harf + rakam içermeli', 'err');
       if (f.pw.value !== f.pw2.value) return toast('Yeni şifreler eşleşmiyor', 'err');
-      YK.auth.set(f.user.value, f.pw.value); YK.log('Panel giriş bilgileri değiştirildi'); toast('Giriş bilgileri güncellendi'); rerender();
+      if (R.on) {
+        try { await YK.server.password(f.user.value.trim(), f.old.value, f.pw.value); } catch (er) { return toast(er.message, 'err'); }
+        $('#suName').textContent = R.user;
+      } else {
+        if (!YK.auth.check(c.user, f.old.value)) return toast('Mevcut şifre hatalı', 'err');
+        YK.auth.set(f.user.value, f.pw.value); YK.log('Panel giriş bilgileri değiştirildi');
+      }
+      toast('Giriş bilgileri güncellendi'); rerender();
     };
+    const sf = $('#srvForm');
+    if (sf) sf.onsubmit = e => {
+      e.preventDefault();
+      const em = sf.notify_email.value.trim();
+      if (em && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) return toast('Geçerli bir e-posta girin', 'err');
+      YK.saveServerSettings(Object.assign({}, YK.serverSettings(), { notify_email: em })); YK.log('Bildirim e-postası ' + (em ? 'ayarlandı' : 'kaldırıldı')); toast('Kaydedildi');
+    };
+    bindMigrate(view);
     $('#bExport').onclick = async () => { const d = await YK.exportAll(); YK.download('yakinda-kurye-yedek-' + today() + '.json', JSON.stringify(d), 'application/json'); try { localStorage.setItem('yk_last_backup', new Date().toISOString()); } catch (er) {} YK.log('Yedek indirildi'); toast('Yedek indirildi'); rerender(); };
     $('#bImport').onchange = e => {
       const file = e.target.files[0]; if (!file) return;
       const fr = new FileReader();
       fr.onload = async () => {
-        try { const d = JSON.parse(fr.result); if (!(await confirmBox('Mevcut veriler yedekteki verilerle değiştirilecek. Devam edilsin mi?', 'Geri yükle'))) return; await YK.importAll(d); YK.log('Yedekten geri yükleme yapıldı'); toast('Yedek geri yüklendi'); rerender(); }
-        catch (er) { toast('Yedek dosyası okunamadı', 'err'); }
+        let d; try { d = JSON.parse(fr.result); } catch (er) { return toast('Yedek dosyası okunamadı', 'err'); }
+        if (!(await confirmBox('Mevcut veriler yedekteki verilerle değiştirilecek. Devam edilsin mi?', 'Geri yükle'))) return;
+        try { await YK.importAll(d); YK.log('Yedekten geri yükleme yapıldı'); toast('Yedek geri yüklendi'); updateBadges(); rerender(); }
+        catch (er) { toast(er.message || 'Yedek geri yüklenemedi', 'err'); }
       };
       fr.readAsText(file); e.target.value = '';
     };
     $('#bDemo').onclick = () => { loadDemo(); YK.log('Örnek veriler yüklendi'); toast('Örnek veriler eklendi'); location.hash = '#panel'; };
-    $('#rContent').onclick = async () => { if (await confirmBox('Site metinleri, görselleri ve listeler varsayılana dönsün mü?', 'Sıfırla')) { YK.resetContent(); YK.log('Site içeriği sıfırlandı'); toast('Site içeriği sıfırlandı'); } };
+    $('#rContent').onclick = async () => { if (await confirmBox('Panelde kaydedilmiş (yayınlanmamış) site içeriği taslağı silinip yayındaki/varsayılan içeriğe dönülsün mü?', 'Sıfırla')) { YK.resetContent(); YK.log('Site içeriği taslağı sıfırlandı'); updateBadges(); toast('Site içeriği taslağı sıfırlandı'); } };
     $('#rApps').onclick = async () => { if (await confirmBox('Tüm başvurular kalıcı olarak silinsin mi?')) { YK.saveList('applications', []); YK.log('Tüm başvurular silindi'); updateBadges(); toast('Başvurular silindi'); } };
     $('#rRecs').onclick = async () => { if (await confirmBox('Tüm kayıtlar (vardiya, ödeme vb.) kalıcı olarak silinsin mi?')) { YK.saveList('records', []); YK.log('Tüm kayıtlar silindi'); toast('Kayıtlar silindi'); } };
     $('#rAll').onclick = async () => {
-      if (!(await confirmBox('Başvurular, müşteriler, çalışanlar, kayıtlar ve site içeriği tamamen silinecek. Önce yedek almanız önerilir. Devam edilsin mi?', 'Hepsini sil'))) return;
+      if (!(await confirmBox('Başvurular, müşteriler, çalışanlar, kayıtlar ve site içeriği taslağı tamamen silinecek. Önce yedek almanız önerilir. Devam edilsin mi?', 'Hepsini sil'))) return;
       ['applications', 'employees', 'records', 'customers'].forEach(k => YK.saveList(k, [])); YK.resetContent(); YK.log('Tüm veriler silindi'); updateBadges(); toast('Tüm veriler silindi'); rerender();
     };
   }
@@ -1275,6 +1451,13 @@
     YK.saveList('records', recs);
   }
 
-  /* Başlat */
-  if (YK.auth.isLogged()) showApp(); else showLogin();
+  /* Başlat: sunucu varsa sunucu modu, yoksa yerel mod */
+  (async function start() {
+    const st = await YK.server.connect();
+    if (st && st.logged) {
+      try { await YK.server.pull(); return showApp(); } catch (e) { return showLogin(e.message); }
+    }
+    if (!st && YK.auth.isLogged()) return showApp();
+    showLogin();
+  })();
 })();

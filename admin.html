@@ -2,14 +2,15 @@
 <html lang="tr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0E0E0E">
   <meta name="robots" content="noindex, nofollow">
   <title>Yönetim Paneli — Yakında Kurye</title>
   <link rel="icon" href="assets/img/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/admin.css?v=6">
+  <link rel="stylesheet" href="assets/css/admin.css?v=7">
 </head>
 <body>
 
@@ -23,12 +24,14 @@
       </div>
       <form class="login-card" id="loginForm" autocomplete="on">
         <img src="assets/img/logo.png" alt="Yakında Kurye" class="login-logo">
-        <h1>Yönetim Paneli</h1>
-        <p class="muted">Devam etmek için giriş yapın.</p>
-        <label class="fld"><span>Kullanıcı adı</span><input name="user" autocomplete="username" required></label>
+        <h1 id="loginTitle">Yönetim Paneli</h1>
+        <p class="muted" id="loginSub">Bağlanıyor…</p>
+        <label class="fld"><span>Kullanıcı adı</span><input name="user" autocomplete="username" autocapitalize="off" spellcheck="false" required></label>
         <label class="fld"><span>Şifre</span><span class="pw-wrap"><input name="pass" type="password" autocomplete="current-password" required><button type="button" class="pw-eye" id="pwEye" aria-label="Şifreyi göster"><span data-i="goz"></span></button></span></label>
-        <p class="login-err" id="loginErr" hidden>Kullanıcı adı veya şifre hatalı.</p>
-        <button class="btn btn-dark btn-block btn-lg">Giriş Yap</button>
+        <label class="fld" id="pass2Row" hidden><span>Şifre (tekrar)</span><input name="pass2" type="password" autocomplete="new-password"></label>
+        <p class="login-err" id="loginErr" role="alert" hidden></p>
+        <button class="btn btn-dark btn-block btn-lg" id="loginBtn">Giriş Yap</button>
+        <p class="login-mode" id="loginMode"></p>
         <a href="index.html" class="back-link">← Siteye dön</a>
       </form>
     </div>
@@ -53,7 +56,8 @@
         <a href="#ayarlar" data-r="ayarlar"><span data-i="ayar"></span>Ayarlar</a>
       </nav>
       <div class="side-foot">
-        <a href="index.html" target="_blank" class="side-link"><span data-i="dis"></span>Siteyi görüntüle</a>
+        <div class="sync" id="syncState"></div>
+        <a href="index.html" target="_blank" rel="noopener" class="side-link"><span data-i="dis"></span>Siteyi görüntüle</a>
         <div class="side-user"><span class="su-av">A</span><div><b id="suName">admin</b><small>Yönetici</small></div><button class="icon-btn sm" id="logout" title="Çıkış yap" aria-label="Çıkış yap"><span data-i="cikis"></span></button></div>
       </div>
     </aside>
@@ -71,8 +75,8 @@
 
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
-  <script src="assets/js/content.js?v=6"></script>
-  <script src="assets/js/store.js?v=6"></script>
-  <script src="assets/js/admin.js?v=6"></script>
+  <script src="assets/js/content.js?v=7"></script>
+  <script src="assets/js/store.js?v=7"></script>
+  <script src="assets/js/admin.js?v=7"></script>
 </body>
 </html>

@@ -23,7 +23,7 @@
   $$('[data-img]').forEach(el => { el.decoding = 'async'; YK.setImg(el, C.images[el.dataset.img]); });
 
   const tel = 'tel:' + (S.phone || '').replace(/[^\d+]/g, '');
-  const waNum = (S.whatsapp || '').replace(/\D/g, '');
+  const waNum = YK.waNumber(S.whatsapp);
   const wa = 'https://wa.me/' + waNum;
   $$('[data-href]').forEach(a => {
     const t = a.dataset.href;
@@ -31,6 +31,11 @@
     if ((t === 'wa' && !waNum) || (t === 'tel' && !S.phone) || (t === 'mail' && !S.email)) a.hidden = true;
   });
   if (!TX.top_note) $('#topbar').hidden = true;
+  if (YK.isPreview()) {
+    const pv = document.createElement('div'); pv.className = 'preview-bar';
+    pv.innerHTML = '<b>Önizleme</b> Panelde kaydedilen, henüz yayınlanmamış içerik gösteriliyor. <a href="' + location.pathname + '">Yayındaki siteyi gör</a>';
+    document.body.appendChild(pv);
+  }
 
   /* ---------- Listeler ---------- */
   const card = (x, cls) => '<div class="' + (cls || 'card svc') + '"><span class="ic-box">' + YK.icon(x.icon) + '</span><div><h3>' + esc(x.title) + '</h3><p>' + nl(x.desc) + '</p></div></div>';
@@ -43,7 +48,7 @@
   fill('values', C.values.map(x => card(x, 'card value')).join(''));
   fill('services', C.services.map(x => card(x)).join(''));
   fill('businessBenefits', C.businessBenefits.map(x => card(x, 'benefit')).join(''));
-  fill('bizModels', C.bizModels.map(m => '<div class="bizmodel' + (m.tag ? ' featured' : '') + '">' + (m.tag ? '<span class="tag">' + esc(m.tag) + '</span>' : '') + '<span class="ic-box">' + YK.icon(m.icon) + '</span><h3>' + esc(m.title) + '</h3><p>' + nl(m.desc) + '</p><a href="#isletme-basvuru" class="bm-link">Teklif iste ' + YK.icon('ok') + '</a></div>').join(''));
+  fill('bizModels', C.bizModels.map(m => '<div class="bizmodel' + (m.tag ? ' featured' : '') + '">' + (m.tag ? '<span class="tag">' + esc(m.tag) + '</span>' : '') + '<span class="ic-box">' + YK.icon(m.icon) + '</span><h3>' + esc(m.title) + '</h3><p>' + nl(m.desc) + '</p><a href="#isletme-basvuru" class="bm-link" data-sec="bizForm">Teklif iste ' + YK.icon('ok') + '</a></div>').join(''));
   fill('sectors', C.sectors.filter(s => s && s.title).map(s => '<div class="sector">' + YK.icon(s.icon) + '<span>' + esc(s.title) + '</span></div>').join(''));
   fill('bizSteps', C.bizSteps.map((s, i) => '<li><span class="num">' + (i + 1) + '</span><h4>' + esc(s.title) + '</h4><p>' + nl(s.desc) + '</p></li>').join(''));
   fill('courierBenefits', C.courierBenefits.map(x => card(x, 'benefit')).join(''));
@@ -61,6 +66,7 @@
   const regions = C.regions.filter(Boolean);
   fill('regions', regions.map(r => '<span class="region">' + YK.icon('konum') + esc(r) + '</span>').join(''));
 
+  C.gallery = C.gallery.filter(g => g && g.src);
   fill('gallery', C.gallery.map((g, i) => '<button class="g-item" data-i="' + i + '" aria-label="' + esc(g.title || 'Görsel') + ' – büyüt"><img alt="' + esc(g.title || 'Yakında Kurye') + '" loading="lazy" decoding="async"><span>' + esc(g.title) + '</span></button>').join(''));
   $$('#gallery .g-item').forEach(b => YK.setImg($('img', b), C.gallery[b.dataset.i].src));
 
@@ -94,6 +100,7 @@
   if (!regions.length) hidden.regions = true;
   if (!C.stats.length) hidden.stats = true;
   if (!faqs.length) hidden.faq = true;
+  if (!C.gallery.some(g => g && g.src)) hidden.refs = true;
   if (!(Number(C.calc.perPackage) > 0)) hidden.calc = true;
   if (['services', 'business', 'bizSolutions', 'bizSteps', 'bizForm'].every(k => hidden[k])) hidden.zoneBiz = true;
   if (['courier', 'calc', 'courForm'].every(k => hidden[k])) hidden.zoneCour = true;
@@ -259,8 +266,9 @@
   if ($('#kazanc')) {
     const k = C.calc, rate = Number(k.perPackage) || 0;
     const pkg = $('#cPkg'), daysBox = $('#cDays');
-    pkg.min = k.minPackages || 1; pkg.max = k.maxPackages || 60; pkg.value = k.defPackages || 25;
-    let days = Number(k.defDays) || 6;
+    const lo = Math.max(1, Number(k.minPackages) || 1), hi = Math.max(lo + 1, Number(k.maxPackages) || 60);
+    pkg.min = lo; pkg.max = hi; pkg.value = Math.min(hi, Math.max(lo, Number(k.defPackages) || 25));
+    let days = Math.min(7, Math.max(1, Math.round(Number(k.defDays) || 6)));
     daysBox.innerHTML = [1, 2, 3, 4, 5, 6, 7].map(d => '<button type="button" role="radio" data-d="' + d + '">' + d + '</button>').join('');
     const tl = n => Math.round(n).toLocaleString('tr-TR') + ' ₺';
     function calc() {
@@ -306,8 +314,8 @@
 
   /* ---------- Başvuru / talep formları ---------- */
   const FORM_UI = {
-    kurye: { icon: 'motor', head: 'Kurye Başvuru Formu', sub: 'Kurye olarak ekibimize katılmak için', btn: 'Başvuruyu Gönder', okTitle: 'courform_success_title', okText: 'courform_success_text', refLabel: 'Başvuru No' },
-    isletme: { icon: 'magaza', head: 'İşletme Talep Formu', sub: 'İşletmeniz için kurye hizmeti almak için', btn: 'Teklif İste', okTitle: 'bizform_success_title', okText: 'bizform_success_text', refLabel: 'Talep No' }
+    kurye: { icon: 'motor', head: 'Kurye Başvuru Formu', sub: 'Kurye olarak ekibimize katılmak için', btn: TX.courform_btn || 'Başvuruyu Gönder', okTitle: 'courform_success_title', okText: 'courform_success_text', refLabel: 'Başvuru No' },
+    isletme: { icon: 'magaza', head: 'İşletme Talep Formu', sub: 'İşletmeniz için kurye hizmeti almak için', btn: TX.bizform_btn || 'Teklif İste', okTitle: 'bizform_success_title', okText: 'bizform_success_text', refLabel: 'Talep No' }
   };
   $$('[data-form]').forEach(box => mountForm(box, box.dataset.form));
 
@@ -320,7 +328,7 @@
       '<input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">' +
       '<label class="kvkk"><input type="checkbox" name="kvkk" required> <span>' + nl(TX.kvkk_text) + ' <button type="button" class="kvkk-link" data-kvkk>Aydınlatma metnini oku</button></span></label>' +
       '<p class="form-error" role="alert" hidden></p>' +
-      '<button type="submit" class="btn ' + (type === 'isletme' ? 'btn-y' : 'btn-k') + ' btn-lg btn-block"><span class="btn-txt">' + ui.btn + '</span> ' + YK.icon('gonder') + '</button>' +
+      '<button type="submit" class="btn ' + (type === 'isletme' ? 'btn-y' : 'btn-k') + ' btn-lg btn-block"><span class="btn-txt">' + esc(ui.btn) + '</span> ' + YK.icon('gonder') + '</button>' +
       '<p class="draft-note" hidden>Formdaki bilgileriniz bu cihazda geçici olarak saklanıyor.</p></form>' +
       '<div class="success" hidden><div class="success-ic">' + YK.icon('check') + '</div><h3>' + nl(TX[ui.okTitle]) + '</h3><p>' + nl(TX[ui.okText]) + '</p><div class="ref">' + ui.refLabel + ': <strong></strong></div>' +
       '<div class="success-btns"><a class="btn btn-wa" target="_blank" rel="noopener">' + YK.icon('whatsapp') + 'WhatsApp ile ilet</a><button type="button" class="btn btn-ghost-k sb-new">Yeni form doldur</button></div></div>';
@@ -360,7 +368,7 @@
       const t = e.target, fld = t.closest && t.closest('.field'); if (!fld) return;
       const f = def.fields.find(x => x.name === t.name); if (f && t.value.trim()) setMsg(fld, validate(f, t.value.trim()));
     });
-    $('.sb-new', box).addEventListener('click', () => { form.reset(); progress(); form.hidden = false; succ.hidden = true; });
+    $('.sb-new', box).addEventListener('click', () => { form.reset(); err.hidden = true; progress(); form.hidden = false; succ.hidden = true; });
 
     form.addEventListener('submit', e => {
       e.preventDefault();
@@ -370,17 +378,14 @@
         const msg = validate(f, v); setMsg(el.closest('.field'), msg);
         if (msg && !firstBad) firstBad = el;
       });
+      err.hidden = true;
       if (firstBad) { err.textContent = 'Lütfen işaretli alanları kontrol edin.'; err.hidden = false; firstBad.focus(); return; }
       if (!form.elements.kvkk.checked) { err.textContent = 'Devam etmek için KVKK onayını işaretleyin.'; err.hidden = false; return; }
 
-      const phone = data.telefon.replace(/\D/g, '');
-      const dup = YK.list('applications').find(a => a.type === type && (a.data.telefon || '').replace(/\D/g, '') === phone && Date.now() - new Date(a.createdAt) < 864e5);
-      if (dup) { err.innerHTML = 'Bu telefon numarasıyla son 24 saat içinde zaten ' + (type === 'kurye' ? 'başvuru' : 'talep') + ' yapılmış (No: <b>' + esc(dup.ref) + '</b>). Ekibimiz sizinle iletişime geçecek.'; err.hidden = false; return; }
-
       btn.disabled = true; btn.classList.add('loading');
-      const ref = YK.refNo();
-      const bot = !!form.elements.website.value;
-      const finish = () => {
+      const bot = form.elements.website.value;
+      const stop = html => { btn.disabled = false; btn.classList.remove('loading'); err.innerHTML = html; err.hidden = false; err.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' }); };
+      const finish = (ref, localId) => {
         btn.disabled = false; btn.classList.remove('loading');
         store.del(DRAFT); draftNote.hidden = true;
         $('.ref strong', succ).textContent = ref;
@@ -393,17 +398,33 @@
         box.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
         confetti(succ);
         track('generate_lead', { form_type: type });
+        // İsteğe bağlı e-posta bildirimi (Web3Forms)
+        if (S.notify_key && !bot) {
+          const payload = Object.assign({ access_key: S.notify_key, subject: 'Yeni ' + def.label + ' – ' + ref, from_name: 'Yakında Kurye Web Sitesi', [ui.refLabel]: ref }, ...def.fields.map(f => ({ [f.label]: data[f.name] || '-' })));
+          fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload) })
+            .then(r => r.json()).then(j => { if (localId) YK.update('applications', localId, { notified: !!j.success }); })
+            .catch(() => { if (localId) YK.update('applications', localId, { notified: false }); });
+        }
       };
-      if (bot) return setTimeout(finish, 600);
-      const saved = YK.add('applications', { type: type, status: 'yeni', ref: ref, data: data, kvkk: true, notes: [], source: location.hostname || 'yerel' });
-      if (!saved) { btn.disabled = false; btn.classList.remove('loading'); return; }
-      if (S.notify_key) {
-        const payload = Object.assign({ access_key: S.notify_key, subject: 'Yeni ' + def.label + ' – ' + ref, from_name: 'Yakında Kurye Web Sitesi', [ui.refLabel]: ref }, ...def.fields.map(f => ({ [f.label]: data[f.name] || '-' })));
-        fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload) })
-          .then(r => r.json()).then(j => YK.update('applications', saved.id, { notified: !!j.success }))
-          .catch(() => YK.update('applications', saved.id, { notified: false }))
-          .finally(finish);
-      } else setTimeout(finish, 400);
+      const contactHint = waNum ? ' Dilerseniz <a href="' + wa + '" target="_blank" rel="noopener">WhatsApp</a>' + (S.phone ? ' veya <a href="' + tel + '">telefon</a>' : '') + ' ile de ulaşabilirsiniz.' : (S.phone ? ' Dilerseniz <a href="' + tel + '">bizi arayın</a>.' : '');
+      const dupMsg = ref => 'Bu telefon numarasıyla son 24 saat içinde zaten ' + (type === 'kurye' ? 'başvuru' : 'talep') + ' yapılmış' + (ref ? ' (No: <b>' + esc(ref) + '</b>)' : '') + '. Ekibimiz sizinle iletişime geçecek.';
+
+      // 1) Sunucu varsa başvuru doğrudan yönetim paneline kaydedilir
+      YK.submitForm(type, data, bot).then(j => finish(j.ref), e2 => {
+        if (!e2.offline) {
+          if (e2.code === 'dup') return stop(dupMsg(e2.data && e2.data.ref));
+          return stop((e2.status >= 500 ? 'Teknik bir sorun nedeniyle başvurunuz şu an alınamadı.' : esc(e2.message)) + contactHint);
+        }
+        // 2) Sunucu yoksa (statik hosting) bu tarayıcıya kaydedilir; e-posta / WhatsApp ile iletilir
+        if (bot) return setTimeout(() => finish(YK.refNo()), 500);
+        const phone = data.telefon.replace(/\D/g, '');
+        const dup = YK.list('applications').find(a => a.type === type && (a.data.telefon || '').replace(/\D/g, '') === phone && Date.now() - new Date(a.createdAt) < 864e5);
+        if (dup) return stop(dupMsg(dup.ref));
+        const ref = YK.refNo();
+        const saved = YK.add('applications', { type: type, status: 'yeni', ref: ref, data: data, kvkk: true, notes: [], source: location.hostname || 'yerel' });
+        if (!saved) return stop('Başvurunuz kaydedilemedi.' + contactHint);
+        setTimeout(() => finish(ref, saved.id), 400);
+      });
     });
   }
 
@@ -420,9 +441,13 @@
       input = '<input id="' + id + '" name="' + f.name + '" type="' + f.type + '"' + req + ' maxlength="' + (f.type === 'tel' ? 14 : 120) + '"' +
         (f.placeholder ? ' placeholder="' + esc(f.placeholder) + '"' : '') + (f.auto ? ' autocomplete="' + f.auto + '"' : '') +
         (f.type === 'number' ? ' min="0" max="999" inputmode="numeric"' : '') + (f.type === 'tel' ? ' inputmode="tel" autocomplete="tel"' : '') +
-        (f.type === 'email' ? ' autocomplete="email"' : '') + (f.type === 'date' ? ' max="' + new Date().toISOString().slice(0, 10) + '"' : '') + '>';
+        (f.type === 'email' ? ' autocomplete="email"' : '') + (f.type === 'date' ? ' max="' + maxDate(f) + '"' : '') + '>';
     }
     return '<div class="field' + (f.full ? ' full' : '') + '"><label for="' + id + '">' + esc(f.label) + (f.required ? ' <i>*</i>' : '') + '</label>' + input + '<small class="f-msg"></small></div>';
+  }
+  function maxDate(f) {
+    const d = new Date(); if (f.name === 'dogumTarihi') d.setFullYear(d.getFullYear() - 18);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
   function validate(f, v) {
     if (f.required && !v) return 'Bu alan zorunludur.';
@@ -446,5 +471,5 @@
   document.addEventListener('click', e => { const a = e.target.closest('a[href^="tel:"], a[href*="wa.me"]'); if (a) track(a.href.indexOf('tel:') === 0 ? 'click_phone' : 'click_whatsapp'); });
 
   // Panelde içerik kaydedilirse açık sitede otomatik yenile (aynı tarayıcı)
-  window.addEventListener('storage', e => { if (e.key === 'yk_content') location.reload(); });
+  window.addEventListener('storage', e => { if ((e.key === 'yk_content' && !YK.isPreview()) || (e.key === 'yk_preview' && YK.isPreview())) location.reload(); });
 })();

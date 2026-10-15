@@ -569,3 +569,112 @@ code { background: var(--line-2); padding: 1px 6px; border-radius: 5px; font-siz
   .seo-grid { grid-template-columns: 1fr; justify-items: center; }
   .welcome { padding: 20px; }
 }
+
+/* ===== Sürüm 4: sunucu modu, senkron durumu, mobil ===== */
+.login-mode { display: flex; align-items: flex-start; gap: 8px; margin: 2px 0 0; padding: 10px 12px; border-radius: 10px; font-size: .78rem; line-height: 1.45; }
+.login-mode .ic { width: 16px; height: 16px; margin-top: 1px; }
+.login-mode.on { background: #effaf2; color: #166534; }
+.login-mode.off { background: #fff7ed; color: #9a3412; }
+.login-mode:empty { display: none; }
+.btn.loading { pointer-events: none; opacity: .75; }
+.btn.loading::after { content: ""; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.sync { display: flex; align-items: center; gap: 10px; padding: 9px 12px; margin-bottom: 4px; border-radius: 12px; font-size: .78rem; background: #161616; border: 1px solid #222; }
+.sync:empty { display: none; }
+.sync > .ic { width: 16px; height: 16px; flex: none; }
+.sync > span { flex: 1; min-width: 0; }
+.sync b { display: block; color: #fff; font-weight: 600; font-size: .8rem; }
+.sync small { display: block; color: #8b8b84; font-size: .7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sync.ok > .ic { color: #4ade80; }
+.sync.busy > .ic { color: var(--y); animation: spin 1.2s linear infinite; }
+.sync.err { border-color: #7f1d1d; background: #2a1212; }
+.sync.err > .ic { color: #f87171; }
+.sync.local > .ic { color: #fb923c; }
+.sync .link-btn { color: #fca5a5; font-size: .72rem; }
+.pill.green { background: #e7f7ec; color: var(--green); border-color: #bfe6cb; }
+.alert.migr { border-color: #93c5fd; background: #eff6ff; }
+.alert.migr .ic { color: #2563eb; }
+.alert .btn-row.mt { margin-top: 10px; }
+.choice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.choice .q-btn { justify-content: center; border: 0; cursor: pointer; font: 600 .95rem var(--font); padding: 18px; }
+.pub-alt { border: 1px dashed var(--line); border-radius: 12px; padding: 10px 14px; }
+.pub-alt summary { cursor: pointer; font-weight: 600; font-size: .86rem; color: var(--m); }
+.pub-alt[open] summary { margin-bottom: 8px; }
+.side-nav a, .icon-btn, .btn { -webkit-tap-highlight-color: transparent; }
+body.side-open { overflow: hidden; }
+
+@media (max-width: 1024px) {
+  .side { width: min(280px, 86vw); }
+  body.side-open .side { box-shadow: 20px 0 50px rgba(0, 0, 0, .3); }
+  .side-nav a { padding: 12px 14px; }
+}
+@media (max-width: 760px) {
+  .topbar { padding: 10px 14px; gap: 10px; }
+  .tb-title h1 { font-size: 1.1rem; }
+  .tb-title small { display: none; }
+  .gsearch { order: 5; width: 100%; }
+  .gsearch input { font-size: 16px; padding: 8px 0; }
+  .top-actions { order: 4; width: 100%; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; padding-bottom: 2px; scrollbar-width: none; }
+  .top-actions::-webkit-scrollbar { display: none; }
+  .top-actions .btn { flex: none; }
+  .welcome h2 { font-size: 1.2rem; }
+  .welcome-btns { width: 100%; }
+  .welcome-btns .btn { flex: 1; }
+  .ctabs { padding: 10px; gap: 10px; }
+  .ctg > div { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .ctg > div::-webkit-scrollbar { display: none; }
+  .ctabs a { flex: none; }
+  .toolbar .sel { flex: 1; min-width: 0; }
+  .toolbar .month { flex-wrap: wrap; }
+  .seg { max-width: 100%; overflow-x: auto; }
+  .seg a, .seg button { white-space: nowrap; }
+  .emp-layout .profile { order: 0; }
+  .note-add { flex-direction: column; align-items: stretch; }
+  .le-item { flex-direction: column; }
+  .le-ctrl { flex-direction: row; justify-content: flex-end; }
+  .img-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .seo-score { width: 120px; height: 120px; }
+  .choice { grid-template-columns: 1fr; }
+  /* Form alanlarında iOS'un otomatik yakınlaştırmasını önler */
+  .fld input, .fld select, .fld textarea, .le-plain, .sel, .month input, .search input, .note-add textarea, .puantaj input { font-size: 16px; }
+}
+@media (max-width: 640px) {
+  .m-foot { padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); }
+  .m-foot .btn { flex: 1 1 auto; }
+  .m-foot .left { flex: 0 0 auto; }
+  .m-head { position: sticky; top: 0; background: #fff; z-index: 2; }
+  .tbl { font-size: .84rem; }
+  .profile-btns { width: 100%; }
+  .profile-btns .btn { flex: 1; }
+  .kpis.sm { grid-template-columns: repeat(3, 1fr); }
+  .kpi-btn { padding: 10px 12px; }
+  .toasts { left: 16px; right: 16px; transform: none; bottom: calc(16px + env(safe-area-inset-bottom)); }
+  .toast { width: 100%; }
+}
+/* Başvuru listesi telefonda kart görünümü */
+@media (max-width: 640px) {
+  .tbl-apps thead { display: none; }
+  .tbl-apps, .tbl-apps tbody { display: block; }
+  .tbl-apps tr { display: grid; grid-template-columns: 30px auto 1fr auto; grid-template-areas: "cb name name status" "cb type date phone"; gap: 4px 10px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line-2); }
+  .tbl-apps td { padding: 0; border: 0; min-width: 0; }
+  .tbl-apps td.cb { grid-area: cb; align-self: start; padding-top: 2px; }
+  .tbl-apps td:nth-child(2) { grid-area: date; }
+  .tbl-apps td:nth-child(2) b { font-weight: 500; font-size: .8rem; color: var(--m); }
+  .tbl-apps td:nth-child(2) small { display: none; }
+  .tbl-apps td:nth-child(3) { grid-area: type; }
+  .tbl-apps td:nth-child(4) { grid-area: name; }
+  .tbl-apps td:nth-child(4) small { display: inline; margin-left: 6px; }
+  .tbl-apps td:nth-child(5) { grid-area: phone; font-size: .8rem; color: var(--m); text-align: right; }
+  .tbl-apps td:last-child { grid-area: status; }
+  .tbl-apps tr.unseen td:first-child { box-shadow: none; }
+  .tbl-apps tr.unseen { box-shadow: inset 4px 0 0 var(--y); }
+}
+/* Izgara öğeleri ekrandan taşmasın */
+.view { grid-template-columns: minmax(0, 1fr); }
+.view > *, .emp-main > *, #cBody > * { min-width: 0; }
+@media (max-width: 640px) {
+  .seg { scrollbar-width: none; }
+  .seg::-webkit-scrollbar { display: none; }
+  #segType { display: flex; width: 100%; }
+  #segType a { flex: 1; text-align: center; padding: 7px 6px; font-size: .78rem; }
+}

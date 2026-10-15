@@ -1,9 +1,11 @@
 /* ==========================================================================
    Yakında Kurye — Ortak veri katmanı (site + admin paneli)
-   Tüm veriler tarayıcıda saklanır: JSON veriler localStorage'da,
-   yüklenen görseller IndexedDB'de (desteklenmezse localStorage'da).
-   Gerçek bir sunucuya geçerken yalnızca bu dosyadaki load/save
-   fonksiyonlarının bir API'ye bağlanması yeterlidir.
+   İki çalışma modu vardır:
+   • Sunucu modu: hosting'de PHP varsa (api/index.php yanıt veriyorsa) tüm
+     başvurular ve panel verileri sunucuda saklanır, her cihazdan aynı veri görünür.
+   • Yerel mod: PHP yoksa (ör. dosyayı çift tıklayarak açma, statik hosting)
+     veriler tarayıcıda saklanır: JSON veriler localStorage'da, yüklenen
+     görseller IndexedDB'de (desteklenmezse localStorage'da).
    ========================================================================== */
 (function () {
   'use strict';
@@ -101,6 +103,8 @@
       path_cour_label: 'Kuryeyim',
       path_cour_text: 'Yakında Kurye ekibine katılıp kazanmak istiyorum.',
       path_cour_btn: 'Kurye Ol',
+      nav_cta_biz: 'Kurye Talep Et',
+      nav_cta_cour: 'Kurye Ol',
       hero_chip1: 'Hızlı Teslimat',
       hero_chip2: '7/24 Operasyon',
       about_kicker: 'Hakkımızda',
@@ -111,10 +115,13 @@
       about_vision_title: 'Vizyonumuz',
       about_vision: 'Hizmet verdiğimiz her şehirde işletmelerin ilk tercih ettiği, kuryelerin gururla çalıştığı kurye markası olmak.',
       about_values_title: 'Değerlerimiz',
+      biz_zone_tag: 'Restoran · Market · Eczane · E-ticaret',
       biz_zone_title: 'İşletmeler İçin',
       biz_zone_text: 'Restoran, kafe, market, eczane ve e-ticaret işletmelerine özel kurye çözümleri',
+      cour_zone_tag: 'Moto kurye · Tam / yarı zamanlı',
       cour_zone_title: 'Kuryeler İçin',
       cour_zone_text: 'Yakında Kurye ekibine katıl: düzenli kazanç, esnek vardiya ve tam destek',
+      wa_label: 'WhatsApp ile yazın',
       services_kicker: 'Hizmetlerimiz',
       services_title: 'Her teslimat için doğru kurye',
       services_text: 'Paketten yemeğe, acil gönderilerden gün boyu hizmete kadar işletmenizin ihtiyacı olan tüm kurye çözümleri tek çatı altında.',
@@ -126,6 +133,7 @@
       bizmodels_kicker: 'Çözümler',
       bizmodels_title: 'İşletmenize uygun hizmet modeli',
       bizmodels_text: 'Yoğunluğunuza ve bütçenize en uygun modeli birlikte belirleyelim.',
+      bizsteps_kicker: 'Nasıl Çalışır?',
       bizsteps_title: '4 adımda kuryeniz kapınızda',
       bizform_kicker: 'Ücretsiz Teklif',
       bizform_title: 'İşletmeniz için kurye talep edin',
@@ -133,24 +141,29 @@
       bizform_p1: 'Ücretsiz ihtiyaç analizi',
       bizform_p2: 'Size özel fiyat teklifi',
       bizform_p3: 'Hızlı kurulum, hızlı başlangıç',
+      bizform_btn: 'Teklif İste',
       bizform_success_title: 'Talebiniz alındı!',
       bizform_success_text: 'Ekibimiz en kısa sürede sizi arayarak ihtiyaçlarınızı dinleyecek ve size özel teklifimizi iletecek.',
       courier_kicker: 'Kurye Ol',
       courier_title: 'Yakında Kurye ailesine katıl, kazancını kendin belirle',
       courier_text: 'Kendi motorunla ya da şirket motoruyla, tam zamanlı veya yarı zamanlı çalış. Haftalık ödeme, ekipman desteği ve 7/24 operasyon desteğiyle yanındayız.',
+      courier_img_tag: 'Ekipman desteği',
       req_title: 'Başvuru şartları',
+      req_btn: 'Kurye Başvurusu Yap',
       models_title: 'Çalışma modelleri',
       steps_title: 'Başvuru süreci nasıl işliyor?',
       calc_kicker: 'Kazanç Hesaplayıcı',
       calc_title: 'Ne kadar kazanabileceğini hesapla',
       calc_text: 'Günlük teslim edeceğin paket sayısını ve haftada kaç gün çalışacağını seç; tahmini kazancını hemen gör.',
       calc_note: 'Hesaplama tahminidir. Gerçek kazanç bölge, vardiya, prim ve paket yoğunluğuna göre değişir.',
+      calc_btn: 'Hemen Başvur, Kazanmaya Başla',
       courform_kicker: 'Kurye Başvurusu',
       courform_title: 'Başvurunu 2 dakikada tamamla',
       courform_text: 'Formu doldur, ekibimiz en geç 48 saat içinde seninle iletişime geçsin.',
       courform_p1: '2 dakikada tamamlanır',
       courform_p2: '48 saat içinde dönüş',
       courform_p3: 'Bilgilerin KVKK ile korunur',
+      courform_btn: 'Başvuruyu Gönder',
       courform_success_title: 'Başvurun alındı!',
       courform_success_text: 'Ekibimiz en kısa sürede seni arayacak. Başvuru numaranı not almayı unutma.',
       kvkk_text: 'Kişisel verilerimin 6698 sayılı KVKK kapsamında talebimin/başvurumun değerlendirilmesi amacıyla işlenmesini kabul ediyorum.',
@@ -451,19 +464,203 @@
     { key: 'İzin', sign: 0 }, { key: 'Kaza / Hasar', sign: 0 }, { key: 'Uyarı', sign: 0 }, { key: 'Not', sign: 0 }
   ];
 
-  /* ---------- localStorage yardımcıları ---------- */
-  const KEYS = { content: 'yk_content', applications: 'yk_applications', employees: 'yk_employees', customers: 'yk_customers', records: 'yk_records', auth: 'yk_auth', log: 'yk_log' };
-  const clone = o => JSON.parse(JSON.stringify(o));
+  /* ---------- Depolama ---------- */
+  const KEYS = { content: 'yk_content', applications: 'yk_applications', employees: 'yk_employees', customers: 'yk_customers', records: 'yk_records', auth: 'yk_auth', log: 'yk_log', server: 'yk_server' };
+  // Sunucu modunda sunucuyla eşitlenen anahtarlar → sunucudaki karşılıkları
+  const SYNC = { yk_applications: 'applications', yk_employees: 'employees', yk_customers: 'customers', yk_records: 'records', yk_log: 'log', yk_content: 'draft', yk_server: 'settings' };
+  const LIST_COLLS = ['applications', 'employees', 'customers', 'records'];
+  const clone = o => o === undefined ? undefined : JSON.parse(JSON.stringify(o));
+  const ls = {
+    get(k) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+  };
+
+  const remote = { on: false, setup: false, logged: false, user: '', error: '', mail: false, publishedAt: '', problem: '' };
+  const mem = {};
 
   function load(key, def) {
-    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : clone(def); }
-    catch (e) { return clone(def); }
+    if (remote.on && SYNC[key]) return mem[key] == null ? clone(def) : clone(mem[key]);
+    const v = ls.get(key);
+    return v == null ? clone(def) : v;
   }
   function save(key, val) {
+    if (remote.on && SYNC[key]) { queue(key, val); return true; }
     try { localStorage.setItem(key, JSON.stringify(val)); return true; }
     catch (e) { alert('Veri kaydedilemedi. Tarayıcı depolama alanı dolmuş veya engellenmiş olabilir.'); return false; }
   }
 
+  /* ---------- Sunucu bağlantısı ---------- */
+  const API = 'api/index.php';
+  const emit = (name, detail) => { try { window.dispatchEvent(new CustomEvent('yk:' + name, { detail: detail || {} })); } catch (e) {} };
+  // e.offline = sunucu yok (statik hosting / dosyadan açma); e.status = HTTP kodu
+  function api(action, body) {
+    if (location.protocol === 'file:') { const e = new Error('Sunucu yok'); e.offline = true; return Promise.reject(e); }
+    const o = { method: body === undefined ? 'GET' : 'POST', credentials: 'same-origin', cache: 'no-store', headers: { 'X-YK': '1', Accept: 'application/json' } };
+    if (body !== undefined) { o.headers['Content-Type'] = 'application/json'; o.body = JSON.stringify(body); }
+    return fetch(API + '?a=' + action, o).then(r => r.text().then(t => {
+      let j = null; try { j = JSON.parse(t); } catch (e) {}
+      if (!j || typeof j !== 'object') { const e = new Error('Sunucuya ulaşılamadı'); e.offline = true; e.status = r.status; throw e; }
+      if (!r.ok || j.ok === false) {
+        const e = new Error(j.error || ('Sunucu hatası (' + r.status + ')')); e.status = r.status; e.code = j.code || ''; e.data = j;
+        if (r.status === 401 && remote.logged) { remote.logged = false; emit('auth'); }
+        throw e;
+      }
+      return j;
+    }), () => { const e = new Error('Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edin.'); e.offline = true; e.network = true; throw e; });
+  }
+
+  // Bekleyen değişiklikler sırayla sunucuya gönderilir; hata olursa tekrar denenir
+  const ops = [];
+  let busy = false, retryT = null;
+  function queue(key, val) {
+    const coll = SYNC[key], prev = mem[key];
+    mem[key] = clone(val);
+    if (key === KEYS.content) ls.set('yk_preview', val);
+    let op;
+    if (LIST_COLLS.indexOf(coll) >= 0) {
+      const pm = {}; (prev || []).forEach(x => { if (x && x.id) pm[x.id] = JSON.stringify(x); });
+      const ids = {}; (val || []).forEach(x => { if (x && x.id) ids[x.id] = 1; });
+      const upsert = (val || []).filter(x => x && x.id && pm[x.id] !== JSON.stringify(x));
+      const del = Object.keys(pm).filter(id => !ids[id]);
+      if (!upsert.length && !del.length) return;
+      op = { coll: coll, upsert: upsert, delete: del };
+    } else if (coll === 'log') {
+      const known = {}; (prev || []).forEach(x => { known[x.t + '|' + x.text] = 1; });
+      const append = (val || []).filter(x => x && !known[x.t + '|' + x.text]);
+      if (!append.length) return;
+      op = { coll: 'log', append: append };
+    } else {
+      for (let i = ops.length - 1; i > 0; i--) if (ops[i].coll === coll && 'value' in ops[i]) ops.splice(i, 1);
+      op = { coll: coll, value: val };
+    }
+    ops.push(op); emit('sync', syncState()); flush();
+  }
+  function syncState() { return { pending: ops.length, error: remote.error }; }
+  function flush() {
+    if (busy || !ops.length || !remote.logged) return;
+    busy = true; clearTimeout(retryT);
+    api('sync', ops[0]).then(() => {
+      ops.shift(); busy = false; remote.error = ''; emit('sync', syncState()); flush();
+    }, e => {
+      busy = false;
+      if (e.status && e.status >= 400 && e.status < 500 && [401, 408, 429].indexOf(e.status) < 0) { ops.shift(); remote.error = 'Bir değişiklik sunucu tarafından reddedildi: ' + e.message; emit('sync', syncState()); flush(); return; }
+      remote.error = e.status === 401 ? 'Oturum kapandı' : 'Sunucuya kaydedilemedi, tekrar deneniyor…';
+      emit('sync', syncState());
+      if (e.status !== 401) retryT = setTimeout(flush, 6000);
+    });
+  }
+
+  function applyPull(j) {
+    LIST_COLLS.forEach(c => { if (Array.isArray(j[c])) mem['yk_' + c] = j[c]; });
+    if ('log' in j) mem[KEYS.log] = Array.isArray(j.log) ? j.log : [];
+    if ('draft' in j) mem[KEYS.content] = j.draft || null;
+    if ('settings' in j) mem[KEYS.server] = j.settings || {};
+    if (j.published && typeof j.published === 'object') window.YK_PUBLISHED = j.published;
+    if ('mail' in j) remote.mail = !!j.mail;
+  }
+  // Yeni başvuruları kontrol eder: 30 sn'de bir ve sekmeye geri dönüldüğünde
+  let pollT = null, lastPoll = 0;
+  function pollNow() {
+    if (!remote.logged || Date.now() - lastPoll < 3000) return;
+    lastPoll = Date.now();
+    api('pull&only=applications').then(j => {
+      if (ops.some(o => o.coll === 'applications')) return;
+      const before = JSON.stringify(mem[KEYS.applications] || []);
+      if (Array.isArray(j.applications) && JSON.stringify(j.applications) !== before) { mem[KEYS.applications] = j.applications; emit('remote', { key: KEYS.applications }); }
+    }).catch(() => {});
+  }
+  function poll() {
+    clearInterval(pollT); lastPoll = Date.now();
+    pollT = setInterval(() => { if (!document.hidden) pollNow(); }, 30000);
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && remote.on) pollNow(); });
+  window.addEventListener('focus', () => { if (remote.on) pollNow(); });
+
+  const server = {
+    // Sunucu var mı? Varsa durumunu döndürür, yoksa null.
+    connect() {
+      return api('status').then(j => {
+        remote.on = true; remote.setup = !!j.setup; remote.logged = !!j.logged; remote.user = j.user || '';
+        ls.set('yk_mode', 'server');
+        return j;
+      }, e => {
+        // Sunucu var ama yanlış yapılandırılmış (ör. api/data klasörüne yazma izni yok)
+        if (!e.offline) remote.problem = e.message;
+        return null;
+      });
+    },
+    // Önce bekleyen değişiklikler gönderilir, sonra sunucudaki güncel veri alınır
+    pull() {
+      const before = ops.length ? (flush(), waitSync().catch(() => {})) : Promise.resolve();
+      return before.then(() => api('pull')).then(j => { applyPull(j); poll(); return j; });
+    },
+    setupAdmin(user, pass) { return api('setup', { user: user, pass: pass }).then(j => { remote.setup = false; remote.logged = true; remote.user = j.user; return j; }); },
+    login(user, pass) { return api('login', { user: user, pass: pass }).then(j => { remote.logged = true; remote.user = j.user; return j; }); },
+    logout() { clearInterval(pollT); return api('logout', {}).catch(() => {}).then(() => { remote.logged = false; LIST_COLLS.forEach(c => { delete mem['yk_' + c]; }); }); },
+    password(user, old, pass) { return api('password', { user: user, old: old, pass: pass }).then(j => { remote.user = j.user; return j; }); },
+    publish(content) {
+      const c = clone(content); delete c.reviewed;
+      return api('publish', { content: c }).then(j => { window.YK_PUBLISHED = clone(c); mem[KEYS.content] = clone(content); ls.set('yk_preview', content); remote.publishedAt = j.at; return j; });
+    },
+    refresh: pollNow,
+    pending: () => ops.length,
+    state: syncState,
+    retry: flush,
+    // Bu tarayıcıda yerel modda kaydedilmiş veri var mı?
+    localData() {
+      const n = {}; let any = false;
+      LIST_COLLS.forEach(c => { const v = ls.get('yk_' + c); n[c] = Array.isArray(v) ? v.length : 0; if (n[c]) any = true; });
+      n.content = !!ls.get(KEYS.content); if (n.content) any = true;
+      return any ? n : null;
+    },
+    // Yerel verileri sunucudakilere ekler (aynı kayıtlar güncellenir), sonra yereli temizler
+    migrateLocal() {
+      const local = { content: ls.get(KEYS.content), log: ls.get(KEYS.log) || [] };
+      LIST_COLLS.forEach(c => { local[c] = ls.get('yk_' + c) || []; });
+      return localMedia().then(items => uploadMedia(items)).then(map => {
+        const fix = o => rewriteMedia(o, map);
+        LIST_COLLS.forEach(c => {
+          const cur = load('yk_' + c, []), byId = {}; cur.forEach((x, i) => { byId[x.id] = i; });
+          fix(local[c]).forEach(x => { if (x && x.id) { if (x.id in byId) cur[byId[x.id]] = x; else cur.push(x); } });
+          if (c === 'applications') cur.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+          save('yk_' + c, cur);
+        });
+        if (local.content && !mem[KEYS.content]) save(KEYS.content, fix(local.content));
+        log('Bu tarayıcıdaki yerel veriler sunucuya aktarıldı');
+        return waitSync();
+      }).then(() => server.clearLocal());
+    },
+    clearLocal() {
+      LIST_COLLS.forEach(c => ls.del('yk_' + c));
+      [KEYS.content, KEYS.log, KEYS.auth].forEach(ls.del);
+      try { Object.keys(localStorage).filter(k => k.indexOf('yk_media_') === 0).forEach(k => localStorage.removeItem(k)); } catch (e) {}
+      return localMedia().then(items => Promise.all(items.map(m => idb('readwrite', s => s.delete(m.id)).catch(() => {}))));
+    }
+  };
+  function waitSync() {
+    return new Promise((res, rej) => {
+      const t0 = Date.now();
+      (function check() { if (!ops.length) return res(); if (Date.now() - t0 > 60000) return rej(new Error('Sunucuya kaydetme zaman aşımına uğradı')); setTimeout(check, 300); })();
+    });
+  }
+  // 'media:<id>' referanslarını yeni adreslerle değiştirir
+  function rewriteMedia(o, map) {
+    if (o == null || !Object.keys(map).length) return o;
+    return JSON.parse(JSON.stringify(o).replace(/"media:([a-z0-9]+)"/g, (m, id) => map[id] ? JSON.stringify(map[id]) : '""'));
+  }
+  function uploadMedia(items) {
+    const map = {};
+    return items.reduce((p, m) => p.then(() => m && m.data && m.data.indexOf('data:image/') === 0 && m.data.indexOf('svg') < 0
+      ? api('upload', { data: m.data, name: m.name || 'görsel' }).then(j => { map[m.id] = j.item.src; }).catch(() => {}) : null), Promise.resolve()).then(() => map);
+  }
+
+  // Site formları: sunucu varsa oraya gönderilir
+  function submitForm(type, data, honeypot) {
+    return api('submit', { type: type, data: data, website: honeypot || '', kvkk: true });
+  }
+
+  /* ---------- Site içeriği ---------- */
   // Katmanlar: varsayılan → yayındaki içerik (content.js) → bu tarayıcıdaki taslak (panel)
   function mergeLayer(c, layer) {
     if (!layer || typeof layer !== 'object') return;
@@ -476,25 +673,31 @@
     Object.keys(DEFAULT_CONTENT).forEach(k => { if (Array.isArray(DEFAULT_CONTENT[k]) && Array.isArray(layer[k])) c[k] = layer[k]; });
   }
   function publishedContent() { const c = clone(DEFAULT_CONTENT); mergeLayer(c, window.YK_PUBLISHED); return c; }
+  // Sitede ?onizleme=1 ile panelde kaydedilip henüz yayınlanmamış içerik gösterilir
+  const isPreview = () => /[?&]onizleme(=|&|$)/.test(location.search);
+  function draftLayer() {
+    if (remote.on) return load(KEYS.content, null);
+    if (ls.get('yk_mode') === 'server') return isPreview() ? ls.get('yk_preview') : null;
+    return ls.get(KEYS.content);
+  }
   function getContent() {
     const c = clone(DEFAULT_CONTENT);
     mergeLayer(c, window.YK_PUBLISHED);
-    mergeLayer(c, load(KEYS.content, null));
+    mergeLayer(c, draftLayer());
     return c;
   }
   // Panelde kaydedilen içerik, yayındaki içerikten farklı mı?
   function hasUnpublished() {
     const strip = o => { o = clone(o); delete o.reviewed; return JSON.stringify(o); };
-    return !!load(KEYS.content, null) && strip(getContent()) !== strip(publishedContent());
+    return !!draftLayer() && strip(getContent()) !== strip(publishedContent());
   }
-  // Yayın dosyası (content.js): yüklenen görseller dosyanın içine gömülür
+  // Yayın dosyası (content.js): yerel moddaki görseller dosyanın içine gömülür
   async function buildPublishFile() {
     const c = getContent(); delete c.reviewed;
     const fix = async src => (src && src.indexOf('media:') === 0) ? await resolve(src) : src;
     for (const k of Object.keys(c.images)) c.images[k] = await fix(c.images[k]);
     for (const g of c.gallery) g.src = await fix(g.src);
     for (const t of c.testimonials) if (t.photo) t.photo = await fix(t.photo);
-    if (c.settings.og_image) c.settings.og_image = await fix(c.settings.og_image);
     return '/* Yakında Kurye — yayındaki site içeriği (' + new Date().toLocaleString('tr-TR') + ' tarihinde yönetim panelinden oluşturuldu). */\nwindow.YK_PUBLISHED = ' + JSON.stringify(c, null, 1) + ';\n';
   }
   function sitemapXML(base) {
@@ -503,10 +706,10 @@
   }
   function robotsTXT(base, noindex) {
     base = (base || '').replace(/\/+$/, '');
-    return noindex ? 'User-agent: *\nDisallow: /\n' : 'User-agent: *\nAllow: /\nDisallow: /admin.html\n' + (base ? '\nSitemap: ' + base + '/sitemap.xml\n' : '');
+    return noindex ? 'User-agent: *\nDisallow: /\n' : 'User-agent: *\nAllow: /\nDisallow: /admin.html\nDisallow: /api/\n' + (base ? '\nSitemap: ' + base + '/sitemap.xml\n' : '');
   }
   const saveContent = c => save(KEYS.content, c);
-  const resetContent = () => { try { localStorage.removeItem(KEYS.content); } catch (e) {} };
+  const resetContent = () => { if (remote.on) save(KEYS.content, null); else ls.del(KEYS.content); };
 
   function list(coll) { return load(KEYS[coll], []); }
   function saveList(coll, arr) { return save(KEYS[coll], arr); }
@@ -532,6 +735,8 @@
     save(KEYS.log, a.slice(0, 300));
   }
   const getLog = () => load(KEYS.log, []);
+  const serverSettings = () => load(KEYS.server, {}) || {};
+  const saveServerSettings = s => save(KEYS.server, s);
 
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function refNo() {
@@ -548,6 +753,14 @@
     return d.toLocaleString('tr-TR', o);
   }
   function fmtMoney(n) { return (Number(n) || 0).toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' ₺'; }
+  // WhatsApp için numarayı uluslararası biçime çevirir (0532… → 90532…)
+  function waNumber(t) {
+    let d = String(t || '').replace(/\D/g, '');
+    if (d.indexOf('00') === 0) d = d.slice(2);
+    if (d[0] === '0') d = '90' + d.slice(1);
+    else if (d.length === 10 && d[0] === '5') d = '90' + d;
+    return d;
+  }
 
   /* ---------- Medya deposu (yüklenen görseller) ---------- */
   const DB_NAME = 'yk_media_db';
@@ -564,29 +777,43 @@
     });
     return dbPromise;
   }
-  function tx(mode, fn) {
+  function idb(mode, fn) {
     return db().then(d => new Promise((res, rej) => {
       const t = d.transaction('media', mode); const s = t.objectStore('media');
       const r = fn(s); t.oncomplete = () => res(r && r.result); t.onerror = () => rej(t.error);
     }));
   }
+  function localMedia() {
+    const fromLS = [];
+    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k.indexOf('yk_media_') === 0) fromLS.push(ls.get(k)); } } catch (e) {}
+    return idb('readonly', s => s.getAll()).then(r => (r || []).concat(fromLS).filter(Boolean)).catch(() => fromLS.filter(Boolean));
+  }
   const media = {
+    // Görseli kaydeder, sitede kullanılacak adresi döndürür
     put(dataUrl, name) {
+      if (remote.on) {
+        if (/^data:image\/svg/.test(dataUrl)) return Promise.reject(new Error('SVG görseller desteklenmiyor. PNG veya JPG yükleyin.'));
+        return api('upload', { data: dataUrl, name: name || 'görsel' }).then(j => j.item.src);
+      }
       const item = { id: uid(), data: dataUrl, name: name || 'görsel', createdAt: new Date().toISOString() };
-      return tx('readwrite', s => s.put(item)).then(() => 'media:' + item.id)
+      return idb('readwrite', s => s.put(item)).then(() => 'media:' + item.id)
         .catch(() => { save('yk_media_' + item.id, item); return 'media:' + item.id; });
     },
     get(id) {
-      return tx('readonly', s => s.get(id)).then(r => r || load('yk_media_' + id, null)).catch(() => load('yk_media_' + id, null));
+      return idb('readonly', s => s.get(id)).then(r => r || ls.get('yk_media_' + id)).catch(() => ls.get('yk_media_' + id));
     },
-    del(id) {
-      try { localStorage.removeItem('yk_media_' + id); } catch (e) {}
-      return tx('readwrite', s => s.delete(id)).catch(() => {});
+    // id, 'media:<id>' veya sunucudaki adres (uploads/…) kabul eder
+    del(ref) {
+      ref = String(ref || '');
+      if (remote.on && ref.indexOf('media:') !== 0) return api('media_delete', { id: ref }).catch(() => {});
+      const id = ref.replace(/^media:/, '');
+      ls.del('yk_media_' + id);
+      return idb('readwrite', s => s.delete(id)).catch(() => {});
     },
+    // Görsel seçici için liste: { id, src (kullanılacak değer), url (önizleme), name }
     all() {
-      const fromLS = [];
-      try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k.indexOf('yk_media_') === 0) fromLS.push(load(k, null)); } } catch (e) {}
-      return tx('readonly', s => s.getAll()).then(r => (r || []).concat(fromLS)).catch(() => fromLS);
+      if (remote.on) return api('media').then(j => (j.items || []).map(x => ({ id: x.id, src: x.src, url: x.src, name: x.name, createdAt: x.createdAt })));
+      return localMedia().then(items => items.map(x => ({ id: x.id, src: 'media:' + x.id, url: x.data, name: x.name, createdAt: x.createdAt })));
     }
   };
   const cache = {};
@@ -599,7 +826,7 @@
   function setImg(el, src) { if (!el) return; resolve(src).then(u => { if (u) el.src = u; }); }
   function setBg(el, src) { if (!el) return; resolve(src).then(u => { if (u) el.style.backgroundImage = 'url("' + u + '")'; }); }
 
-  // Görseli küçültüp dataURL'e çevirir (depolama alanı için)
+  // Görseli küçültüp dataURL'e çevirir (depolama alanı ve hız için)
   function fileToDataUrl(file, maxSize) {
     maxSize = maxSize || 1600;
     return new Promise((res, rej) => {
@@ -607,7 +834,7 @@
       fr.onerror = rej;
       fr.onload = () => {
         const url = fr.result;
-        if (file.type === 'image/svg+xml' || (file.type === 'image/png' && file.size < 400000)) return res(url);
+        if (file.type === 'image/svg+xml' || file.type === 'image/gif' || (file.type === 'image/png' && file.size < 400000)) return res(url);
         const im = new Image();
         im.onload = () => {
           const k = Math.min(1, maxSize / Math.max(im.width, im.height));
@@ -624,35 +851,42 @@
   }
 
   /* ---------- Yönetici girişi ---------- */
-  // Not: Bu yalnızca tarayıcı tarafı basit bir korumadır. Canlı yayında sunucu tarafı oturum gerekir.
+  // Yerel mod: tarayıcı tarafı basit koruma (veriler zaten yalnızca bu tarayıcıda).
+  // Sunucu modu: giriş sunucuda doğrulanır (api/index.php, şifre hash'lenmiş saklanır).
   function hash(s) { let h1 = 0xdeadbeef, h2 = 0x41c6ce57; for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909); return (h2 >>> 0).toString(16) + (h1 >>> 0).toString(16); }
   const DEFAULT_USER = 'admin', DEFAULT_PASS = 'yakinda2026';
   const auth = {
-    creds() { return load(KEYS.auth, { user: DEFAULT_USER, hash: hash('yk:' + DEFAULT_PASS) }); },
+    creds() { return remote.on ? { user: remote.user || DEFAULT_USER } : load(KEYS.auth, { user: DEFAULT_USER, hash: hash('yk:' + DEFAULT_PASS) }); },
     check(user, pw) { const c = auth.creds(); return user.trim().toLowerCase() === c.user.toLowerCase() && hash('yk:' + pw) === c.hash; },
     set(user, pw) { return save(KEYS.auth, { user: user.trim() || DEFAULT_USER, hash: hash('yk:' + pw) }); },
     login() { try { sessionStorage.setItem('yk_session', '1'); } catch (e) { window.__ykSession = true; } },
     logout() { try { sessionStorage.removeItem('yk_session'); } catch (e) {} window.__ykSession = false; },
-    isLogged() { try { return sessionStorage.getItem('yk_session') === '1' || !!window.__ykSession; } catch (e) { return !!window.__ykSession; } },
-    isDefault() { const c = auth.creds(); return c.hash === hash('yk:' + DEFAULT_PASS); }
+    isLogged() { if (remote.on) return remote.logged; try { return sessionStorage.getItem('yk_session') === '1' || !!window.__ykSession; } catch (e) { return !!window.__ykSession; } },
+    isDefault() { if (remote.on) return false; const c = auth.creds(); return c.hash === hash('yk:' + DEFAULT_PASS); }
   };
 
   /* ---------- Yedekleme ---------- */
   function exportAll() {
-    return media.all().then(m => ({
-      app: 'yakinda-kurye', version: 1, exportedAt: new Date().toISOString(),
-      content: load(KEYS.content, {}), applications: list('applications'), employees: list('employees'), records: list('records'), customers: list('customers'), log: getLog(), media: m
-    }));
+    const base = { app: 'yakinda-kurye', version: 2, mode: remote.on ? 'server' : 'local', exportedAt: new Date().toISOString(),
+      content: load(KEYS.content, {}), applications: list('applications'), employees: list('employees'), records: list('records'), customers: list('customers'), log: getLog() };
+    // Sunucu modunda görseller sunucudaki uploads klasöründe kalır; yedekte adresleri bulunur
+    return (remote.on ? Promise.resolve([]) : localMedia()).then(m => Object.assign(base, { media: m }));
   }
   function importAll(data) {
-    if (!data || data.app !== 'yakinda-kurye') throw new Error('Geçersiz yedek dosyası');
+    if (!data || data.app !== 'yakinda-kurye') return Promise.reject(new Error('Geçersiz yedek dosyası'));
+    if (remote.on) {
+      return uploadMedia(data.media || []).then(map => {
+        const fix = o => rewriteMedia(o, map);
+        return api('restore', { applications: fix(data.applications || []), employees: fix(data.employees || []), customers: fix(data.customers || []), records: data.records || [], log: data.log || [], draft: fix(data.content && Object.keys(data.content).length ? data.content : null) });
+      }).then(() => server.pull());
+    }
     save(KEYS.content, data.content || {});
     saveList('applications', data.applications || []);
     saveList('employees', data.employees || []);
     saveList('records', data.records || []);
     saveList('customers', data.customers || []);
     save(KEYS.log, data.log || []);
-    return Promise.all((data.media || []).map(m => tx('readwrite', s => s.put(m)).catch(() => save('yk_media_' + m.id, m))));
+    return Promise.all((data.media || []).filter(m => m && m.data).map(m => idb('readwrite', s => s.put(m)).catch(() => save('yk_media_' + m.id, m))));
   }
 
   function toCSV(rows, cols) {
@@ -667,8 +901,8 @@
 
   window.YK = {
     ICONS, ICON_CHOICES, icon, BUNDLED_IMAGES, DEFAULT_CONTENT, FORMS, getForms, ILLER, APP_STATUSES, EMP_FIELDS, EMP_DOCS, CUST_FIELDS, CUST_STATUSES, EXPIRY_FIELDS, RECORD_TYPES, log, getLog,
-    getContent, publishedContent, hasUnpublished, buildPublishFile, sitemapXML, robotsTXT, saveContent, resetContent, list, saveList, add, update, remove, get,
-    uid, refNo, esc, fmtDate, fmtMoney, media, resolve, setImg, setBg, fileToDataUrl, auth,
-    exportAll, importAll, toCSV, download
+    getContent, publishedContent, hasUnpublished, isPreview, buildPublishFile, sitemapXML, robotsTXT, saveContent, resetContent, list, saveList, add, update, remove, get,
+    serverSettings, saveServerSettings, uid, refNo, esc, fmtDate, fmtMoney, waNumber, media, resolve, setImg, setBg, fileToDataUrl, auth,
+    exportAll, importAll, toCSV, download, remote, server, submitForm
   };
 })();

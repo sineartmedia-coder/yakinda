@@ -1,6 +1,14 @@
 /* Yakında Kurye — site tarafı */
 (function () {
   'use strict';
+  const PAGE = document.body.dataset.page || 'home';
+  // Eski tek sayfalık sitenin #bağlantıları (ör. index.html#kurye-basvuru) yeni sayfalara gider
+  if (PAGE === 'home' && location.hash) {
+    const eski = { isletmeler: 'isletmeler.html', hizmetler: 'isletmeler.html#hizmetler', 'isletme-avantaj': 'isletmeler.html#isletme-avantaj', cozumler: 'isletmeler.html#cozumler', 'nasil-calisir': 'isletmeler.html#nasil-calisir', bolgeler: 'isletmeler.html#bolgeler', sss: 'isletmeler.html#sss',
+      kuryeler: 'kuryeler.html', 'kurye-ol': 'kuryeler.html#kurye-ol', 'kurye-sartlar': 'kuryeler.html#kurye-sartlar', kazanc: 'kuryeler.html#kazanc',
+      'isletme-basvuru': 'basvuru.html#isletme-basvuru', 'kurye-basvuru': 'basvuru.html#kurye-basvuru', iletisim: 'basvuru.html#iletisim' }[location.hash.slice(1)];
+    if (eski) { location.replace(eski.replace(/(#|$)/, location.search + '$1')); return; }
+  }
   const C = YK.getContent();
   const FORMS = YK.getForms(C);
   const $ = (s, r) => (r || document).querySelector(s);
@@ -16,11 +24,15 @@
     del(k) { try { localStorage.removeItem(k); } catch (e) {} }
   };
   const fill = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; return el; };
+  // Blog yazıları alt klasörde: içerikteki görsel yolları site köküne göre düzeltilir
+  const ROOT = document.body.dataset.root || '';
+  const src = u => (ROOT && typeof u === 'string' && u && !/^(https?:|data:|media:|blob:|\/)/.test(u)) ? ROOT + u : u;
+  const FORM_URL = k => (PAGE === 'basvuru' ? '' : ROOT + 'basvuru.html') + '#' + k + '-basvuru';
 
   /* ---------- Metinler, görseller, ayarlar ---------- */
   $$('[data-t]').forEach(el => { const v = TX[el.dataset.t] || ''; el.innerHTML = el.dataset.t === 'about_text' ? paras(v) : nl(v); });
   $$('[data-s]').forEach(el => { el.textContent = S[el.dataset.s] || ''; });
-  $$('[data-img]').forEach(el => { el.decoding = 'async'; YK.setImg(el, C.images[el.dataset.img]); });
+  $$('[data-img]').forEach(el => { el.decoding = 'async'; YK.setImg(el, src(C.images[el.dataset.img])); });
 
   const tel = 'tel:' + (S.phone || '').replace(/[^\d+]/g, '');
   const waNum = YK.waNumber(S.whatsapp);
@@ -48,7 +60,7 @@
   fill('values', C.values.map(x => card(x, 'card value')).join(''));
   fill('services', C.services.map(x => card(x)).join(''));
   fill('businessBenefits', C.businessBenefits.map(x => card(x, 'benefit')).join(''));
-  fill('bizModels', C.bizModels.map(m => '<div class="bizmodel' + (m.tag ? ' featured' : '') + '">' + (m.tag ? '<span class="tag">' + esc(m.tag) + '</span>' : '') + '<span class="ic-box">' + YK.icon(m.icon) + '</span><h3>' + esc(m.title) + '</h3><p>' + nl(m.desc) + '</p><a href="#isletme-basvuru" class="bm-link" data-sec="bizForm">Teklif iste ' + YK.icon('ok') + '</a></div>').join(''));
+  fill('bizModels', C.bizModels.map(m => '<div class="bizmodel' + (m.tag ? ' featured' : '') + '">' + (m.tag ? '<span class="tag">' + esc(m.tag) + '</span>' : '') + '<span class="ic-box">' + YK.icon(m.icon) + '</span><h3>' + esc(m.title) + '</h3><p>' + nl(m.desc) + '</p><a href="' + FORM_URL('isletme') + '" class="bm-link" data-sec="bizForm">Teklif iste ' + YK.icon('ok') + '</a></div>').join(''));
   fill('sectors', C.sectors.filter(s => s && s.title).map(s => '<div class="sector">' + YK.icon(s.icon) + '<span>' + esc(s.title) + '</span></div>').join(''));
   fill('bizSteps', C.bizSteps.map((s, i) => '<li><span class="num">' + (i + 1) + '</span><h4>' + esc(s.title) + '</h4><p>' + nl(s.desc) + '</p></li>').join(''));
   fill('courierBenefits', C.courierBenefits.map(x => card(x, 'benefit')).join(''));
@@ -61,23 +73,24 @@
   const stars = n => { n = Math.max(0, Math.min(5, parseInt(n, 10) || 5)); let h = ''; for (let i = 0; i < 5; i++) h += '<i class="' + (i < n ? 'on' : '') + '">★</i>'; return h; };
   const testis = C.testimonials.filter(t => t && t.text);
   fill('testimonials', testis.map((t, i) => '<figure class="testi ' + (t.type === 'kurye' ? 't-cour' : 't-biz') + '"><span class="t-type">' + YK.icon(t.type === 'kurye' ? 'motor' : 'magaza') + (t.type === 'kurye' ? 'Kurye' : 'İşletme') + '</span><span class="q">' + YK.icon('tirnak') + '</span><div class="stars" aria-label="' + (parseInt(t.rating, 10) || 5) + ' yıldız">' + stars(t.rating) + '</div><blockquote>' + nl(t.text) + '</blockquote><figcaption><span class="t-av">' + (t.photo ? '<img data-tp="' + i + '" alt="">' : esc((t.name || '?').trim().charAt(0).toLocaleUpperCase('tr-TR'))) + '</span><span><b>' + esc(t.name) + '</b><small>' + esc(t.role || '') + '</small></span></figcaption></figure>').join(''));
-  $$('[data-tp]').forEach(im => YK.setImg(im, testis[im.dataset.tp].photo));
+  $$('[data-tp]').forEach(im => YK.setImg(im, src(testis[im.dataset.tp].photo)));
 
   const regions = C.regions.filter(Boolean);
   fill('regions', regions.map(r => '<span class="region">' + YK.icon('konum') + esc(r) + '</span>').join(''));
 
   C.gallery = C.gallery.filter(g => g && g.src);
   fill('gallery', C.gallery.map((g, i) => '<button class="g-item" data-i="' + i + '" aria-label="' + esc(g.title || 'Görsel') + ' – büyüt"><img alt="' + esc(g.title || 'Yakında Kurye') + '" loading="lazy" decoding="async"><span>' + esc(g.title) + '</span></button>').join(''));
-  $$('#gallery .g-item').forEach(b => YK.setImg($('img', b), C.gallery[b.dataset.i].src));
+  $$('#gallery .g-item').forEach(b => YK.setImg($('img', b), src(C.gallery[b.dataset.i].src)));
 
-  // SSS: İşletmeler / Kuryeler sekmeleri (kategorisiz sorular iki sekmede de görünür)
-  const faqs = C.faq.filter(f => f && f.q);
-  function drawFaq(cat) {
-    fill('faq', faqs.filter(f => !f.cat || f.cat === 'genel' || f.cat === cat).map(f => '<details class="faq-item"><summary>' + esc(f.q) + '<span class="pm"></span></summary><div class="faq-a">' + nl(f.a) + '</div></details>').join(''));
-    $$('.faq-item').forEach(d => d.addEventListener('toggle', () => { if (d.open) $$('.faq-item').forEach(o => { if (o !== d) o.open = false; }); }));
-  }
-  $$('#faqTabs button').forEach(b => b.addEventListener('click', () => { $$('#faqTabs button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); }); drawFaq(b.dataset.cat); }));
-  drawFaq('isletme');
+  // SSS: her sayfa kendi kitlesinin sorularını gösterir (kategorisiz sorular her yerde)
+  const faqBox = $('#faq'), faqCat = faqBox ? faqBox.dataset.cat : '';
+  const faqs = C.faq.filter(f => f && f.q && (!faqCat || !f.cat || f.cat === 'genel' || f.cat === faqCat));
+  fill('faq', faqs.map(f => '<details class="faq-item"><summary>' + esc(f.q) + '<span class="pm"></span></summary><div class="faq-a">' + nl(f.a) + '</div></details>').join(''));
+  $$('.faq-item').forEach(d => d.addEventListener('toggle', () => { if (d.open) $$('.faq-item').forEach(o => { if (o !== d && o.parentNode === d.parentNode) o.open = false; }); }));
+
+  // Ana sayfa kartları: kitlenin öne çıkan avantajları
+  const kk = list => list.slice(0, 3).map(x => '<li>' + YK.icon('check') + '<span>' + esc(x.title) + '</span></li>').join('');
+  fill('kkBiz', kk(C.businessBenefits)); fill('kkCour', kk(C.courierBenefits));
 
   const soc = ['instagram', 'facebook', 'linkedin'].filter(k => /^https?:\/\//.test(S[k] || ''));
   fill('socials', soc.map(k => '<a href="' + esc(S[k]) + '" target="_blank" rel="noopener" aria-label="' + k + '">' + YK.icon(k) + '</a>').join(''));
@@ -87,7 +100,7 @@
     const mm = (S.map_embed || '').match(/src="([^"]+)"/);
     const mapSrc = mm ? mm[1] : (S.map_embed || '');
     if (/^https:\/\/(www\.)?google\.[a-z.]+\/maps\/embed/.test(mapSrc)) mapBox.innerHTML = '<iframe src="' + esc(mapSrc) + '" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Yakında Kurye konum haritası"></iframe>';
-    else { mapBox.innerHTML = '<img alt="Yakında Kurye şubesi" loading="lazy">'; YK.setImg($('img', mapBox), C.images.contact); }
+    else { mapBox.innerHTML = '<img alt="Yakında Kurye şubesi" loading="lazy">'; YK.setImg($('img', mapBox), src(C.images.contact)); }
   }
   const yr = $('#year'); if (yr) yr.textContent = new Date().getFullYear();
   $$('[data-icon]').forEach(el => { el.innerHTML = YK.icon(el.dataset.icon); });
@@ -106,45 +119,41 @@
   if (['courier', 'calc', 'courForm'].every(k => hidden[k])) hidden.zoneCour = true;
   $$('[data-section]').forEach(el => { if (hidden[el.dataset.section]) el.remove(); });
   $$('[data-sec]').forEach(a => { if (hidden[a.dataset.sec]) a.remove(); });
-  if (!faqs.some(f => f.cat === 'kurye') || !faqs.some(f => f.cat !== 'kurye')) { const ft = $('#faqTabs'); if (ft) { ft.remove(); drawFaq(faqs.some(f => f.cat !== 'kurye') ? 'isletme' : 'kurye'); } }
   if (hidden.stats && hidden.marquee) { const ch = $$('.checker')[0]; if (ch) ch.remove(); }
   const mCta0 = $('#mCta'); if (mCta0 && !mCta0.querySelector('a')) mCta0.remove();
 
-  /* ---------- Telefon ve tablet görünümü ---------- */
-  const mobil = matchMedia('(max-width: 960px)');
-
-  // İşletmeler / Kuryeler sekmeleri: telefon ve tablette iki bölümden yalnızca seçili olan görünür
-  const kitle = $('#kitle'), kTabs = $$('#kitleTabs button');
-  const kitleOf = el => { const z = el && el.closest('[data-kitle]'); return z ? z.dataset.kitle : null; };
-  if (kitle && $('#isletmeler') && $('#kuryeler')) {
-    const setKitle = k => {
-      document.body.classList.toggle('k-biz', k === 'biz');
-      document.body.classList.toggle('k-cour', k === 'cour');
-      kTabs.forEach(b => { const on = b.dataset.k === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
-      store.set('yk_kitle', k);
-      if (mobil.matches) { const fb = $('#faqTabs [data-cat="' + (k === 'cour' ? 'kurye' : 'isletme') + '"]'); if (fb && !fb.classList.contains('on')) fb.click(); }
+  /* ---------- Sayfa etkileşimleri ---------- */
+  // Başvuru sayfası: işletme talebi / kurye başvurusu sekmeleri
+  const bvTabs = $$('#bvTabs button');
+  if (bvTabs.length) {
+    const ids = { isletme: 'isletme-basvuru', kurye: 'kurye-basvuru' };
+    const mevcut = Object.keys(ids).filter(k => document.getElementById(ids[k]));
+    const setBv = k => {
+      document.body.dataset.bv = k;
+      bvTabs.forEach(b => { const on = b.dataset.bv === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+      store.set('yk_kitle', k === 'kurye' ? 'cour' : 'biz');
     };
-    const hashEl = () => { try { return location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1))); } catch (e) { return null; } };
-    const h0 = hashEl();
-    setKitle(kitleOf(h0) || (store.get('yk_kitle') === 'cour' ? 'cour' : 'biz'));
-    window.addEventListener('hashchange', () => {
-      const el = hashEl(), k = kitleOf(el);
-      if (k && !document.body.classList.contains('k-' + k)) { setKitle(k); el.scrollIntoView({ behavior: 'instant' }); }
-    });
-    kTabs.forEach(b => b.addEventListener('click', () => {
-      setKitle(b.dataset.k);
-      // Aşağıdayken sekme değişirse yeni bölümün başına dön
-      const top = kitle.getBoundingClientRect().top + scrollY - $('.header').offsetHeight;
-      if (scrollY > top + 2) window.scrollTo({ top: top, behavior: 'instant' });
-    }));
-    // Diğer sekmedeki bir bölüme giden bağlantı önce o sekmeyi açar
-    document.addEventListener('click', e => {
-      const a = e.target.closest('a[href^="#"]'); if (!a || a.getAttribute('href').length < 2) return;
-      const k = kitleOf(document.getElementById(a.getAttribute('href').slice(1)));
-      if (k && !document.body.classList.contains('k-' + k)) setKitle(k);
-    }, true);
-    if (h0 && kitleOf(h0)) window.addEventListener('load', () => h0.scrollIntoView({ behavior: 'instant' }));
-  } else { const kt = $('#kitleTabs'); if (kt) kt.remove(); }
+    const fromHash = () => { const h = location.hash.slice(1); return Object.keys(ids).find(k => h === ids[k] || h === k) || null; };
+    const toTabs = () => { const t = $('#bvTabs'); window.scrollTo({ top: t.getBoundingClientRect().top + scrollY - $('.header').offsetHeight - 12, behavior: 'instant' }); };
+    if (mevcut.length < 2) { $('#bvTabs').remove(); if (mevcut.length) document.body.dataset.bv = mevcut[0]; }
+    else {
+      setBv(fromHash() || (store.get('yk_kitle') === 'cour' ? 'kurye' : 'isletme'));
+      bvTabs.forEach(b => b.addEventListener('click', () => { setBv(b.dataset.bv); history.replaceState(null, '', '#' + ids[b.dataset.bv]); }));
+      window.addEventListener('hashchange', () => { const k = fromHash(); if (k) { setBv(k); toTabs(); } });
+      if (fromHash()) window.addEventListener('load', toTabs);
+    }
+  }
+
+  // Blog: kategori filtresi
+  const bf = $('#blogFiltre');
+  if (bf) bf.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    $$('button', bf).forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); });
+    $$('.blog-tum .post-card').forEach(c => { c.hidden = !!b.dataset.f && c.dataset.cat !== b.dataset.f; });
+  });
+
+  // Önizlemede sayfalar arası geçişte önizleme kalsın
+  if (YK.isPreview()) $$('a[href]').forEach(a => { const h = a.getAttribute('href'); if (/^[^:?#]+\.html(#|$)/.test(h)) a.setAttribute('href', h.replace('.html', '.html?onizleme=1')); });
 
   // Yana kaydırılan kart listelerinin altındaki noktalar
   $$('.m-kay').forEach(row => {
@@ -161,14 +170,13 @@
     mark();
   });
 
-  // Hakkımızda metni telefonda kısaltılır
-  const abt = $('.about-text');
+  // Hakkımızda telefonda kısaltılır; misyon, vizyon ve değerler "Devamını oku" ile açılır
+  const abt = $('.about-text'), abSec = abt && abt.closest('section');
   if (abt) {
     const mb = document.createElement('button'); mb.type = 'button'; mb.className = 'more-btn'; mb.setAttribute('aria-expanded', 'false');
-    const setMb = o => { abt.classList.toggle('open', o); mb.setAttribute('aria-expanded', o); mb.innerHTML = (o ? 'Daha az göster' : 'Devamını oku') + YK.icon(o ? 'yukari' : 'asagi'); };
+    const setMb = o => { abt.classList.toggle('open', o); abSec.classList.toggle('acik', o); mb.setAttribute('aria-expanded', o); mb.innerHTML = (o ? 'Daha az göster' : 'Devamını oku') + YK.icon(o ? 'yukari' : 'asagi'); };
     setMb(false); abt.after(mb);
     mb.addEventListener('click', () => setMb(!abt.classList.contains('open')));
-    if (mobil.matches && abt.scrollHeight <= abt.clientHeight + 4) { setMb(true); mb.hidden = true; }
   }
 
   /* ---------- SEO ---------- */
@@ -182,9 +190,14 @@
   function seo() {
     const base = (S.site_url || '').trim().replace(/\/+$/, '');
     const abs = u => !u ? '' : /^https?:/.test(u) ? u : u.indexOf('media:') === 0 ? '' : base ? base + '/' + u.replace(/^\.?\//, '') : '';
-    const title = TX.seo_title || TX.site_title || document.title;
-    const desc = TX.seo_description || '';
-    const ogImg = abs(C.images.og || C.images.hero);
+    const home = PAGE === 'home', post = PAGE === 'yazi';
+    const metaOf = (a, k) => { const m = document.head.querySelector('meta[' + a + '="' + k + '"]'); return m ? m.getAttribute('content') : ''; };
+    // Ana sayfanın başlık/açıklaması panelden gelir; diğer sayfalarınki kendi HTML'inde yazılıdır
+    const title = home ? (TX.seo_title || TX.site_title || document.title) : document.title;
+    const desc = home ? (TX.seo_description || '') : metaOf('name', 'description');
+    const ogImg = abs(document.body.dataset.img || C.images.og || C.images.hero);
+    const root = (base ? base + '/' : new URL(ROOT || './', location.href).href).replace(/\/?$/, '/');
+    const url = root + (document.body.dataset.path || '');
     document.title = title;
     setMeta('name', 'description', desc);
     setMeta('name', 'keywords', S.seo_keywords);
@@ -197,31 +210,46 @@
     setMeta('property', 'og:description', desc);
     setMeta('property', 'og:site_name', 'Yakında Kurye');
     setMeta('property', 'og:locale', 'tr_TR');
-    setMeta('property', 'og:url', base ? base + '/' : '');
+    setMeta('property', 'og:url', base ? url : '');
     setMeta('property', 'og:image', ogImg);
     setMeta('property', 'og:image:alt', 'Yakında Kurye');
     setMeta('name', 'twitter:card', 'summary_large_image');
     setMeta('name', 'twitter:title', title);
     setMeta('name', 'twitter:description', desc);
     setMeta('name', 'twitter:image', ogImg);
-    if (base) { let l = $('link[rel=canonical]'); if (!l) { l = document.createElement('link'); l.rel = 'canonical'; document.head.appendChild(l); } l.href = base + '/'; }
+    if (base) { let l = $('link[rel=canonical]'); if (!l) { l = document.createElement('link'); l.rel = 'canonical'; document.head.appendChild(l); } l.href = url; }
 
     // Yapısal veri (schema.org)
-    const id = (base || location.origin + location.pathname.replace(/[^/]*$/, '')) .replace(/\/?$/, '/');
+    const id = root;
+    const h1 = $('h1') ? $('h1').textContent.trim() : title;
     const address = { '@type': 'PostalAddress', streetAddress: S.address || undefined, addressLocality: S.district || S.city || undefined, addressRegion: S.city || undefined, postalCode: S.postal || undefined, addressCountry: 'TR' };
     const graph = [
       { '@type': 'Organization', '@id': id + '#org', name: 'Yakında Kurye', url: id, logo: abs(C.images.logo) || undefined, slogan: TX.slogan, email: S.email || undefined, telephone: S.phone || undefined, sameAs: soc.map(k => S[k]) },
-      { '@type': 'LocalBusiness', '@id': id + '#business', name: 'Yakında Kurye', description: desc, url: id, image: ogImg || undefined, telephone: S.phone || undefined, email: S.email || undefined, address: address, parentOrganization: { '@id': id + '#org' },
-        geo: S.geo_lat && S.geo_lng ? { '@type': 'GeoCoordinates', latitude: Number(S.geo_lat), longitude: Number(S.geo_lng) } : undefined,
-        areaServed: (regions.length ? regions : [S.city || 'Türkiye']).map(r => ({ '@type': 'Place', name: r })),
-        openingHours: S.opening_hours || 'Mo-Su 00:00-23:59', priceRange: S.price_range || undefined,
-        hasOfferCatalog: { '@type': 'OfferCatalog', name: 'Kurye hizmetleri', itemListElement: C.services.map(s => ({ '@type': 'Offer', itemOffered: { '@type': 'Service', name: s.title, description: s.desc, serviceType: 'Kurye hizmeti', provider: { '@id': id + '#business' }, areaServed: S.city || undefined } })) } },
       { '@type': 'WebSite', '@id': id + '#website', url: id, name: 'Yakında Kurye', inLanguage: 'tr-TR', publisher: { '@id': id + '#org' } },
-      { '@type': 'WebPage', '@id': id + '#webpage', url: id, name: title, description: desc, inLanguage: 'tr-TR', isPartOf: { '@id': id + '#website' }, about: { '@id': id + '#business' } }
+      { '@type': 'WebPage', '@id': url + '#webpage', url: url, name: title, description: desc, inLanguage: 'tr-TR', isPartOf: { '@id': id + '#website' }, about: { '@id': id + '#business' } }
     ];
-    if (faqs.length) graph.push({ '@type': 'FAQPage', '@id': id + '#faq', mainEntity: faqs.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) });
-    // Kurye alımı için iş ilanı (Google İş Arama)
-    if (S.job_enabled !== false && !hidden.courForm) {
+    if (home || PAGE === 'isletme' || PAGE === 'basvuru') graph.push({ '@type': 'LocalBusiness', '@id': id + '#business', name: 'Yakında Kurye', description: home ? desc : (TX.seo_description || desc), url: id, image: abs(C.images.og || C.images.hero) || undefined, telephone: S.phone || undefined, email: S.email || undefined, address: address, parentOrganization: { '@id': id + '#org' },
+      geo: S.geo_lat && S.geo_lng ? { '@type': 'GeoCoordinates', latitude: Number(S.geo_lat), longitude: Number(S.geo_lng) } : undefined,
+      areaServed: (regions.length ? regions : [S.city || 'Türkiye']).map(r => ({ '@type': 'Place', name: r })),
+      openingHours: S.opening_hours || 'Mo-Su 00:00-23:59', priceRange: S.price_range || undefined,
+      hasOfferCatalog: { '@type': 'OfferCatalog', name: 'Kurye hizmetleri', itemListElement: C.services.map(s => ({ '@type': 'Offer', itemOffered: { '@type': 'Service', name: s.title, description: s.desc, serviceType: 'Kurye hizmeti', provider: { '@id': id + '#business' }, areaServed: S.city || undefined } })) } });
+    if (!home) {
+      const crumbs = [{ name: 'Ana Sayfa', item: id }];
+      if (post) crumbs.push({ name: 'Blog', item: id + 'blog.html' });
+      crumbs.push({ name: h1, item: url });
+      graph.push({ '@type': 'BreadcrumbList', '@id': url + '#breadcrumb', itemListElement: crumbs.map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c.name, item: c.item })) });
+    }
+    const faqEl = $('#faq');
+    if (faqEl && faqs.length) graph.push({ '@type': 'FAQPage', '@id': url + '#faq', mainEntity: faqs.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) });
+    if (post) {
+      const qa = $$('.yazi-sss .faq-item').map(d => ({ '@type': 'Question', name: $('summary', d).textContent.trim(), acceptedAnswer: { '@type': 'Answer', text: $('.faq-a', d).textContent.trim() } }));
+      graph.push({ '@type': 'BlogPosting', '@id': url + '#article', headline: h1, description: desc, image: ogImg || undefined, inLanguage: 'tr-TR', mainEntityOfPage: url,
+        datePublished: metaOf('property', 'article:published_time'), dateModified: metaOf('property', 'article:modified_time') || metaOf('property', 'article:published_time'),
+        articleSection: metaOf('property', 'article:section') || undefined, author: { '@id': id + '#org' }, publisher: { '@id': id + '#org' } });
+      if (qa.length) graph.push({ '@type': 'FAQPage', '@id': url + '#sss', mainEntity: qa });
+    }
+    // Kurye alımı için iş ilanı (Google İş Arama) yalnızca Kuryeler sayfasında
+    if (PAGE === 'kurye' && S.job_enabled !== false && !hidden.courForm) {
       const d = new Date(); const posted = S.job_posted || d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01';
       const until = new Date(posted + 'T00:00:00'); until.setDate(until.getDate() + 60);
       graph.push({ '@type': 'JobPosting', title: S.job_title || 'Moto Kurye', description: '<p>' + esc(TX.courier_text) + '</p><ul>' + C.requirements.filter(Boolean).map(r => '<li>' + esc(r) + '</li>').join('') + '</ul><ul>' + C.courierBenefits.map(b => '<li>' + esc(b.title) + ': ' + esc(b.desc) + '</li>').join('') + '</ul>',
@@ -278,17 +306,6 @@
   onScroll();
 
   if ('IntersectionObserver' in window) {
-    // Aktif menü: bölge (işletme/kurye) ve bölüm takibi
-    const zoneOf = el => { let z = null; $$('[data-section]').forEach(s => { if (s.classList.contains('zone') && s.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) z = s.id; }); return z; };
-    const spy = new IntersectionObserver(es => es.forEach(x => {
-      if (x.isIntersecting) {
-        $$('#nav a.active').forEach(a => a.classList.remove('active'));
-        let l = $('#nav a[href="#' + x.target.id + '"]');
-        if (!l) { const z = zoneOf(x.target); const zl = z && $('#nav a[href="#' + z + '"]'); if (zl && ['yorumlar', 'referanslar', 'bolgeler', 'sss', 'iletisim', 'hakkimizda'].indexOf(x.target.id) < 0) l = zl; }
-        if (l) l.classList.add('active');
-      }
-    }), { rootMargin: '-45% 0px -50% 0px' });
-    $$('main section[id], main .zone').forEach(s => spy.observe(s));
     const fio = new IntersectionObserver(es => { formVisible = es.some(x => x.isIntersecting) || $$('.apply-sec').some(s => { const r = s.getBoundingClientRect(); return r.top < innerHeight && r.bottom > 0; }); onScroll(); });
     $$('.apply-sec').forEach(s => fio.observe(s));
 
@@ -297,7 +314,7 @@
       x.target.classList.add('in'); io.unobserve(x.target);
       if (x.target.matches('.stat')) countUp($('b', x.target));
     }), { threshold: .12 });
-    $$('.sec-head, .card, .benefit, .model, .steps li, .g-item, .split-img, .faq-item, .stat, .testi, .region, .calc-card, .apply-card, .bizmodel, .sector, .mv-card, .zone-in').forEach(el => {
+    $$('.sec-head, .card, .benefit, .model, .steps li, .g-item, .split-img, .faq-item, .stat, .testi, .region, .calc-card, .apply-card, .bizmodel, .sector, .mv-card, .zone-in, .kk, .post-card').forEach(el => {
       el.classList.add('reveal');
       const sib = Array.from(el.parentNode.children).indexOf(el);
       el.style.transitionDelay = Math.min(sib, 6) * 70 + 'ms';
@@ -344,20 +361,23 @@
     calc();
   }
 
-  /* ---------- Lightbox ---------- */
+  /* ---------- Lightbox (yalnızca galerili sayfada) ---------- */
   const lb = $('#lightbox'); let lbi = 0;
-  function lbShow(i) { lbi = (i + C.gallery.length) % C.gallery.length; const g = C.gallery[lbi]; const im = $('img', lb); im.removeAttribute('src'); YK.setImg(im, g.src); im.alt = g.title || ''; $('p', lb).textContent = g.title || ''; }
+  const lbOn = () => lb && !lb.hidden;
+  function lbShow(i) { lbi = (i + C.gallery.length) % C.gallery.length; const g = C.gallery[lbi]; const im = $('img', lb); im.removeAttribute('src'); YK.setImg(im, src(g.src)); im.alt = g.title || ''; $('p', lb).textContent = g.title || ''; }
   function lbOpen(i) { lbShow(i); lb.hidden = false; document.body.classList.add('lock'); $('.lb-close', lb).focus(); }
   function lbClose() { lb.hidden = true; document.body.classList.remove('lock'); }
-  const gal = $('#gallery'); if (gal) gal.addEventListener('click', e => { const b = e.target.closest('.g-item'); if (b) lbOpen(+b.dataset.i); });
-  lb.addEventListener('click', e => {
-    if (e.target.closest('.lb-prev')) return lbShow(lbi - 1);
-    if (e.target.closest('.lb-next')) return lbShow(lbi + 1);
-    if (e.target === lb || e.target.closest('.lb-close')) lbClose();
-  });
-  let tx0 = null;
-  lb.addEventListener('touchstart', e => { tx0 = e.touches[0].clientX; }, { passive: true });
-  lb.addEventListener('touchend', e => { if (tx0 == null) return; const dx = e.changedTouches[0].clientX - tx0; if (Math.abs(dx) > 50) lbShow(lbi + (dx < 0 ? 1 : -1)); tx0 = null; });
+  if (lb) {
+    const gal = $('#gallery'); if (gal) gal.addEventListener('click', e => { const b = e.target.closest('.g-item'); if (b) lbOpen(+b.dataset.i); });
+    lb.addEventListener('click', e => {
+      if (e.target.closest('.lb-prev')) return lbShow(lbi - 1);
+      if (e.target.closest('.lb-next')) return lbShow(lbi + 1);
+      if (e.target === lb || e.target.closest('.lb-close')) lbClose();
+    });
+    let tx0 = null;
+    lb.addEventListener('touchstart', e => { tx0 = e.touches[0].clientX; }, { passive: true });
+    lb.addEventListener('touchend', e => { if (tx0 == null) return; const dx = e.changedTouches[0].clientX - tx0; if (Math.abs(dx) > 50) lbShow(lbi + (dx < 0 ? 1 : -1)); tx0 = null; });
+  }
 
   /* ---------- KVKK penceresi ---------- */
   const dlg = $('#kvkkDlg'); let kvkkTarget = null;
@@ -368,9 +388,9 @@
   $('#kvkkOk').addEventListener('click', () => { if (kvkkTarget) { kvkkTarget.checked = true; kvkkTarget.dispatchEvent(new Event('change', { bubbles: true })); } dlgClose(); });
 
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { if (!lb.hidden) lbClose(); if (!dlg.hidden) dlgClose(); setNav(false); }
-    if (!lb.hidden && e.key === 'ArrowRight') lbShow(lbi + 1);
-    if (!lb.hidden && e.key === 'ArrowLeft') lbShow(lbi - 1);
+    if (e.key === 'Escape') { if (lbOn()) lbClose(); if (!dlg.hidden) dlgClose(); setNav(false); }
+    if (lbOn() && e.key === 'ArrowRight') lbShow(lbi + 1);
+    if (lbOn() && e.key === 'ArrowLeft') lbShow(lbi - 1);
   });
 
   /* ---------- Başvuru / talep formları ---------- */

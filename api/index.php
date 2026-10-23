@@ -254,7 +254,15 @@ function publish(array $c): array {
   $base = rtrim(trim((string) ($s['site_url'] ?? '')), '/');
   $noindex = !empty($s['noindex']);
   if ($base && preg_match('#^https?://#i', $base)) {
-    $res['sitemap'] = write_file_atomic(YK_ROOT . '/sitemap.xml', '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n  <url><loc>" . h($base . '/') . '</loc><lastmod>' . date('Y-m-d') . "</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>\n</urlset>\n");
+    // Ana sayfalar + blog klasöründeki tüm yazılar
+    $pages = [['', 'weekly', '1.0'], ['isletmeler.html', 'weekly', '0.9'], ['kuryeler.html', 'weekly', '0.9'], ['basvuru.html', 'monthly', '0.8'], ['blog.html', 'weekly', '0.8']];
+    foreach (glob(YK_ROOT . '/blog/*.html') ?: [] as $f) $pages[] = ['blog/' . basename($f), 'monthly', '0.7', date('Y-m-d', (int) filemtime($f))];
+    $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+    foreach ($pages as $p) {
+      if ($p[0] !== '' && !is_file(YK_ROOT . '/' . $p[0])) continue;
+      $xml .= '  <url><loc>' . h($base . '/' . $p[0]) . '</loc><lastmod>' . ($p[3] ?? date('Y-m-d')) . '</lastmod><changefreq>' . $p[1] . '</changefreq><priority>' . $p[2] . "</priority></url>\n";
+    }
+    $res['sitemap'] = write_file_atomic(YK_ROOT . '/sitemap.xml', $xml . "</urlset>\n");
   }
   $robots = $noindex ? "User-agent: *\nDisallow: /\n" : "User-agent: *\nAllow: /\nDisallow: /admin.html\nDisallow: /api/\n" . ($base ? "\nSitemap: " . $base . "/sitemap.xml\n" : '');
   $res['robots'] = write_file_atomic(YK_ROOT . '/robots.txt', $robots);

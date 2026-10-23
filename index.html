@@ -24,9 +24,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/style.css?v=9">
+  <link rel="stylesheet" href="assets/css/style.css?v=10">
 </head>
-<body>
+<body data-page="home" data-path="">
   <a class="skip" href="#main">İçeriğe geç</a>
   <div class="progress" id="progress" aria-hidden="true"></div>
 
@@ -42,17 +42,17 @@
 
   <header class="header" id="top">
     <div class="container header-in">
-      <a href="#top" class="brand" aria-label="Yakında Kurye ana sayfa"><img data-img="logo" alt="Yakında Kurye"></a>
+      <a href="index.html" class="brand" aria-label="Yakında Kurye ana sayfa"><img data-img="logo" alt="Yakında Kurye"></a>
       <nav class="nav" id="nav" aria-label="Ana menü">
-        <a href="#hakkimizda" data-sec="about">Hakkımızda</a>
-        <a href="#isletmeler" class="nav-biz" data-sec="zoneBiz"><span data-icon="magaza"></span>İşletmeler İçin</a>
-        <a href="#kuryeler" class="nav-cour" data-sec="zoneCour"><span data-icon="motor"></span>Kuryeler İçin</a>
-        <a href="#referanslar" data-sec="refs">Referanslar</a>
-        <a href="#sss" data-sec="faq">SSS</a>
-        <a href="#iletisim" data-sec="contact">İletişim</a>
+        <a href="index.html" class="active" aria-current="page">Ana Sayfa</a>
+        <a href="isletmeler.html" class="nav-biz" data-sec="zoneBiz"><span data-icon="magaza"></span>İşletmeler İçin</a>
+        <a href="kuryeler.html" class="nav-cour" data-sec="zoneCour"><span data-icon="motor"></span>Kuryeler İçin</a>
+        <a href="index.html#hakkimizda" data-sec="about">Hakkımızda</a>
+        <a href="blog.html">Blog</a>
+        <a href="basvuru.html#iletisim" data-sec="contact">İletişim</a>
         <span class="nav-ctas">
-          <a href="#isletme-basvuru" class="btn btn-y nav-cta" data-sec="bizForm" data-t="nav_cta_biz">Kurye Talep Et</a>
-          <a href="#kurye-basvuru" class="btn btn-k nav-cta" data-sec="courForm" data-t="nav_cta_cour">Kurye Ol</a>
+          <a href="basvuru.html#isletme-basvuru" class="btn btn-y nav-cta" data-sec="bizForm" data-t="nav_cta_biz">Kurye Talep Et</a>
+          <a href="basvuru.html#kurye-basvuru" class="btn btn-k nav-cta" data-sec="courForm" data-t="nav_cta_cour">Kurye Ol</a>
         </span>
       </nav>
       <button class="nav-toggle" id="navToggle" aria-label="Menüyü aç" aria-expanded="false" aria-controls="nav"><span data-icon="menu"></span></button>
@@ -69,12 +69,12 @@
           <h1><span class="h1a" data-t="hero_title">Zamanında</span> <em class="h1b" data-t="hero_title_highlight">Yanınızda</em></h1>
           <p class="lead" data-t="hero_text">Restoranınızın, marketinizin ya da mağazanızın teslimatlarını eğitimli ve sigortalı kuryelerimizle zamanında ulaştırıyoruz. Kurye olarak ekibimize katılmak isteyenlere ise düzenli kazanç sunuyoruz.</p>
           <div class="paths">
-            <a href="#isletmeler" class="path path-biz" data-sec="zoneBiz">
+            <a href="isletmeler.html" class="path path-biz" data-sec="zoneBiz">
               <span class="path-ic" data-icon="magaza"></span>
               <span class="path-body"><b data-t="path_biz_label">İşletmeyim</b><small data-t="path_biz_text">Restoranım / işletmem için kurye hizmeti almak istiyorum.</small></span>
               <span class="path-cta"><span data-t="path_biz_btn">Kurye Talep Et</span><span data-icon="ok"></span></span>
             </a>
-            <a href="#kuryeler" class="path path-cour" data-sec="zoneCour">
+            <a href="kuryeler.html" class="path path-cour" data-sec="zoneCour">
               <span class="path-ic" data-icon="motor"></span>
               <span class="path-body"><b data-t="path_cour_label">Kuryeyim</b><small data-t="path_cour_text">Yakında Kurye ekibine katılıp kazanmak istiyorum.</small></span>
               <span class="path-cta"><span data-t="path_cour_btn">Kurye Ol</span><span data-icon="ok"></span></span>
@@ -98,7 +98,34 @@
     </section>
     <div class="checker" aria-hidden="true"></div>
 
-    <!-- HAKKIMIZDA -->
+    <!-- Kimin için: iki ayrı sayfaya yönlendiren kartlar -->
+    <section class="section kimin-icin" id="kimin-icin">
+      <div class="container">
+        <div class="sec-head">
+          <span class="kicker">Hizmetlerimiz</span>
+          <h2>Size nasıl yardımcı olalım?</h2>
+        </div>
+        <div class="kk-grid">
+          <a href="isletmeler.html" class="kk kk-biz" data-section="zoneBiz">
+            <span class="kk-ic" data-icon="magaza"></span>
+            <span class="zone-tag" data-t="biz_zone_tag">Restoran · Market · Eczane · E-ticaret</span>
+            <h3 data-t="biz_zone_title">İşletmeler İçin</h3>
+            <p data-t="biz_zone_text">Restoran, kafe, market, eczane ve e-ticaret işletmelerine özel kurye çözümleri</p>
+            <ul class="kk-list" id="kkBiz"></ul>
+            <span class="kk-cta">Hizmetleri incele <span data-icon="ok"></span></span>
+          </a>
+          <a href="kuryeler.html" class="kk kk-cour" data-section="zoneCour">
+            <span class="kk-ic" data-icon="motor"></span>
+            <span class="zone-tag" data-t="cour_zone_tag">Moto kurye · Tam / yarı zamanlı</span>
+            <h3 data-t="cour_zone_title">Kuryeler İçin</h3>
+            <p data-t="cour_zone_text">Yakında Kurye ekibine katıl: düzenli kazanç, esnek vardiya ve tam destek</p>
+            <ul class="kk-list" id="kkCour"></ul>
+            <span class="kk-cta">Kurye olmak için <span data-icon="ok"></span></span>
+          </a>
+        </div>
+      </div>
+    </section>
+
     <section class="section about-sec" id="hakkimizda" data-section="about">
       <div class="container">
         <div class="split about-split">
@@ -121,184 +148,6 @@
       </div>
     </section>
 
-    <!-- Telefon ve tablette işletme ve kurye bölümleri sekmeyle ayrılır (masaüstünde ikisi de görünür) -->
-    <div class="kitle" id="kitle">
-    <div class="kitle-tabs" id="kitleTabs" role="tablist" aria-label="Kimin için?">
-      <button type="button" role="tab" data-k="biz" aria-selected="true"><span data-icon="magaza"></span>İşletmeler İçin</button>
-      <button type="button" role="tab" data-k="cour" aria-selected="false"><span data-icon="motor"></span>Kuryeler İçin</button>
-    </div>
-
-    <!-- ================= İŞLETMELER İÇİN ================= -->
-    <div class="zone zone-biz" id="isletmeler" data-section="zoneBiz" data-kitle="biz">
-      <div class="container zone-in">
-        <span class="zone-ic" data-icon="magaza"></span>
-        <div class="zone-txt"><span class="zone-tag" data-t="biz_zone_tag">Restoran · Market · Eczane · E-ticaret</span><h2 data-t="biz_zone_title">İşletmeler İçin</h2><p data-t="biz_zone_text">Restoran, kafe, market, eczane ve e-ticaret işletmelerine özel kurye çözümleri</p></div>
-        <nav class="zone-nav" aria-label="İşletmeler bölümü">
-          <a href="#hizmetler" data-sec="services">Hizmetler</a><a href="#isletme-avantaj" data-sec="business">Avantajlar</a><a href="#cozumler" data-sec="bizSolutions">Çözümler</a><a href="#nasil-calisir" data-sec="bizSteps">Nasıl Çalışır</a><a href="#isletme-basvuru" class="zn-cta" data-sec="bizForm">Teklif Al</a>
-        </nav>
-      </div>
-    </div>
-
-    <section class="section" id="hizmetler" data-section="services" data-kitle="biz">
-      <div class="container">
-        <div class="sec-head">
-          <span class="kicker" data-t="services_kicker">Hizmetlerimiz</span>
-          <h2 data-t="services_title">Her teslimat için doğru kurye</h2>
-          <p data-t="services_text">Paketten yemeğe, acil gönderilerden gün boyu hizmete kadar işletmenizin ihtiyacı olan tüm kurye çözümleri tek çatı altında.</p>
-        </div>
-        <div class="grid-4 m-kay" id="services"></div>
-      </div>
-    </section>
-
-    <section class="section dark" id="isletme-avantaj" data-section="business" data-kitle="biz">
-      <div class="hero-bg soft" aria-hidden="true"><span class="hb hb1"></span><span class="hb hb2"></span></div>
-      <div class="container">
-        <div class="split rev">
-          <div>
-            <span class="kicker" data-t="business_kicker">Neden Yakında Kurye?</span>
-            <h2 data-t="business_title">Kurye yükünü bize bırakın, siz işinize odaklanın</h2>
-            <p class="muted" data-t="business_text">Kadrolu kurye maliyeti, motor bakımı, sigorta ve vardiya planlaması derdine son. İhtiyacınız kadar kuryeyi, ihtiyacınız olan saatlerde size sağlıyoruz.</p>
-            <div class="benefits on-dark" id="businessBenefits"></div>
-            <a href="#isletme-basvuru" class="btn btn-y btn-lg shine" data-sec="bizForm"><span data-t="business_cta">Ücretsiz Teklif Alın</span><span data-icon="ok"></span></a>
-          </div>
-          <div class="biz-visual">
-            <div class="split-img tilt"><img data-img="business" alt="Yakında Kurye ile çalışan işletme" loading="lazy"></div>
-            <img class="biz-sticker spin-slow" data-img="business_sticker" alt="Bu işletme Yakında Kurye ile çalışıyor" loading="lazy">
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section bg-soft" id="cozumler" data-section="bizSolutions" data-kitle="biz">
-      <div class="container">
-        <div class="sec-head">
-          <span class="kicker" data-t="bizmodels_kicker">Çözümler</span>
-          <h2 data-t="bizmodels_title">İşletmenize uygun hizmet modeli</h2>
-          <p data-t="bizmodels_text">Yoğunluğunuza ve bütçenize en uygun modeli birlikte belirleyelim.</p>
-        </div>
-        <div class="bizmodels m-kay" id="bizModels"></div>
-        <h3 class="h3-center" data-t="sectors_title">Hizmet verdiğimiz sektörler</h3>
-        <div class="sectors" id="sectors"></div>
-      </div>
-    </section>
-
-    <section class="section" id="nasil-calisir" data-section="bizSteps" data-kitle="biz">
-      <div class="container">
-        <div class="sec-head"><span class="kicker" data-t="bizsteps_kicker">Nasıl Çalışır?</span><h2 data-t="bizsteps_title">4 adımda kuryeniz kapınızda</h2></div>
-        <ol class="steps steps-4" id="bizSteps"></ol>
-      </div>
-    </section>
-
-    <section class="section apply-sec apply-biz" id="isletme-basvuru" data-section="bizForm" data-kitle="biz">
-      <div class="container apply-in">
-        <aside class="apply-side">
-          <span class="kicker" data-t="bizform_kicker">Ücretsiz Teklif</span>
-          <h2 data-t="bizform_title">İşletmeniz için kurye talep edin</h2>
-          <p class="muted" data-t="bizform_text">Formu doldurun; ihtiyacınızı dinleyip size özel kurye planı ve fiyat teklifini en kısa sürede iletelim.</p>
-          <ul class="apply-points">
-            <li><span data-icon="check"></span><span data-t="bizform_p1">Ücretsiz ihtiyaç analizi</span></li>
-            <li><span data-icon="check"></span><span data-t="bizform_p2">Size özel fiyat teklifi</span></li>
-            <li><span data-icon="check"></span><span data-t="bizform_p3">Hızlı kurulum, hızlı başlangıç</span></li>
-          </ul>
-          <div class="apply-img round"><img data-img="bizform" alt="" loading="lazy"></div>
-          <div class="apply-contact">
-            <a data-href="tel"><span data-icon="telefon"></span><span data-s="phone">0850 000 00 00</span></a>
-            <a data-href="wa" target="_blank" rel="noopener"><span data-icon="whatsapp"></span><span data-t="wa_label">WhatsApp ile yazın</span></a>
-          </div>
-        </aside>
-        <div class="apply-card" data-form="isletme"></div>
-      </div>
-    </section>
-
-    <!-- ================= KURYELER İÇİN ================= -->
-    <div class="zone zone-cour" id="kuryeler" data-section="zoneCour" data-kitle="cour">
-      <div class="container zone-in">
-        <span class="zone-ic" data-icon="motor"></span>
-        <div class="zone-txt"><span class="zone-tag" data-t="cour_zone_tag">Moto kurye · Tam / yarı zamanlı</span><h2 data-t="cour_zone_title">Kuryeler İçin</h2><p data-t="cour_zone_text">Yakında Kurye ekibine katıl: düzenli kazanç, esnek vardiya ve tam destek</p></div>
-        <nav class="zone-nav" aria-label="Kuryeler bölümü">
-          <a href="#kurye-ol" data-sec="courier">Neden Biz</a><a href="#kurye-sartlar" data-sec="courier">Şartlar</a><a href="#kazanc" data-sec="calc">Kazanç</a><a href="#kurye-basvuru" class="zn-cta" data-sec="courForm">Başvur</a>
-        </nav>
-      </div>
-    </div>
-
-    <section class="section bg-soft" id="kurye-ol" data-section="courier" data-kitle="cour">
-      <div class="container">
-        <div class="split">
-          <div class="split-img tilt"><img data-img="courier" alt="Yakında Kurye çantası ile kurye" loading="lazy"><span class="img-tag"><span data-icon="kask"></span><span data-t="courier_img_tag">Ekipman desteği</span></span></div>
-          <div>
-            <span class="kicker" data-t="courier_kicker">Kurye Ol</span>
-            <h2 data-t="courier_title">Yakında Kurye ailesine katıl, kazancını kendin belirle</h2>
-            <p class="muted" data-t="courier_text">Kendi motorunla ya da şirket motoruyla, tam zamanlı veya yarı zamanlı çalış. Haftalık ödeme, ekipman desteği ve 7/24 operasyon desteğiyle yanındayız.</p>
-            <div class="benefits" id="courierBenefits"></div>
-          </div>
-        </div>
-        <div class="courier-grid" id="kurye-sartlar">
-          <div class="card req-card">
-            <h3 data-t="req_title">Başvuru şartları</h3>
-            <ul class="checklist" id="requirements"></ul>
-            <a href="#kurye-basvuru" class="btn btn-k" data-sec="courForm"><span data-t="req_btn">Kurye Başvurusu Yap</span> <span data-icon="ok"></span></a>
-          </div>
-          <div>
-            <h3 class="h3-pad" data-t="models_title">Çalışma modelleri</h3>
-            <div class="models m-kay" id="workModels"></div>
-          </div>
-        </div>
-        <h3 class="h3-center" data-t="steps_title">Başvuru süreci nasıl işliyor?</h3>
-        <ol class="steps" id="steps"></ol>
-      </div>
-    </section>
-
-    <section class="section calc-sec" id="kazanc" data-section="calc" data-kitle="cour">
-      <div class="container calc-in">
-        <div class="calc-text">
-          <span class="kicker" data-t="calc_kicker">Kazanç Hesaplayıcı</span>
-          <h2 data-t="calc_title">Ne kadar kazanabileceğini hesapla</h2>
-          <p class="muted" data-t="calc_text">Günlük teslim edeceğin paket sayısını ve haftada kaç gün çalışacağını seç; tahmini kazancını hemen gör.</p>
-          <div class="calc-img"><img data-img="calc" alt="" loading="lazy"></div>
-        </div>
-        <div class="calc-card">
-          <label class="range">
-            <span class="range-top"><span>Günlük paket</span><b id="cPkgV">25</b></span>
-            <input type="range" id="cPkg" min="5" max="60" value="25">
-          </label>
-          <div class="range">
-            <span class="range-top"><span>Haftada çalışılan gün</span><b id="cDayV">6</b></span>
-            <div class="days" id="cDays" role="radiogroup" aria-label="Haftada çalışılan gün"></div>
-          </div>
-          <div class="calc-out">
-            <div><small>Günlük</small><b id="cDay">—</b></div>
-            <div><small>Haftalık</small><b id="cWeek">—</b></div>
-            <div class="big"><small>Aylık tahmini</small><b id="cMonth">—</b></div>
-          </div>
-          <p class="calc-note" data-t="calc_note">Hesaplama tahminidir. Gerçek kazanç bölge, vardiya, prim ve paket yoğunluğuna göre değişir.</p>
-          <a href="#kurye-basvuru" class="btn btn-y btn-block btn-lg shine" data-sec="courForm"><span data-t="calc_btn">Hemen Başvur, Kazanmaya Başla</span> <span data-icon="ok"></span></a>
-        </div>
-      </div>
-    </section>
-
-    <section class="section apply-sec" id="kurye-basvuru" data-section="courForm" data-kitle="cour">
-      <div class="container apply-in">
-        <aside class="apply-side">
-          <span class="kicker" data-t="courform_kicker">Kurye Başvurusu</span>
-          <h2 data-t="courform_title">Başvurunu 2 dakikada tamamla</h2>
-          <p class="muted" data-t="courform_text">Formu doldur, ekibimiz en geç 48 saat içinde seninle iletişime geçsin.</p>
-          <ul class="apply-points">
-            <li><span data-icon="saat"></span><span data-t="courform_p1">2 dakikada tamamlanır</span></li>
-            <li><span data-icon="telefon"></span><span data-t="courform_p2">48 saat içinde dönüş</span></li>
-            <li><span data-icon="kalkan"></span><span data-t="courform_p3">Bilgilerin KVKK ile korunur</span></li>
-          </ul>
-          <div class="apply-img"><img data-img="courform" alt="Yakında Kurye termal çanta" loading="lazy"></div>
-          <div class="apply-contact">
-            <a data-href="tel"><span data-icon="telefon"></span><span data-s="phone">0850 000 00 00</span></a>
-            <a data-href="wa" target="_blank" rel="noopener"><span data-icon="whatsapp"></span><span data-t="wa_label">WhatsApp ile yazın</span></a>
-          </div>
-        </aside>
-        <div class="apply-card" data-form="kurye"></div>
-      </div>
-    </section>
-    </div>
-
-    <!-- ================= ORTAK BÖLÜMLER ================= -->
     <section class="section" id="yorumlar" data-section="testimonials">
       <div class="container">
         <div class="sec-head">
@@ -320,50 +169,51 @@
       </div>
     </section>
 
-    <section class="section regions-sec" id="bolgeler" data-section="regions">
-      <div class="container regions-in">
-        <div>
-          <span class="kicker" data-t="regions_kicker">Hizmet Bölgeleri</span>
-          <h2 data-t="regions_title">Hizmet verdiğimiz bölgeler</h2>
-          <p class="muted" data-t="regions_text">Bölgeniz listede yoksa bize ulaşın; yeni bölgelerde açılış çalışmalarımız sürüyor.</p>
-        </div>
-        <div class="regions" id="regions"></div>
-      </div>
-    </section>
-
-    <section class="section" id="sss" data-section="faq">
-      <div class="container narrow">
+    <section class="section bg-soft blog-son" id="blogdan">
+      <div class="container">
         <div class="sec-head">
-          <span class="kicker" data-t="faq_kicker">Sıkça Sorulan Sorular</span>
-          <h2 data-t="faq_title">Merak edilenler</h2>
+          <span class="kicker">Blog</span>
+          <h2>Kurye rehberi ve işletme ipuçları</h2>
+          <p>Kurye olmak, kazancı artırmak ve teslimatı büyütmek üzerine yazılarımız.</p>
         </div>
-        <div class="seg-tabs" id="faqTabs" role="tablist">
-          <button type="button" role="tab" data-cat="isletme" class="on" aria-selected="true"><span data-icon="magaza"></span>İşletmeler</button>
-          <button type="button" role="tab" data-cat="kurye" aria-selected="false"><span data-icon="motor"></span>Kuryeler</button>
+        <div class="blog-grid m-kay">
+          <article class="post-card" data-cat="kurye">
+            <a href="blog/moto-kurye-nasil-olunur.html" class="pc-img" tabindex="-1" aria-hidden="true"><img src="assets/img/hero-kurye.jpg" alt="" loading="lazy" decoding="async"></a>
+            <div class="pc-body">
+              <span class="pc-cat pc-kurye">Kuryeler İçin</span>
+              <h3><a href="blog/moto-kurye-nasil-olunur.html">Moto Kurye Nasıl Olunur? 2026 Şartları, Belgeler ve Başvuru Adımları</a></h3>
+              <p>Moto kurye olmak için hangi ehliyet gerekir, adli sicil şartı nedir, SRC KURYE ve MYK belgesi zorunlu mu? Şartları, hazırlamanız gereken belgeleri ve başvuru adımlarını tek yazıda topladık.</p>
+              <span class="pc-meta">23 Ekim 2026 · 4 dk okuma</span>
+            </div>
+          </article>
+          <article class="post-card" data-cat="isletme">
+            <a href="blog/restoran-kendi-kuryesi-mi-kurye-firmasi-mi.html" class="pc-img" tabindex="-1" aria-hidden="true"><img src="assets/img/sube-cephe.jpg" alt="" loading="lazy" decoding="async"></a>
+            <div class="pc-body">
+              <span class="pc-cat pc-isletme">İşletmeler İçin</span>
+              <h3><a href="blog/restoran-kendi-kuryesi-mi-kurye-firmasi-mi.html">Restoranlar İçin Kurye Hizmeti: Kendi Kuryeniz mi, Kurye Firması mı?</a></h3>
+              <p>Paket servis büyüdükçe her restoran aynı soruyla karşılaşır: kuryeyi kendin mi istihdam edeceksin, yoksa bir kurye firmasıyla mı çalışacaksın? Maliyet kalemlerini, avantajları ve doğru seçimi adım adım inceledik.</p>
+              <span class="pc-meta">23 Ekim 2026 · 3 dk okuma</span>
+            </div>
+          </article>
+          <article class="post-card" data-cat="kurye">
+            <a href="blog/kurye-kazanci-nasil-artirilir.html" class="pc-img" tabindex="-1" aria-hidden="true"><img src="assets/img/kurye-canta.jpg" alt="" loading="lazy" decoding="async"></a>
+            <div class="pc-body">
+              <span class="pc-cat pc-kurye">Kuryeler İçin</span>
+              <h3><a href="blog/kurye-kazanci-nasil-artirilir.html">Kurye Kazancı Nasıl Artırılır? 9 Pratik Öneri</a></h3>
+              <p>Aynı saatlerde çalışan iki kuryenin kazancı neden farklı olur? Kurye ücretlerinin nasıl hesaplandığını ve kazancını artırmak için bugün uygulayabileceğin 9 öneriyi derledik.</p>
+              <span class="pc-meta">23 Ekim 2026 · 3 dk okuma</span>
+            </div>
+          </article>
         </div>
-        <div class="faq" id="faq"></div>
+        <div class="blog-more"><a href="blog.html" class="btn btn-ghost-k">Tüm yazılar <span data-icon="ok"></span></a></div>
       </div>
     </section>
 
-    <section class="section dark" id="iletisim" data-section="contact">
-      <div class="container contact-in">
-        <div>
-          <span class="kicker" data-t="contact_kicker">İletişim</span>
-          <h2 data-t="contact_title">Bize ulaşın</h2>
-          <p class="muted" data-t="contact_text">Kurye hizmeti talebi, kurye başvurusu veya her türlü sorunuz için bize ulaşabilirsiniz.</p>
-          <div class="contact-list">
-            <a data-href="tel" class="c-item"><span class="c-ic" data-icon="telefon"></span><span><small>Telefon</small><b data-s="phone">0850 000 00 00</b></span></a>
-            <a data-href="wa" target="_blank" rel="noopener" class="c-item"><span class="c-ic" data-icon="whatsapp"></span><span><small>WhatsApp</small><b>Mesaj gönderin</b></span></a>
-            <a data-href="mail" class="c-item"><span class="c-ic" data-icon="mail"></span><span><small>E-posta</small><b data-s="email">info@yakindakurye.com</b></span></a>
-            <div class="c-item"><span class="c-ic" data-icon="konum"></span><span><small>Adres</small><b data-s="address">Örnek Mah. Örnek Cad. No:10/A, Ankara</b></span></div>
-            <div class="c-item"><span class="c-ic" data-icon="saat"></span><span><small>Çalışma saatleri</small><b data-s="hours">Operasyon: 7/24 · Ofis: Hafta içi 09:00 – 18:00</b></span></div>
-          </div>
-          <div class="contact-ctas">
-            <a href="#isletme-basvuru" class="btn btn-y" data-sec="bizForm"><span data-icon="magaza"></span>Kurye Talep Et</a>
-            <a href="#kurye-basvuru" class="btn btn-ghost" data-sec="courForm"><span data-icon="motor"></span>Kurye Ol</a>
-          </div>
-        </div>
-        <div class="contact-visual" id="mapBox"></div>
+    <section class="cta-band">
+      <div class="hero-bg soft" aria-hidden="true"><span class="hb hb1"></span><span class="hb hb2"></span></div>
+      <div class="container cta-in">
+        <div class="cta-txt"><h2 data-t="contact_title">Bize ulaşın</h2><p data-t="contact_text">Kurye hizmeti talebi, kurye başvurusu veya her türlü sorunuz için bize ulaşabilirsiniz.</p></div>
+        <div class="cta-btns"><a href="basvuru.html#isletme-basvuru" class="btn btn-y btn-lg" data-sec="bizForm"><span data-icon="magaza"></span>Kurye Talep Et</a><a href="basvuru.html#kurye-basvuru" class="btn btn-ghost btn-lg" data-sec="courForm"><span data-icon="motor"></span>Kurye Ol</a></div>
       </div>
     </section>
   </main>
@@ -378,15 +228,15 @@
       </div>
       <div>
         <h4>Kurumsal</h4>
-        <a href="#hakkimizda" data-sec="about">Hakkımızda</a><a href="#referanslar" data-sec="refs">Referanslar</a><a href="#sss" data-sec="faq">SSS</a><a href="#iletisim" data-sec="contact">İletişim</a><button type="button" class="f-link" data-kvkk>KVKK Aydınlatma Metni</button>
+        <a href="index.html#hakkimizda" data-sec="about">Hakkımızda</a><a href="index.html#referanslar" data-sec="refs">Referanslar</a><a href="blog.html">Blog</a><a href="basvuru.html#iletisim" data-sec="contact">İletişim</a><button type="button" class="f-link" data-kvkk>KVKK Aydınlatma Metni</button>
       </div>
       <div class="f-col-kitle">
         <h4>İşletmeler İçin</h4>
-        <a href="#hizmetler" data-sec="services">Hizmetlerimiz</a><a href="#cozumler" data-sec="bizSolutions">Hizmet Modelleri</a><a href="#nasil-calisir" data-sec="bizSteps">Nasıl Çalışır</a><a href="#isletme-basvuru" data-sec="bizForm">Kurye Talep Et</a>
+        <a href="isletmeler.html#hizmetler" data-sec="services">Hizmetlerimiz</a><a href="isletmeler.html#cozumler" data-sec="bizSolutions">Hizmet Modelleri</a><a href="isletmeler.html#nasil-calisir" data-sec="bizSteps">Nasıl Çalışır</a><a href="basvuru.html#isletme-basvuru" data-sec="bizForm">Kurye Talep Et</a>
       </div>
       <div class="f-col-kitle">
         <h4>Kuryeler İçin</h4>
-        <a href="#kurye-ol" data-sec="courier">Neden Yakında Kurye</a><a href="#kurye-sartlar" data-sec="courier">Başvuru Şartları</a><a href="#kazanc" data-sec="calc">Kazanç Hesapla</a><a href="#kurye-basvuru" data-sec="courForm">Kurye Başvurusu</a>
+        <a href="kuryeler.html#kurye-ol" data-sec="courier">Neden Yakında Kurye</a><a href="kuryeler.html#kurye-sartlar" data-sec="courier">Başvuru Şartları</a><a href="kuryeler.html#kazanc" data-sec="calc">Kazanç Hesapla</a><a href="basvuru.html#kurye-basvuru" data-sec="courForm">Kurye Başvurusu</a>
       </div>
       <div>
         <h4>İletişim</h4>
@@ -400,8 +250,8 @@
   </footer>
 
   <div class="m-cta" id="mCta">
-    <a href="#isletme-basvuru" class="btn btn-y" data-sec="bizForm"><span data-icon="magaza"></span><span data-t="mobile_cta1">Kurye Talep Et</span></a>
-    <a href="#kurye-basvuru" class="btn btn-k" data-sec="courForm"><span data-icon="motor"></span><span data-t="mobile_cta2">Kurye Ol</span></a>
+    <a href="basvuru.html#isletme-basvuru" class="btn btn-y" data-sec="bizForm"><span data-icon="magaza"></span><span data-t="mobile_cta1">Kurye Talep Et</span></a>
+    <a href="basvuru.html#kurye-basvuru" class="btn btn-k" data-sec="courForm"><span data-icon="motor"></span><span data-t="mobile_cta2">Kurye Ol</span></a>
   </div>
   <a class="wa-float" data-href="wa" target="_blank" rel="noopener" aria-label="WhatsApp ile yazın"><span data-icon="whatsapp"></span></a>
   <button class="to-top" id="toTop" aria-label="Yukarı çık"><span data-icon="yukari"></span></button>
@@ -421,8 +271,8 @@
     </div>
   </div>
 
-  <script src="assets/js/content.js?v=9"></script>
-  <script src="assets/js/store.js?v=9"></script>
-  <script src="assets/js/site.js?v=9"></script>
+  <script src="assets/js/content.js?v=10"></script>
+  <script src="assets/js/store.js?v=10"></script>
+  <script src="assets/js/site.js?v=10"></script>
 </body>
 </html>

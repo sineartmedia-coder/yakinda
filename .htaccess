@@ -2,7 +2,7 @@
 
 # Panelden yayınlanan içerik her ziyarette güncel yüklensin
 <IfModule mod_headers.c>
-  <FilesMatch "^(content\.js|index\.html|admin\.html)$">
+  <FilesMatch "^(content\.js|.*\.html)$">
     Header set Cache-Control "no-cache, must-revalidate"
   </FilesMatch>
   Header always set X-Content-Type-Options "nosniff"

@@ -1,10 +1,14 @@
-# Yakında Kurye — Web Sitesi ve Yönetim Paneli (Sürüm 4)
+# Yakında Kurye — Web Sitesi ve Yönetim Paneli (Sürüm 5)
 
-Restoran ve işletmelere kurye hizmeti veren, kurye alımı yapan **Yakında Kurye** için tek sayfalık web sitesi ve yönetim paneli.
+Restoran ve işletmelere kurye hizmeti veren, kurye alımı yapan **Yakında Kurye** için çok sayfalı web sitesi, blog ve yönetim paneli.
 
 | Dosya / klasör | Ne işe yarar |
 | --- | --- |
-| `index.html` | Web sitesi |
+| `index.html` | Ana sayfa: tanıtım, "Size nasıl yardımcı olalım?" kartları, hakkımızda, referanslar, son blog yazıları |
+| `isletmeler.html` | İşletmeler için: hizmetler, avantajlar, hizmet modelleri, nasıl çalışır, işletme SSS |
+| `kuryeler.html` | Kuryeler için: neden biz, başvuru şartları, çalışma modelleri, kazanç hesaplayıcı, kurye SSS |
+| `basvuru.html` | Başvuru ve iletişim: işletme talep formu / kurye başvuru formu (sekmeli), iletişim bilgileri |
+| `blog.html`, `blog/` | Blog listesi ve yazılar |
 | `admin.html` | Yönetim paneli |
 | `api/index.php` | Sunucu kodu: formları kaydeder, panel verilerini saklar, "Yayınla" ile siteyi günceller |
 | `assets/` | Görseller, stil ve JavaScript dosyaları |
@@ -58,14 +62,23 @@ Panelin sol alt köşesinde hangi modda çalıştığı yazar.
 - **SEO:** SEO puanı, Google önizlemesi, başlık/açıklama, alan adı, yerel SEO, Search Console, Google Analytics (çerez onaylı), kurye iş ilanı yapısal verisi.
 - **Ayarlar:** Şifre, bildirim e-postası (sunucu modu), yedek indir / geri yükle, işlem geçmişi, örnek veri, sıfırlama.
 
+## Sayfa yapısı ve blog
+
+- Panelde düzenlenen metinler, görseller ve listeler hangi sayfada bulunuyorsa orada görünür (ör. kazanç hesaplayıcı Kuryeler sayfasında, formlar Başvuru sayfasında). Bölümleri aç/kapa ayarları aynen çalışır.
+- Eski tek sayfalık sitenin bağlantıları (ör. `index.html#kurye-basvuru`) kendiliğinden yeni sayfalara yönlendirilir.
+- Her sayfanın kendi başlığı, açıklaması ve yapısal verisi vardır (sayfa yolu, SSS, iş ilanı, blog yazısı). Panelde girilen SEO başlığı ve açıklaması ana sayfa içindir.
+- **Blog yazıları** `blog/` klasöründe düz HTML dosyalarıdır, panelden düzenlenmez. Yeni yazı eklemek için mevcut bir yazı dosyası kopyalanıp içeriği değiştirilir; ardından `blog.html` listesine kart eklenir. Sunucu modunda sitemap `blog/` klasörünü kendiliğinden tarar; yerel modda `assets/js/store.js` içindeki sayfa listesine (`SAYFALAR`) yeni dosya eklenir.
+- Mevzuat içeren yazılar (ehliyet, SRC KURYE, ekipman) Ekim 2026 itibarıyla yazılmıştır; mevzuat değiştikçe güncellenmelidir.
+
 ## Telefon ve tablet görünümü
 
-Masaüstü düzeni (960 px üstü) aynıdır; telefon ve tablette (960 px ve altı) site daha kısa ve sade gösterilir:
+- Ana sayfa ve alt sayfalar telefonda kısa tutulur: hizmetler, hizmet modelleri, çalışma modelleri, yorumlar ve blog kartları yana kaydırılır; referans galerisi iki sıralı yatay galeridir; adımlar kısa bir zaman çizelgesidir.
+- Hakkımızda bölümünde misyon, vizyon ve değerler telefonda "Devamını oku" ile açılır. Formlarda isteğe bağlı alanlar "Ek bilgiler" düğmesinin altında durur.
+- Tablette (601–960 px) hero, görselli bölümler, hesaplayıcı, formlar ve iletişim iki sütunludur.
 
-- **İşletmeler İçin / Kuryeler İçin** bölümleri sekmeyle ayrılır; aynı anda yalnızca seçili olan görünür. Hero'daki "İşletmeyim / Kuryeyim" kartları, menü ve alt butonlar doğru sekmeyi kendiliğinden açar. Seçim o cihazda hatırlanır.
-- Hizmetler, hizmet modelleri, çalışma modelleri ve yorumlar yana kaydırılan kartlar; referans galerisi yana kaydırılan iki sıralı galeri olur. Adımlar kısa bir zaman çizelgesine dönüşür.
-- Hakkımızda metni "Devamını oku" ile açılır. Formlarda isteğe bağlı alanlar "Ek bilgiler" düğmesinin altında durur.
-- Tablette (601–960 px) hero, görselli bölümler, hesaplayıcı, formlar ve iletişim iki sütunlu; değerler, sektörler ve hizmet modelleri tek satırda; adımlar yatay çizgi üzerinde gösterilir.
+## Önceki sürüme dönmek
+
+Tek sayfalık önceki sürüm iki yerde saklanır: GitHub'daki `yedek-tek-sayfa` dalı ve masaüstündeki `06_web_sitesi/yakinda-kurye-site_YEDEK_tek-sayfa_2026-10-23` klasörü. Geri dönmek için o klasördeki dosyalar hostinge yüklenir (sunucudaki `api/data` klasörüne dokunulmaz; başvurular ve panel verileri korunur).
 
 ## Bildirimler
 

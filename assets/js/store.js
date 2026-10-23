@@ -731,9 +731,14 @@
     for (const t of c.testimonials) if (t.photo) t.photo = await fix(t.photo);
     return '/* Yakında Kurye — yayındaki site içeriği (' + new Date().toLocaleString('tr-TR') + ' tarihinde yönetim panelinden oluşturuldu). */\nwindow.YK_PUBLISHED = ' + JSON.stringify(c, null, 1) + ';\n';
   }
+  // Sitedeki sayfalar (yeni blog yazısı eklenince bu listeye de eklenir)
+  const PAGES = /*SAYFALAR*/['', 'isletmeler.html', 'kuryeler.html', 'basvuru.html', 'blog.html', 'blog/moto-kurye-nasil-olunur.html', 'blog/restoran-kendi-kuryesi-mi-kurye-firmasi-mi.html', 'blog/kurye-kazanci-nasil-artirilir.html', 'blog/paket-basi-mi-vardiyali-kurye-mi.html', 'blog/kurye-olmak-icin-hangi-ehliyet-gerekir.html', 'blog/yogun-saatlerde-paket-servis-gecikmesi.html', 'blog/moto-kurye-ekipmanlari.html']/*/SAYFALAR*/;
   function sitemapXML(base) {
     base = (base || '').replace(/\/+$/, '');
-    return '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>' + base + '/</loc><lastmod>' + new Date().toISOString().slice(0, 10) + '</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>\n</urlset>\n';
+    const day = new Date().toISOString().slice(0, 10);
+    const pri = p => p === '' ? '1.0' : /^blog\//.test(p) ? '0.7' : /^(isletmeler|kuryeler)/.test(p) ? '0.9' : '0.8';
+    return '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+      PAGES.map(p => '  <url><loc>' + base + '/' + p + '</loc><lastmod>' + day + '</lastmod><changefreq>' + (/^blog\//.test(p) ? 'monthly' : 'weekly') + '</changefreq><priority>' + pri(p) + '</priority></url>\n').join('') + '</urlset>\n';
   }
   function robotsTXT(base, noindex) {
     base = (base || '').replace(/\/+$/, '');

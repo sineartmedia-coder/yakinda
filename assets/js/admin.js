@@ -42,10 +42,10 @@
       b.onclick = () => a.onClick ? a.onClick(api) : close(); foot.appendChild(b);
     });
     if (!o.actions || !o.actions.length) foot.remove();
-    function onKey(e) { if (e.key === 'Escape' && w === $$('.m-wrap').pop()) close(); }
+    function onKey(e) { if (e.key === 'Escape' && !o.sticky && w === $$('.m-wrap').pop()) close(); }
     function close() { w.remove(); document.removeEventListener('keydown', onKey); if (o.onClose) o.onClose(); }
     document.addEventListener('keydown', onKey);
-    w.addEventListener('mousedown', e => { if (e.target === w) close(); });
+    if (!o.sticky) w.addEventListener('mousedown', e => { if (e.target === w) close(); });
     $('.m-x', w).onclick = close;
     document.body.appendChild(w);
     const first = $('input:not([type=hidden]):not([type=file]):not([type=checkbox]),select,textarea', body); if (first && !o.noFocus) setTimeout(() => first.focus(), 30);
@@ -985,7 +985,7 @@
     ['Genel', [['marquee', 'Kayan yazı bandı'], ['stats', 'Sarı istatistik bandı'], ['about', 'Hakkımızda']]],
     ['İşletmeler için', [['services', 'Hizmetlerimiz'], ['business', 'İşletme avantajları'], ['bizSolutions', 'Hizmet modelleri & sektörler'], ['bizSteps', 'Nasıl çalışır (4 adım)'], ['bizForm', 'İşletme talep formu']]],
     ['Kuryeler için', [['courier', 'Kurye ol (avantajlar, şartlar, süreç)'], ['calc', 'Kazanç hesaplayıcı'], ['courForm', 'Kurye başvuru formu']]],
-    ['Ortak', [['testimonials', 'Yorumlar (boşsa gizlenir)'], ['refs', 'Referanslar / Galeri'], ['regions', 'Hizmet bölgeleri (boşsa gizlenir)'], ['faq', 'SSS'], ['contact', 'İletişim']]]
+    ['Ortak', [['testimonials', 'Yorumlar (boşsa gizlenir)'], ['refs', 'Referanslar / Galeri'], ['regions', 'Hizmet bölgeleri (boşsa gizlenir)'], ['faq', 'SSS'], ['contact', 'İletişim'], ['blog', 'Blog (yazılar ve “son yazılar” bölümleri)']]]
   ];
   const CONTENT_TABS = [
     { id: 'genel', group: 'Genel', label: 'Genel & İletişim', blocks: [
@@ -1072,6 +1072,7 @@
       { type: 'texts', title: 'İletişim metinleri', items: [T('contact_kicker', 'Küçük etiket'), T('contact_title', 'Başlık'), T('contact_text', 'Açıklama', 1)] },
       { type: 'texts', title: 'KVKK', items: [T('kvkk_text', 'Onay kutusu metni', 1), T('kvkk_title', 'Aydınlatma metni başlığı'), T('kvkk_full', 'Aydınlatma metni (hukukçunuza kontrol ettirmeniz önerilir)', 1)] }
     ] },
+    { id: 'blog', group: 'Blog', label: 'Blog Yazıları', blocks: [{ type: 'blog', title: 'Blog yazıları' }] },
     { id: 'seo', group: 'Yayın', label: 'SEO', blocks: [
       { type: 'seo', title: 'SEO puanı ve Google önizlemesi' },
       { type: 'texts', title: 'Arama sonucu başlığı ve açıklaması', items: [T('seo_title', 'Sayfa başlığı (title) — 50–60 karakter önerilir'), T('seo_description', 'Meta açıklama — 140–160 karakter önerilir', 1)] },
@@ -1171,6 +1172,8 @@
             wrap.appendChild(bx);
           }));
           sec.appendChild(wrap);
+        } else if (b.type === 'blog') {
+          sec.appendChild(blogEditor(draft, () => setDirty(true), draw, save));
         } else if (b.type === 'seo') {
           sec.id = 'seoBox'; sec.classList.add('seo-card');
         } else if (b.type === 'publish') {
@@ -1197,6 +1200,7 @@
         [!!s.gsc_verify, 'Google Search Console doğrulaması eklendi', ''],
         [draft.faq.length >= 4, 'SSS bölümünde en az 4 soru var (zengin sonuç)', draft.faq.length + ' soru'],
         [draft.gallery.every(g => g.title), 'Tüm galeri görsellerinin başlığı (alt metni) var', ''],
+        [YK.blogList(draft).length >= 3, 'Blogda en az 3 yazı yayında (arama trafiği için)', YK.blogList(draft).length + ' yazı'],
         [!s.noindex, 'Site arama motorlarına açık', ''],
         [!YK.hasUnpublished(), 'Son değişiklikler yayınlandı', '']
       ];
@@ -1218,7 +1222,7 @@
       (pending ? (R.on ? 'Kaydettiğiniz içerik henüz ziyaretçilere görünmüyor.' : 'Panelde kaydettiğiniz içerik şu an yalnızca bu tarayıcıda görünüyor.') : 'Panel içeriği ile yayındaki içerik aynı.') + '</p></div></div>';
     if (R.on) {
       box.innerHTML = state +
-        '<p class="muted">“Sitede yayınla” butonu; site içeriğini, arama motoru etiketlerini (başlık, açıklama, paylaşım görseli) ve alan adı girildiyse <code>sitemap.xml</code> / <code>robots.txt</code> dosyalarını sunucuda anında günceller.</p>' +
+        '<p class="muted">“Sitede yayınla” butonu; site içeriğini, arama motoru etiketlerini (başlık, açıklama, paylaşım görseli), blog yazılarının sayfalarını ve alan adı girildiyse <code>sitemap.xml</code> / <code>robots.txt</code> dosyalarını sunucuda anında günceller.</p>' +
         '<div class="btn-row"><a class="btn btn-light btn-lg" href="' + previewHref() + '" target="_blank" rel="noopener">' + I('goz') + 'Önce önizle</a><button class="btn btn-yellow btn-lg" id="pubGo"' + (pending ? '' : ' disabled') + '>' + I('gonder') + 'Sitede yayınla</button></div>' +
         '<div id="pubRes"></div>' +
         '<details class="pub-alt mt"><summary>Alternatif: content.js dosyasını indir</summary><p class="muted small">Sunucu dosyaya yazamıyorsa (izin hatası) indirilen <code>content.js</code> dosyasını FTP ile <code>assets/js/</code> klasörüne yükleyebilirsiniz.</p><button class="btn btn-light sm" id="pubDl">' + I('indir') + 'content.js indir</button></details>' +
@@ -1230,7 +1234,7 @@
           const r = j.result || {};
           YK.log('Site içeriği yayınlandı'); toast('Site yayınlandı');
           updateBadges(); rerender();
-          setTimeout(() => { const pr = $('#pubRes'); if (pr) pr.innerHTML = '<div class="alert ok mt">' + I('check') + '<div><b>Yayınlandı.</b> İçerik ' + (r.index ? '+ SEO etiketleri ' : '') + (r.sitemap ? '+ sitemap.xml ' : '') + 'güncellendi. Ziyaretçiler sayfayı yenilediğinde yeni hali görür.' + (r.index ? '' : ' <br><small>index.html’deki SEO etiketleri güncellenemedi (dosya izni); site içeriği yine de yayında.</small>') + '</div></div>'; }, 50);
+          setTimeout(() => { const pr = $('#pubRes'); if (pr) pr.innerHTML = '<div class="alert ok mt">' + I('check') + '<div><b>Yayınlandı.</b> İçerik ' + (r.index ? '+ SEO etiketleri ' : '') + (r.blog ? '+ ' + r.blog + ' blog sayfası ' : '') + (r.sitemap ? '+ sitemap.xml ' : '') + 'güncellendi. Ziyaretçiler sayfayı yenilediğinde yeni hali görür.' + (r.index ? '' : ' <br><small>index.html’deki SEO etiketleri güncellenemedi (dosya izni); site içeriği yine de yayında.</small>') + '</div></div>'; }, 50);
         } catch (e) {
           b.disabled = false; b.classList.remove('loading');
           $('#pubRes', box).innerHTML = '<div class="alert warn mt">' + I('uyari') + '<div><b>Yayınlanamadı.</b> ' + esc(e.message) + '</div></div>';
@@ -1305,6 +1309,179 @@
       else { arr.push(blank()); changed(); redraw(); }
     };
     wrap.appendChild(add);
+    return wrap;
+  }
+
+  /* Blog yazıları: liste ve yazı düzenleyici */
+  function blogEditor(draft, changed, redraw, persist) {
+    if (!Array.isArray(draft.blog)) draft.blog = [];
+    const arr = draft.blog;
+    const prevUrl = p => 'blog/yazi.html?s=' + encodeURIComponent(p.slug) + '&onizleme=1';
+    const wrap = document.createElement('div'); wrap.className = 'blog-ed';
+    wrap.innerHTML = '<p class="muted small">' + (R.on ? 'Kaydettiğiniz yazılar “Yayınla” ile sitede yayına girer; her yazı için <code>blog/adres.html</code> sayfası oluşturulur ve sitemap’e eklenir.' : 'Kaydettiğiniz yazılar <code>content.js</code> yayınlandığında sitede görünür. Yeni yazılar <code>blog/yazi.html?s=adres</code> adresinde açılır; ek dosya gerekmez.') + ' Taslak yazılar sitede görünmez.</p>' +
+      '<div class="blog-top"><div class="seg" id="bfSeg">' + [['', 'Tümü'], ['kurye', 'Kuryeler'], ['isletme', 'İşletmeler'], ['taslak', 'Taslaklar']].map(([k, l]) => '<button type="button" data-f="' + k + '"' + (k === (state.blogFilt || '') ? ' class="on"' : '') + '>' + l + '</button>').join('') + '</div>' +
+      '<button type="button" class="btn btn-yellow" data-new>' + I('arti') + 'Yeni yazı</button></div><div class="blog-rows"></div>';
+    const rows = $('.blog-rows', wrap);
+    function drawRows() {
+      const f = state.blogFilt || '';
+      const idx = arr.map((p, i) => i).sort((a, b) => String(arr[b].tarih || '').localeCompare(String(arr[a].tarih || '')) || a - b)
+        .filter(i => !f || (f === 'taslak' ? arr[i].yayinda === false : arr[i].kategori === f));
+      rows.innerHTML = idx.length ? idx.map(i => {
+        const p = arr[i], live = p.yayinda !== false;
+        return '<div class="blog-row" data-i="' + i + '"><div class="br-img">' + (p.gorsel ? '<img data-src="' + esc(p.gorsel) + '" alt="">' : I('gorsel')) + '</div>' +
+          '<div class="br-body"><b>' + esc(p.baslik || 'Başlıksız yazı') + '</b><small><span class="pill' + (p.kategori === 'isletme' ? ' dark' : '') + '">' + esc(YK.BLOG_KAT[p.kategori] || '') + '</span>' +
+          '<span class="pill ' + (live ? 'green' : 'red') + '">' + (live ? 'Yayında' : 'Taslak') + '</span><span>' + esc(YK.blogDate(p.tarih)) + '</span><span class="br-url">blog/' + esc(p.slug) + '.html</span></small></div>' +
+          '<div class="br-act"><a class="btn btn-light sm" target="_blank" rel="noopener" href="' + esc(prevUrl(p)) + '" title="Kaydedilmiş halini sitede gösterir">' + I('goz') + '<span class="hide-sm">Önizle</span></a>' +
+          '<button type="button" class="btn btn-light sm" data-e>' + I('kalem') + '<span class="hide-sm">Düzenle</span></button><button type="button" class="icon-btn sm danger" data-x title="Sil" aria-label="Sil">' + I('cop') + '</button></div></div>';
+      }).join('') : empty('yazi', 'Bu listede yazı yok', 'Yeni bir yazı ekleyerek başlayın.');
+      $$('.blog-row', rows).forEach(r => {
+        const i = +r.dataset.i;
+        $('[data-e]', r).onclick = () => openPost(i);
+        $('[data-x]', r).onclick = async () => {
+          if (!(await confirmBox('“' + (arr[i].baslik || 'Bu yazı') + '” silinsin mi? Değişikliği kaydedip yayınladığınızda sitede de kaldırılır.'))) return;
+          arr.splice(i, 1); changed(); persist(); redraw();
+        };
+        $('.blog-row b', r).onclick = () => openPost(i);
+      });
+      hydrate(rows);
+    }
+    $$('#bfSeg button', wrap).forEach(b => b.onclick = () => { state.blogFilt = b.dataset.f; $$('#bfSeg button', wrap).forEach(x => x.classList.toggle('on', x === b)); drawRows(); });
+    $('[data-new]', wrap).onclick = () => openPost(null);
+    drawRows();
+
+    function openPost(i) {
+      const isNew = i == null;
+      const p = isNew ? { slug: '', baslik: '', kategori: state.blogFilt === 'isletme' ? 'isletme' : 'kurye', tarih: today(), ozet: '', seo_title: '', seo_desc: '', gorsel: '', gorsel_alt: '', icerik: '', sss: [], yayinda: true } : JSON.parse(JSON.stringify(arr[i]));
+      p.sss = Array.isArray(p.sss) ? p.sss : [];
+      const oldSlug = p.slug;
+      let slugTouched = !isNew, edited = false;
+      const body = document.createElement('div'); body.className = 'post-ed';
+      const btn = (k, ic, l) => '<button type="button" data-md="' + k + '" title="' + l + '">' + ic + '</button>';
+      body.innerHTML =
+        '<div class="f-grid">' +
+        '<label class="fld full"><span>Başlık <i>*</i></span><input data-k="baslik" maxlength="140" placeholder="Ör. Moto Kurye Nasıl Olunur?"><small class="cnt" data-c="baslik"></small></label>' +
+        '<label class="fld"><span>Kime yönelik</span><select data-k="kategori"><option value="kurye">Kuryeler İçin</option><option value="isletme">İşletmeler İçin</option></select></label>' +
+        '<label class="fld"><span>Yayın tarihi</span><input type="date" data-k="tarih"></label>' +
+        '<label class="fld full"><span>Sayfa adresi <i>*</i></span><div class="slug-in"><em>blog/</em><input data-k="slug" maxlength="70" spellcheck="false"><em>.html</em></div><small>Başlıktan otomatik oluşur. Küçük harf, rakam ve tire kullanın; yayınlandıktan sonra değiştirirseniz eski adres çalışmaz.</small></label>' +
+        '<label class="fld full"><span>Özet <small>(liste kartlarında ve başlığın altında görünür)</small></span><textarea data-k="ozet" rows="2" maxlength="320"></textarea></label>' +
+        '</div>' +
+        '<div class="pe-img"><div class="pe-img-prev"></div><div class="fld"><span>Kapak görseli</span><div class="btn-row"><button type="button" class="btn btn-light sm" data-pick>' + I('gorsel') + 'Görsel seç</button><button type="button" class="link-btn" data-clear>Kaldır</button></div><label class="fld"><span>Görsel açıklaması (alt metin)</span><input data-k="gorsel_alt" placeholder="Görselde ne var? (SEO ve erişilebilirlik)"></label></div></div>' +
+        '<div class="fld full"><span>İçerik <i>*</i></span>' +
+        '<div class="md-bar">' + btn('h2', 'B1', 'Ara başlık (##)') + btn('h3', 'B2', 'Alt başlık (###)') + btn('b', '<b>K</b>', 'Kalın (**metin**)') + btn('ul', '•', 'Madde listesi (-)') + btn('ol', '1.', 'Numaralı liste (1.)') + btn('a', I('dis'), 'Bağlantı') + btn('not', I('uyari'), 'Not kutusu (>)') + btn('tablo', I('liste'), 'Tablo') +
+        '<span class="md-sp"></span><div class="seg sm" data-tab><button type="button" class="on" data-v="yaz">Yaz</button><button type="button" data-v="on">Önizle</button></div></div>' +
+        '<textarea data-k="icerik" rows="18" class="md-ta" spellcheck="true" placeholder="Paragrafları boş satırla ayırın. Ara başlık için satır başına ## yazın."></textarea><div class="md-prev" hidden></div>' +
+        '<small>## ara başlık · ### alt başlık · - madde · 1. numaralı madde · **kalın** · [metin](adres) · &gt; not kutusu · | tablo |. Site içi bağlantı örnekleri: <code>kuryeler.html</code>, <code>basvuru.html#kurye-basvuru</code>, <code>blog/moto-kurye-nasil-olunur.html</code>. Yazının sonuna başvuru kutusu otomatik eklenir.</small></div>' +
+        '<div class="pe-sss"><div class="pe-h"><b>Sık sorulan sorular</b><small>İsteğe bağlı; yazının sonunda gösterilir ve Google’a soru-cevap olarak bildirilir.</small></div><div class="pe-sss-list"></div><button type="button" class="btn btn-light sm" data-sss>' + I('arti') + 'Soru ekle</button></div>' +
+        '<details class="pe-seo"><summary>SEO ayarları <small>(boş bırakılırsa başlık ve özet kullanılır)</small></summary><div class="f-grid one">' +
+        '<label class="fld"><span>Arama sonucu başlığı</span><input data-k="seo_title" maxlength="90"><small class="cnt" data-c="seo_title"></small></label>' +
+        '<label class="fld"><span>Meta açıklama</span><textarea data-k="seo_desc" rows="2" maxlength="220"></textarea><small class="cnt" data-c="seo_desc"></small></label>' +
+        '<label class="fld"><span>Güncellenme tarihi (içeriği önemli ölçüde güncellediyseniz)</span><input type="date" data-k="guncelleme"></label>' +
+        '</div><div class="serp"><small>Google önizlemesi</small><div class="serp-box"><span class="serp-url"></span><span class="serp-title"></span><span class="serp-desc"></span></div></div></details>' +
+        '<label class="switch full mt"><input type="checkbox" data-k="yayinda"><span class="sw"></span><span>Yayında <small class="muted">(kapalıysa taslak olarak saklanır, sitede görünmez)</small></span></label>';
+      const f = k => $('[data-k="' + k + '"]', body);
+      ['baslik', 'kategori', 'tarih', 'slug', 'ozet', 'gorsel_alt', 'icerik', 'seo_title', 'seo_desc', 'guncelleme'].forEach(k => { f(k).value = p[k] || ''; });
+      f('yayinda').checked = p.yayinda !== false;
+      const ta = f('icerik'), prev = $('.md-prev', body);
+
+      function counts() {
+        const lim = { baslik: [20, 70], seo_title: [30, 60], seo_desc: [120, 160] };
+        Object.keys(lim).forEach(k => {
+          const el = $('[data-c="' + k + '"]', body), n = f(k).value.length, l = lim[k];
+          if (k !== 'baslik' && !n) { el.textContent = 'Boş: ' + (k === 'seo_title' ? 'başlık + “| Yakında Kurye”' : 'özet') + ' kullanılır'; el.className = 'cnt'; return; }
+          el.textContent = n + ' karakter' + (n < l[0] ? ' · kısa' : n > l[1] ? ' · uzun' : ' · ideal'); el.className = 'cnt ' + (n >= l[0] && n <= l[1] ? 'good' : 'warn');
+        });
+        const base = (draft.settings.site_url || 'https://alanadiniz.com').replace(/\/+$/, '').replace(/^https?:\/\//, '');
+        const t = f('seo_title').value || (f('baslik').value + ' | Yakında Kurye'), d = f('seo_desc').value || f('ozet').value;
+        $('.serp-url', body).textContent = base + ' › blog › ' + (f('slug').value || 'adres');
+        $('.serp-title', body).textContent = t.length > 62 ? t.slice(0, 60) + '…' : t;
+        $('.serp-desc', body).textContent = d.length > 162 ? d.slice(0, 158) + '…' : d;
+      }
+      function drawImg() {
+        $('.pe-img-prev', body).innerHTML = p.gorsel ? '<img data-src="' + esc(p.gorsel) + '" alt="">' : '<span>' + I('gorsel') + 'Kapak yok</span>';
+        $('[data-clear]', body).hidden = !p.gorsel; hydrate(body);
+      }
+      function drawSss() {
+        const list = $('.pe-sss-list', body);
+        list.innerHTML = p.sss.map((x, k) => '<div class="pe-q" data-q="' + k + '"><div class="f-grid one"><label class="fld"><span>Soru</span><input value="' + esc(x.q || '') + '"></label><label class="fld"><span>Cevap</span><textarea rows="2">' + esc(x.a || '') + '</textarea></label></div><button type="button" class="icon-btn sm danger" title="Sil" aria-label="Soruyu sil">' + I('cop') + '</button></div>').join('');
+        $$('.pe-q', list).forEach(r => {
+          const k = +r.dataset.q;
+          $('input', r).oninput = e => { p.sss[k].q = e.target.value; edited = true; };
+          $('textarea', r).oninput = e => { p.sss[k].a = e.target.value; edited = true; };
+          $('.icon-btn', r).onclick = () => { p.sss.splice(k, 1); edited = true; drawSss(); };
+        });
+      }
+      const showPrev = () => { prev.innerHTML = YK.md(ta.value, '') || '<p class="muted">Önizlenecek içerik yok.</p>'; $$('a', prev).forEach(a => { a.target = '_blank'; a.rel = 'noopener'; }); };
+      $$('[data-tab] button', body).forEach(b => b.onclick = () => {
+        const on = b.dataset.v === 'on';
+        $$('[data-tab] button', body).forEach(x => x.classList.toggle('on', x === b));
+        prev.hidden = !on; ta.hidden = on; $$('[data-md]', body).forEach(x => { x.disabled = on; });
+        if (on) showPrev(); else ta.focus();
+      });
+
+      // Biçim butonları: seçili metni sarar ya da satır başlarına işaret ekler
+      const after = () => { edited = true; ta.focus(); ta.dispatchEvent(new Event('input')); };
+      function wrapSel(pre, post, ph) {
+        const s0 = ta.selectionStart, e0 = ta.selectionEnd, sel = ta.value.slice(s0, e0) || ph;
+        ta.setRangeText(pre + sel + post, s0, e0, 'end');
+        if (s0 === e0) ta.setSelectionRange(s0 + pre.length, s0 + pre.length + ph.length);
+        after();
+      }
+      function lines(mark, ph) {
+        const v = ta.value, s0 = ta.selectionStart, e0 = ta.selectionEnd;
+        const a = v.lastIndexOf('\n', s0 - 1) + 1; let b = v.indexOf('\n', e0); if (b < 0) b = v.length;
+        const cur = v.slice(a, b);
+        const out = (cur.trim() ? cur : ph).split('\n').map((l, n) => (l.trim() ? mark(n) + l.replace(/^(#{2,3}\s+|[-*•]\s+|\d+[.)]\s+|>\s?)/, '') : l)).join('\n');
+        ta.setRangeText(out, a, b, 'select'); after();
+      }
+      function block(txt) {
+        const v = ta.value, s0 = ta.selectionEnd, pre = s0 && v[s0 - 1] !== '\n' ? '\n\n' : (s0 > 1 && v[s0 - 2] !== '\n' ? '\n' : '');
+        ta.setRangeText(pre + txt + '\n', s0, s0, 'end'); after();
+      }
+      const MD = {
+        h2: () => lines(() => '## ', 'Ara başlık'), h3: () => lines(() => '### ', 'Alt başlık'),
+        b: () => wrapSel('**', '**', 'kalın metin'), ul: () => lines(() => '- ', 'Madde'), ol: () => lines(n => (n + 1) + '. ', 'Madde'),
+        not: () => lines(() => '> ', 'Not metni'),
+        tablo: () => block('| Başlık 1 | Başlık 2 |\n|---|---|\n| Hücre | Hücre |\n| Hücre | Hücre |'),
+        a: () => {
+          const u = prompt('Bağlantı adresi\nSite içi: kuryeler.html, basvuru.html#kurye-basvuru\nDış site: https://…', '');
+          if (u && u.trim()) wrapSel('[', '](' + u.trim().replace(/\s/g, '%20') + ')', 'bağlantı metni');
+        }
+      };
+      $$('[data-md]', body).forEach(b => { b.onmousedown = e => e.preventDefault(); b.onclick = () => MD[b.dataset.md](); });
+
+      $$('[data-k]', body).forEach(el => el.addEventListener('input', () => { edited = true; counts(); }));
+      f('baslik').addEventListener('input', () => { if (!slugTouched) f('slug').value = YK.slugify(f('baslik').value); counts(); });
+      f('slug').addEventListener('input', () => { slugTouched = true; });
+      f('slug').addEventListener('blur', () => { f('slug').value = YK.slugify(f('slug').value); counts(); });
+      f('yayinda').addEventListener('change', () => { edited = true; });
+      $('[data-pick]', body).onclick = () => pickImage(src => { p.gorsel = src; edited = true; drawImg(); });
+      $('[data-clear]', body).onclick = () => { p.gorsel = ''; edited = true; drawImg(); };
+      $('[data-sss]', body).onclick = () => { p.sss.push({ q: '', a: '' }); edited = true; drawSss(); const q = $$('.pe-q input', body).pop(); if (q) q.focus(); };
+
+      const m = modal({
+        title: isNew ? 'Yeni blog yazısı' : 'Yazıyı düzenle', body: body, wide: true, sticky: true,
+        actions: [{ label: 'Vazgeç', onClick: mm => { if (!edited || confirm('Kaydedilmemiş değişiklikler silinsin mi?')) mm.close(); } }, { label: I('check') + 'Kaydet', cls: 'btn-yellow', onClick: done }]
+      });
+      $('.m-x', m.el).onclick = () => { if (!edited || confirm('Kaydedilmemiş değişiklikler silinsin mi?')) m.close(); };
+      drawImg(); drawSss(); counts();
+
+      function done(mm) {
+        ['baslik', 'kategori', 'tarih', 'ozet', 'gorsel_alt', 'icerik', 'seo_title', 'seo_desc', 'guncelleme'].forEach(k => { p[k] = f(k).value.trim(); });
+        p.slug = YK.slugify(f('slug').value || p.baslik); f('slug').value = p.slug;
+        p.yayinda = f('yayinda').checked;
+        p.sss = p.sss.map(x => ({ q: String(x.q || '').trim(), a: String(x.a || '').trim() })).filter(x => x.q && x.a);
+        if (!p.guncelleme) delete p.guncelleme;
+        const bad = (k, msg) => { const el = f(k); el.classList.add('bad'); el.focus(); toast(msg, 'err'); setTimeout(() => el.classList.remove('bad'), 2500); };
+        if (!p.baslik) return bad('baslik', 'Başlık girin');
+        if (!p.slug || p.slug === 'yazi') return bad('slug', 'Geçerli bir sayfa adresi girin');
+        if (arr.some((x, k) => k !== i && x.slug === p.slug)) return bad('slug', 'Bu adres başka bir yazıda kullanılıyor');
+        if (!p.icerik) { if (ta.hidden) $('[data-tab] [data-v="yaz"]', body).click(); return bad('icerik', 'İçerik yazın'); }
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(p.tarih)) p.tarih = today();
+        if (isNew) arr.unshift(p); else arr[i] = p;
+        changed(); persist(); mm.close(); redraw();
+        if (!isNew && oldSlug && oldSlug !== p.slug) toast('Adres değişti: eski bağlantılar artık açılmaz', 'info');
+      }
+    }
     return wrap;
   }
 

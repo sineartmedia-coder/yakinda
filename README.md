@@ -8,7 +8,7 @@ Restoran ve işletmelere kurye hizmeti veren, kurye alımı yapan **Yakında Kur
 | `isletmeler.html` | İşletmeler için: hizmetler, avantajlar, hizmet modelleri, nasıl çalışır, işletme SSS |
 | `kuryeler.html` | Kuryeler için: neden biz, başvuru şartları, çalışma modelleri, kazanç hesaplayıcı, kurye SSS |
 | `basvuru.html` | Başvuru ve iletişim: işletme talep formu / kurye başvuru formu (sekmeli), iletişim bilgileri |
-| `blog.html`, `blog/` | Blog listesi ve yazılar |
+| `blog.html`, `blog/` | Blog listesi ve yazı sayfaları (`blog/yazi.html` yazı şablonudur) |
 | `admin.html` | Yönetim paneli |
 | `api/index.php` | Sunucu kodu: formları kaydeder, panel verilerini saklar, "Yayınla" ile siteyi günceller |
 | `assets/` | Görseller, stil ve JavaScript dosyaları |
@@ -67,7 +67,10 @@ Panelin sol alt köşesinde hangi modda çalıştığı yazar.
 - Panelde düzenlenen metinler, görseller ve listeler hangi sayfada bulunuyorsa orada görünür (ör. kazanç hesaplayıcı Kuryeler sayfasında, formlar Başvuru sayfasında). Bölümleri aç/kapa ayarları aynen çalışır.
 - Eski tek sayfalık sitenin bağlantıları (ör. `index.html#kurye-basvuru`) kendiliğinden yeni sayfalara yönlendirilir.
 - Her sayfanın kendi başlığı, açıklaması ve yapısal verisi vardır (sayfa yolu, SSS, iş ilanı, blog yazısı). Panelde girilen SEO başlığı ve açıklaması ana sayfa içindir.
-- **Blog yazıları** `blog/` klasöründe düz HTML dosyalarıdır, panelden düzenlenmez. Yeni yazı eklemek için mevcut bir yazı dosyası kopyalanıp içeriği değiştirilir; ardından `blog.html` listesine kart eklenir. Sunucu modunda sitemap `blog/` klasörünü kendiliğinden tarar; yerel modda `assets/js/store.js` içindeki sayfa listesine (`SAYFALAR`) yeni dosya eklenir.
+- **Blog yazıları panelden yönetilir:** Site İçeriği → **Blog Yazıları**. Yeni yazı ekleme, düzenleme, silme, taslak/yayında, kapak görseli, SSS ve SEO başlığı/açıklaması buradadır. İçerik, biçim butonlarıyla (ara başlık, kalın, liste, bağlantı, not kutusu, tablo) veya şu işaretlerle yazılır: `## başlık`, `- madde`, `**kalın**`, `[metin](adres)`, `> not`, `| tablo |`. "Önizle" ile kaydedilen hali sitede görülür.
+  - **Sunucu modu:** "Yayınla" her yayındaki yazı için `blog/adres.html` sayfasını oluşturur (arama motorları için hazır içerikli), silinen/taslağa alınan yazıların sayfalarını kaldırır ve sitemap'i günceller.
+  - **Yerel mod:** `content.js` yayınlandığında yazılar sitede görünür; yeni yazılar `blog/yazi.html?s=adres` adresinde açılır, ek dosya gerekmez.
+  - Ana sayfa, İşletmeler ve Kuryeler sayfalarındaki "son yazılar" kartları ile blog listesi kendiliğinden güncellenir. Blog bölümü "Bölümler & Bant" sekmesinden kapatılabilir.
 - Mevzuat içeren yazılar (ehliyet, SRC KURYE, ekipman) Ekim 2026 itibarıyla yazılmıştır; mevzuat değiştikçe güncellenmelidir.
 
 ## Telefon ve tablet görünümü

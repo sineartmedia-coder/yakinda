@@ -308,9 +308,201 @@
     ],
     marquee: ['Restoran Kuryesi', 'Paket Teslimatı', 'Acil Teslimat', 'Yemek Teslimatı', 'Market & Eczane', 'E-ticaret Teslimatı', '7/24 Hizmet', 'Sigortalı Kurye'],
     testimonials: [],
+    // Blog yazıları: içerik sade biçimde yazılır (## başlık, - madde, **kalın**, [bağlantı](adres), > not, | tablo |)
+    blog: [
+     {
+      "slug": "moto-kurye-nasil-olunur",
+      "baslik": "Moto Kurye Nasıl Olunur? 2026 Şartları, Belgeler ve Başvuru Adımları",
+      "kategori": "kurye",
+      "tarih": "2026-10-23",
+      "ozet": "Moto kurye olmak için hangi ehliyet gerekir, adli sicil şartı nedir, SRC KURYE ve MYK belgesi zorunlu mu? Şartları, hazırlamanız gereken belgeleri ve başvuru adımlarını tek yazıda topladık.",
+      "seo_title": "Moto Kurye Nasıl Olunur? 2026 Şartları ve Belgeler | Yakında Kurye",
+      "seo_desc": "Moto kurye olmak için gereken ehliyet, yaş, adli sicil şartı, SRC KURYE ve MYK belgesi durumu, hazırlanacak evraklar ve Ankara'da başvuru adımları. 2026 güncel rehber.",
+      "gorsel": IMG + "hero-kurye.jpg",
+      "gorsel_alt": "Yakında Kurye çantasıyla yolda giden moto kurye",
+      "icerik": "Moto kuryelik; esnek çalışma saatleri, düzenli kazanç ve hızlı işe başlama imkânı sunduğu için en çok tercih edilen işlerden biri. Ancak son iki yılda kuryeliğe dair önemli düzenlemeler yapıldı ve \"kurye olmak için ne gerekir?\" sorusunun cevabı değişti. Bu rehberde 2026 itibarıyla geçerli şartları, hazırlamanız gereken belgeleri ve başvuru adımlarını sırayla anlattık.\n\n## Moto kurye olmak için temel şartlar\n\n- **Uygun sınıf motosiklet ehliyeti:** Kullanacağınız motosiklete göre A1, A2 veya A sınıfı ehliyet.\n- **Yaş:** Ehliyet sınıfına göre yasal alt sınır değişir; kurye firmalarının büyük kısmı 18 yaşını doldurmuş olmayı şart koşar. Yakında Kurye'de de başvuru için 18 yaşını doldurmuş olmak gerekir.\n- **Adli sicil:** Belirli suçlardan kaydınızın bulunmaması gerekir (aşağıda ayrıntılı).\n- **Akıllı telefon:** Siparişler, navigasyon ve iletişim telefon üzerinden yürür.\n- **Motosiklet:** Kendi motosikletiniz ya da kurye firmasının sağladığı motosiklet.\n\n## Hangi ehliyet gerekir?\n\nKarayolları Trafik Yönetmeliği'ne göre motosiklet ehliyet sınıfları ve yaş sınırları şöyledir:\n\n| Sınıf | Asgari yaş | Kullanılabilen araç |\n|---|---|---|\n| **M** | 16 | Yalnızca mopet (50 cm³'e kadar, azami hızı 45 km/s) |\n| **A1** | 16 | 125 cm³ ve 11 kW'a kadar motosikletler |\n| **A2** | 18 | 35 kW'a kadar motosikletler (M ve A1'i de kapsar) |\n| **A** | 20 (2 yıllık A2 ile) veya 24 | Tüm motosikletler (M, A1 ve A2'yi de kapsar) |\n| **B** | 18 | Otomobil; motorlu iki tekerlilerden yalnızca M sınıfı mopet |\n\nKuryelikte en sık kullanılan 125 cm³'lük motosikletler için A1 yeterlidir. Daha güçlü bir motosikletle çalışacaksanız A2 veya A sınıfı gerekir. Ayrıntılar için [kurye olmak için hangi ehliyet gerekir](blog/kurye-olmak-icin-hangi-ehliyet-gerekir.html) yazımıza bakabilirsiniz.\n\n## Adli sicil şartı\n\nMayıs 2025'te kurye işletmeciliğine yönelik yapılan düzenlemeyle, kurye olarak çalışacak kişilerde adli sicil şartı netleşti. Kasten öldürme, cinsel suçlar, yağma, hırsızlık, dolandırıcılık, sahtecilik, güveni kötüye kullanma, kaçakçılık ve uyuşturucu suçları gibi düzenlemede sayılan suçlardan sabıka kaydı bulunan kişiler kurye olarak çalıştırılamaz. Arşiv kayıtları bu kapsamda değerlendirilmez.\n\nAdli sicil kaydı belgenizi e-Devlet üzerinden birkaç dakikada alabilirsiniz.\n\n## SRC KURYE ve MYK belgesi zorunlu mu?\n\n29 Ocak 2026'da yayımlanan düzenlemeyle kuryeler için **SRC KURYE** mesleki yeterlilik belgesi tanımlandı. Bu şartın uygulanması, Mayıs 2026'da yapılan değişiklikle **1 Ocak 2027'ye ertelendi** ([Resmî Gazete, 16.05.2026](https://www.resmigazete.gov.tr/eskiler/2026/05/20260516-5.htm)). Kuryelik yapıyorsanız ya da yapmayı planlıyorsanız belge sürecini takip etmeniz ve eğitiminizi bu tarihten önce planlamanız iyi olur.\n\nSık karıştırılan **MYK \"Motosikletli Kurye (Seviye 3)\"** belgesi ise Mesleki Yeterlilik Kurumu'nun bir yeterlilik belgesidir. Belge zorunlu tutulan meslekler listesine alınmadığı sürece isteğe bağlıdır; yine de bazı işverenler için tercih sebebi olabilir. Güncel zorunlu meslekler listesini MYK'nın sitesinden kontrol edebilirsiniz.\n\n## Sigortalı kurye mi, esnaf kurye mi?\n\nKurye olarak iki şekilde çalışabilirsiniz:\n\n- **Bir kurye firmasında sigortalı çalışmak:** Sigortanız, ekipmanınız ve çoğu zaman motosikletiniz firma tarafından sağlanır. Vergi, fatura ve muhasebe işleriyle uğraşmazsınız.\n- **Esnaf (şahıs şirketli) kurye olmak:** Kendi adınıza fatura keser, Bağ-Kur primlerinizi, vergilerinizi ve yakıt gibi masraflarınızı kendiniz karşılarsınız. Kurye işletmeciliği yapacaksanız yetki belgesi gibi ek yükümlülükleri de araştırmanız gerekir.\n\nKuryeliğe yeni başlayanlar için sigortalı çalışmak, hem masrafları hem de bürokrasiyi azalttığı için genellikle daha kolay bir başlangıçtır.\n\n## Başvuru öncesi hazırlamanız gereken belgeler\n\nKurye firmaları genellikle şu belgeleri ister:\n\n- Nüfus cüzdanı\n- Sürücü belgesi (ehliyet)\n- Adli sicil kaydı belgesi (e-Devlet)\n- Yerleşim yeri belgesi (e-Devlet)\n- Maaş ödemesi için banka IBAN bilgisi\n- Kendi motosikletinizle çalışacaksanız ruhsat ve sigorta poliçesi\n\n## Yakında Kurye'de kurye olmak: 5 adım\n\n1. **Online başvur:** [Başvuru formunu](basvuru.html#kurye-basvuru) doldur, başvuru numaranı al.\n2. **Ön görüşme:** Ekibimiz seni arar ve kısa bir görüşme yapar.\n3. **Evrak teslimi:** Ehliyet, kimlik ve gerekli belgeleri teslim edersin.\n4. **Eğitim ve ekipman:** Kısa bir oryantasyonun ardından kask, mont ve termal çantan teslim edilir.\n5. **Yola çık:** İlk vardiyanla kazanmaya başlarsın.\n\n> **Bilgi notu:** Bu yazı Ekim 2026 itibarıyla yürürlükteki düzenlemelere göre hazırlanmıştır. Mevzuat değişebileceği için başvurmadan önce güncel durumu resmî kaynaklardan kontrol edin.",
+      "sss": [
+       {
+        "q": "Kurye olmak için kaç yaşında olmak gerekir?",
+        "a": "Yasal alt sınır ehliyet sınıfına göre değişir: A1 için 16, A2 için 18 yaş. Kurye firmalarının çoğu, Yakında Kurye de dahil, 18 yaşını doldurmuş olmayı şart koşar."
+       },
+       {
+        "q": "Kendi motosikletim olmadan kurye olabilir miyim?",
+        "a": "Evet. Yakında Kurye'de kendi motosikletinle çalışabilir ya da şirket motosikleti desteğinden yararlanabilirsin. Tercihini başvuru formunda belirtmen yeterli."
+       },
+       {
+        "q": "MYK motokurye belgesi zorunlu mu?",
+        "a": "MYK Motosikletli Kurye (Seviye 3) belgesi, zorunlu meslekler listesine alınmadığı sürece isteğe bağlıdır. Ayrıca tanımlanan SRC KURYE şartının uygulanması 1 Ocak 2027'ye ertelenmiştir."
+       },
+       {
+        "q": "Başvurum ne kadar sürede sonuçlanır?",
+        "a": "Yakında Kurye'ye yapılan başvurular genellikle 48 saat içinde değerlendirilir ve ekibimiz seni telefonla arar."
+       }
+      ],
+      "yayinda": true
+     },
+     {
+      "slug": "restoran-kendi-kuryesi-mi-kurye-firmasi-mi",
+      "baslik": "Restoranlar İçin Kurye Hizmeti: Kendi Kuryeniz mi, Kurye Firması mı?",
+      "kategori": "isletme",
+      "tarih": "2026-10-23",
+      "ozet": "Paket servis büyüdükçe her restoran aynı soruyla karşılaşır: kuryeyi kendin mi istihdam edeceksin, yoksa bir kurye firmasıyla mı çalışacaksın? Maliyet kalemlerini, avantajları ve doğru seçimi adım adım inceledik.",
+      "seo_title": "Restoran Kurye Hizmeti: Kendi Kuryesi mi, Kurye Firması mı? | Yakında Kurye",
+      "seo_desc": "Paket servis yapan restoranlar için kendi kurye kadrosu ile kurye firmasıyla çalışmanın maliyet, esneklik ve risk açısından karşılaştırması. Kurye firması seçerken sorulacak sorular.",
+      "gorsel": IMG + "sube-cephe.jpg",
+      "gorsel_alt": "Yakında Kurye giydirmeli şube cephesi",
+      "icerik": "Paket servis siparişleri arttığında restoranların ilk fark ettiği şey, mutfağın değil teslimatın darboğaz olduğudur. Yemek zamanında hazırlanır ama kurye yoksa sipariş bekler, müşteri arar, puan düşer. Bu noktada iki yol vardır: kendi kurye kadronuzu kurmak ya da teslimatı bir **kurye firmasına** devretmek. İkisinin de doğru olduğu durumlar var; önemli olan kararınızı tahminle değil, kendi sipariş verinize göre vermek.\n\n## Kendi kuryenizi istihdam etmenin gerçek maliyeti\n\nKendi kuryenizin maliyeti yalnızca aylık maaştan ibaret değildir. Bütçe yaparken çoğu işletmenin gözden kaçırdığı kalemler şunlardır:\n\n- **Maaş ve SGK primleri:** Kurye siparişin az olduğu saatlerde de ücret alır.\n- **Motosiklet:** Satın alma ya da kiralama, yakıt, periyodik bakım, lastik ve beklenmedik arızalar.\n- **Sigorta:** Zorunlu trafik sigortası ve tercihe bağlı kasko.\n- **Ekipman:** Kask, mont, yağmurluk, termal çanta ve telefon tutucu.\n- **Yedekleme:** Kurye izne çıktığında, hastalandığında ya da işi bıraktığında yerine kimin gideceği.\n- **İşe alım ve yönetim zamanı:** İlan, görüşme, oryantasyon, vardiya planı ve günlük takip.\n\nBu kalemlerin bir kısmı sabittir: sipariş olsa da olmasa da ödenir. Siparişleri gün içinde dengeli dağılan ve yüksek hacimli işletmelerde bu sorun olmayabilir. Ama yoğunluğu öğle ve akşam saatlerinde toplanan bir restoranda, kurye günün önemli bir kısmında boş bekler.\n\n## Kurye firmasıyla çalışmanın avantajları\n\nBir kurye firmasıyla çalıştığınızda bu yükün büyük kısmı firmaya geçer. Öne çıkan avantajlar:\n\n- **Değişken maliyet:** Modele göre yalnızca teslim edilen paket ya da kullanılan saat kadar ödersiniz.\n- **Esnek kurye sayısı:** Yoğun saatlerde ek kurye alır, sakin saatlerde azaltırsınız.\n- **Yedek kurye:** Kurye izinli veya raporluyken teslimat aksamaz; yerine başka bir kurye gönderilir.\n- **Operasyon yükü yok:** İşe alım, sigorta, ekipman ve vardiya planlaması firmanın sorumluluğundadır.\n- **Raporlama:** Teslimat ve vardiya raporlarıyla hizmeti şeffaf şekilde takip edebilirsiniz.\n\n## Dikkat edilmesi gereken noktalar\n\nKurye firmasıyla çalışmanın da dikkat isteyen tarafları vardır. Müşteriniz kuryeyi sizin markanızın bir parçası olarak görür; kuryenin davranışı, kıyafeti ve paketi taşıma şekli doğrudan size yansır. Ayrıca her gün farklı bir kuryenin gelmesi, bölgeyi ve müdavim müşterilerinizi tanıyan birinin olmaması anlamına gelebilir.\n\nBu riskleri azaltmanın yolu, firmayla çalışma modelini netleştirmektir. Örneğin [işletmeye özel kurye](isletmeler.html#cozumler) modelinde size atanmış, işletmenizi ve müşterilerinizi tanıyan sabit bir kurye ekibi çalışır.\n\n## Karşılaştırma: hangisi size uygun?\n\n| Kriter | Kendi kuryeniz | Kurye firması |\n|---|---|---|\n| Maliyet yapısı | Büyük ölçüde sabit | Modele göre değişken |\n| Yoğun saat esnekliği | Sınırlı; ek kurye işe almak gerekir | Ek kurye talep edilebilir |\n| Kurye izinli olduğunda | Teslimat aksayabilir | Yedek kurye gönderilir |\n| Sigorta ve ekipman | İşletmenin sorumluluğu | Firmanın sorumluluğu |\n| Marka kontrolü | Tam kontrol | Sözleşme ve sabit kurye ile sağlanır |\n| Yönetim zamanı | Yüksek | Düşük |\n\nGenel bir kural olarak: siparişleriniz düzensizse veya belirli saatlerde yoğunlaşıyorsa kurye firması daha ekonomik olur. Hacminiz yüksek ve gün boyu dengeliyse kendi kadronuz ya da kurye firmasıyla **hibrit bir model** (sabit kuryeleriniz + yoğun saatlerde ek destek) mantıklı olabilir.\n\n## Kurye firması seçerken sorulacak 8 soru\n\n1. Kuryeleriniz sigortalı mı, sigorta kapsamı nedir?\n2. Kuryelere işe başlamadan önce eğitim veriliyor mu?\n3. Kurye gelmezse ya da izinliyse yedek kurye ne kadar sürede gelir?\n4. Fiyatlandırma nasıl yapılıyor: paket başı, saatlik, aylık?\n5. Teslimat süreleri ve vardiyalar nasıl raporlanıyor?\n6. Bizim bölgemizde ve çalışma saatlerimizde hizmet veriyor musunuz?\n7. Kurye ekipmanı (çanta, kıyafet) kim tarafından sağlanıyor?\n8. Sözleşme süresi ve fesih koşulları nedir?\n\nBu sorulara net ve yazılı cevap veren bir firma, sorun çıktığında da muhatap bulabileceğiniz bir firmadır.\n\n## Sonuç\n\nKendi kuryeniz ile kurye firması arasındaki seçim, işletmenizin sipariş düzenine bağlıdır. Son birkaç haftanın siparişlerini saat saat çıkarın, boş geçen kurye saatlerini hesaplayın ve sabit maliyetlerinizi yan yana koyun. Karar çoğu zaman bu tablodan kendiliğinden çıkar. Hangi modelin size uygun olduğundan emin değilseniz [işletmelere yönelik hizmetlerimizi](isletmeler.html) inceleyebilir ya da bize ulaşabilirsiniz.",
+      "sss": [
+       {
+        "q": "Kurye firmasıyla çalışmak kendi kuryemi istihdam etmekten ucuz mu?",
+        "a": "Siparişleriniz belirli saatlerde yoğunlaşıyorsa genellikle evet; çünkü yalnızca kullandığınız kadar ödersiniz. Gün boyu yüksek ve dengeli hacimde kendi kadronuz da ekonomik olabilir. En doğru sonucu kendi sipariş verinizle hesaplayarak alırsınız."
+       },
+       {
+        "q": "Kurye firmasıyla çalışırsam her gün farklı kurye mi gelir?",
+        "a": "Modele bağlıdır. İşletmeye özel kurye modelinde size atanmış sabit bir kurye ekibi çalışır; bölgenizi ve müşterilerinizi tanır."
+       },
+       {
+        "q": "Kendi kuryelerim varken yoğun saatlerde ek kurye alabilir miyim?",
+        "a": "Evet. Hibrit modelde sabit kuryeleriniz çalışmaya devam eder, yoğun saatlerde ek kurye desteği alırsınız."
+       }
+      ],
+      "yayinda": true
+     },
+     {
+      "slug": "kurye-kazanci-nasil-artirilir",
+      "baslik": "Kurye Kazancı Nasıl Artırılır? 9 Pratik Öneri",
+      "kategori": "kurye",
+      "tarih": "2026-10-23",
+      "ozet": "Aynı saatlerde çalışan iki kuryenin kazancı neden farklı olur? Kurye ücretlerinin nasıl hesaplandığını ve kazancını artırmak için bugün uygulayabileceğin 9 öneriyi derledik.",
+      "seo_title": "Kurye Kazancı Nasıl Artırılır? 9 Pratik Öneri | Yakında Kurye",
+      "seo_desc": "Kurye ücretleri nasıl hesaplanır, paket başı ve saatlik çalışmanın farkı nedir? Yoğun saatler, bölge bilgisi, motor bakımı ve gider takibiyle kurye kazancını artırmanın 9 yolu.",
+      "gorsel": IMG + "kurye-canta.jpg",
+      "gorsel_alt": "Yakında Kurye çantasıyla teslimata hazırlanan kurye",
+      "icerik": "Kuryelikte kazanç; ne kadar çalıştığına olduğu kadar **nasıl** çalıştığına da bağlıdır. Aynı bölgede, aynı saatlerde çalışan iki kurye arasında belirgin fark olabilir. Bu farkı yaratan şeyler çoğu zaman küçük alışkanlıklardır. Önce kurye ücretlerinin nasıl hesaplandığına, ardından kazancını artırmanın pratik yollarına bakalım.\n\n## Kurye ücretleri nasıl hesaplanır?\n\nKurye ödemeleri genellikle şu modellerden biriyle ya da bunların birleşimiyle yapılır:\n\n- **Paket başı:** Teslim ettiğin her paket için belirli bir ücret alırsın. Ne kadar çok paket, o kadar çok kazanç.\n- **Saatlik / vardiyalı:** Çalıştığın saat üzerinden ücret alırsın; paket sayısı düşük olsa da kazancın belirlidir.\n- **Karma model:** Saatlik ücretin üzerine paket başı ödeme eklenir.\n- **Prim ve bonuslar:** Yoğunluk, performans veya belirli paket hedeflerine göre ek ödemeler.\n\nHangi modelde çalışırsan çalış, kazancını belirleyen iki şey vardır: birim zamanda teslim ettiğin paket sayısı ve bu süreçteki giderlerin. Aşağıdaki önerilerin hepsi bu ikisinden birini iyileştirmeye yöneliktir. Tahmini kazancını görmek için [kazanç hesaplayıcımızı](kuryeler.html#kazanc) da kullanabilirsin.\n\n## 1. Yoğun saatleri doğru seç\n\nSiparişler öğle ve akşam yemeği saatlerinde, hafta sonlarında ve kötü havalarda artar. Esnek çalışabiliyorsan bu saatleri önceliklendirmek, aynı sürede daha fazla paket taşımanı sağlar.\n\n## 2. Bölgeni iyi tanı\n\nKısa yolları, site girişlerini, park yerlerini ve trafiğin yoğunlaştığı noktaları bilmek her teslimatta birkaç dakika kazandırır. Gün sonunda bu dakikalar birkaç ek teslimat demektir.\n\n## 3. Teslim alma ve teslim etme süresini kısalt\n\nTelefonunun şarjlı, navigasyonunun açık, çantanın düzenli olması; restoranda ve müşteri kapısında geçen süreyi kısaltır. Adres eksikse müşteriyi kapıya varmadan arayıp teyit etmek de zaman kazandırır.\n\n## 4. Motosikletinin bakımını aksatma\n\nArızalanan bir motosiklet, çalışamadığın bir gün demektir. Yağ değişimi, zincir ve fren kontrolü gibi periyodik bakımları zamanında yaptır. Doğru lastik basıncı ve yumuşak sürüş, yakıt giderini de azaltır.\n\n## 5. Güvenli sür\n\nHız, kısa vadede birkaç dakika kazandırıyor gibi görünse de bir kaza hem sağlığını hem de haftalarca kazancını kaybetmek demektir. Kask ve eldiven zorunludur; koruyucu ekipmanla ve trafik kurallarına uyarak sürmek uzun vadede en kârlı tercihtir. Ekipman listesi için [moto kurye ekipmanları](blog/moto-kurye-ekipmanlari.html) yazımıza göz atabilirsin.\n\n## 6. Müşteri memnuniyetine önem ver\n\nPaketi düzgün taşımak, kibar olmak ve teslimatı zamanında yapmak; hem işletmenin seni tercih etmesini hem de varsa performans primlerini doğrudan etkiler.\n\n## 7. Gelir ve giderini takip et\n\nHaftalık kazancını, yakıt, bakım ve telefon giderlerini basit bir tabloda tut. Hangi gün ve saatlerin gerçekten kazançlı olduğunu ancak böyle görebilirsin.\n\n## 8. Sana uygun çalışma modelini seç\n\nTam zamanlı, yarı zamanlı (akşam) ve hafta sonu çalışma seçenekleri farklı yaşam düzenlerine uyar. Ek gelir arıyorsan yoğun akşam saatlerinde yarı zamanlı çalışmak, kısa sürede iyi bir kazanç sağlayabilir.\n\n## 9. Prim sistemini öğren, ekibinle iletişimde kal\n\nÇalıştığın firmanın prim ve bonus kurallarını net öğren. Operasyon ekibiyle iyi iletişim kurmak; yoğun bölgelere yönlendirilmeni ve sorunların hızlı çözülmesini sağlar.",
+      "sss": [
+       {
+        "q": "Paket başı mı saatlik mi daha çok kazandırır?",
+        "a": "Yoğun bölgelerde ve yoğun saatlerde paket başı çalışmak daha fazla kazandırabilir; sipariş sayısı düşük dönemlerde saatlik ücret daha güvencelidir. Karma modeller ikisinin avantajını birleştirir."
+       },
+       {
+        "q": "Kurye ödemeleri ne zaman yapılır?",
+        "a": "Bu, çalıştığın firmaya bağlıdır. Yakında Kurye'de kurye ödemeleri haftalık olarak yapılır."
+       },
+       {
+        "q": "Yarı zamanlı kuryelik yapılabilir mi?",
+        "a": "Evet. Yakında Kurye'de akşam vardiyası ve hafta sonu çalışma seçenekleri bulunur."
+       }
+      ],
+      "yayinda": true
+     },
+     {
+      "slug": "paket-basi-mi-vardiyali-kurye-mi",
+      "baslik": "Paket Başı mı, Vardiyalı Kurye mi? İşletmenize Uygun Modeli Seçin",
+      "kategori": "isletme",
+      "tarih": "2026-10-23",
+      "ozet": "Kurye hizmeti alırken en çok sorulan soru, hangi ödeme modelinin daha ekonomik olduğu. Paket başı, vardiyalı ve işletmeye özel kurye modellerini ve kendi rakamlarınızla yapabileceğiniz basit hesabı anlattık.",
+      "seo_title": "Paket Başı mı, Vardiyalı Kurye mi? Kurye Hizmet Modelleri | Yakında Kurye",
+      "seo_desc": "Paket başı, vardiyalı (saatlik) ve işletmeye özel kurye modelleri nedir, hangisi daha ekonomik? Başa baş noktasını kendi verinizle hesaplamanın basit yolu.",
+      "gorsel": IMG + "hizmet-banner1.jpg",
+      "gorsel_alt": "Yakında Kurye hizmetlerini anlatan afiş",
+      "icerik": "Kurye hizmeti almaya karar verdiğinizde karşınıza genellikle üç model çıkar: **paket başı**, **vardiyalı (saatlik)** ve **işletmeye özel kurye**. Hangisinin daha ekonomik olduğu sorusunun tek bir cevabı yoktur; cevap, sizin sipariş sayınızda ve siparişlerin gün içindeki dağılımında saklıdır.\n\n## Paket başı kurye nedir?\n\nPaket başı modelde yalnızca teslim edilen paket kadar ödeme yaparsınız. Sipariş yoksa maliyet de yoktur. Bu model özellikle şu işletmelere uygundur:\n\n- Günlük sipariş sayısı düşük ya da günden güne çok değişen işletmeler\n- Paket servise yeni başlayan ve talebi henüz oturmamış işletmeler\n- Siparişleri gün içine dağınık gelen marketler, eczaneler ve çiçekçiler\n\nDezavantajı, sipariş sayısı arttıkça toplam maliyetin de doğrusal olarak artmasıdır. Belli bir hacmin üzerinde vardiyalı model daha avantajlı hâle gelebilir.\n\n## Vardiyalı (saatlik) kurye nedir?\n\nVardiyalı modelde belirlediğiniz saatlerde, belirlediğiniz sayıda kurye işletmenizde hazır bekler. Ödeme, teslim edilen paket sayısından bağımsız olarak saat üzerinden yapılır. Bu model şunlar için idealdir:\n\n- Öğle ve akşam yemeği gibi yoğun saatleri belli olan restoranlar\n- Yoğun saatlerde siparişin kapıda beklemesini istemeyen işletmeler\n- Kuryenin işletmede hazır bulunmasının hız kazandırdığı durumlar\n\n## İşletmeye özel kurye nedir?\n\nİşletmeye özel modelde size atanmış, işletmenizi ve müşterilerinizi tanıyan sabit bir kurye ekibi çalışır. Kuryelerin istihdamı, sigortası ve ekipmanı yine kurye firmasındadır; siz ise kendi kadronuz varmış gibi düzenli bir ekiple çalışırsınız. Sipariş hacmi yüksek ve istikrarlı olan, marka deneyimine önem veren işletmeler için uygundur.\n\n## Hangisi daha ekonomik? Başa baş noktasını hesaplayın\n\nPaket başı ile vardiyalı model arasındaki seçimi yapmanın en pratik yolu, **başa baş noktasını** bulmaktır. Bunun için iki rakama ihtiyacınız var: size teklif edilen paket başı ücret ve saatlik kurye ücreti.\n\n> **Başa baş noktası** = saatlik kurye ücreti ÷ paket başı ücret\n> Bu sayı, bir kuryenin bir saatte kaç paket taşıması durumunda iki modelin aynı maliyete geldiğini gösterir.\n\nYoğun saatlerinizde bir kurye saatte bu sayıdan **daha fazla** paket taşıyorsa vardiyalı model daha ekonomiktir. Daha az taşıyorsa paket başı model avantajlıdır. Hesabı yaparken şunlara dikkat edin:\n\n- Saatlik paket sayısını tüm gün değil, **her saat dilimi için ayrı** hesaplayın. Öğle saatinde vardiyalı, ikindi saatinde paket başı daha uygun olabilir.\n- Teslimat mesafesi uzadıkça bir kuryenin saatte taşıyabileceği paket sayısı düşer.\n- Paketin kapıda beklediği süre de bir maliyettir; soğuyan yemek ve iptal edilen sipariş hesaba katılmalıdır.\n\n## Hibrit model: ikisinin en iyisi\n\nPek çok işletme için en verimli çözüm, modelleri birleştirmektir: yoğun saatlerde vardiyalı kurye, sakin saatlerde paket başı destek. Böylece hem yoğun saatte hız kazanır hem de boş geçen kurye saatine ödeme yapmazsınız.\n\n| Durum | Önerilen model |\n|---|---|\n| Günlük sipariş düşük veya düzensiz | Paket başı |\n| Yoğun saatler belli, o saatlerde sipariş yüksek | Vardiyalı / saatlik |\n| Gün boyu yüksek ve istikrarlı hacim | İşletmeye özel kurye |\n| Yoğun saatte yüksek, kalan saatlerde düşük hacim | Hibrit (vardiyalı + paket başı) |\n\n## Sonuç\n\nDoğru kurye modeli, işletmenizin sipariş düzenine uyan modeldir. Son birkaç haftanın siparişlerini saat dilimlerine ayırın, başa baş hesabını yapın ve gerekirse modelleri birleştirin. [Hizmet modellerimizi](isletmeler.html#cozumler) inceleyerek başlayabilirsiniz.",
+      "sss": [
+       {
+        "q": "Paket başı kurye ücreti neye göre belirlenir?",
+        "a": "Genellikle teslimat mesafesi, bölge, paket hacmi ve çalışma saatlerine göre belirlenir. En doğru fiyatı işletmenize özel teklifle öğrenebilirsiniz."
+       },
+       {
+        "q": "Vardiyalı kuryede kaç kurye almalıyım?",
+        "a": "Yoğun saatlerinizdeki saatlik sipariş sayısını, bir kuryenin bölgenizde saatte taşıyabileceği paket sayısına bölerek yaklaşık bir sayı bulabilirsiniz."
+       },
+       {
+        "q": "Modeller arasında sonradan geçiş yapabilir miyim?",
+        "a": "Evet. Sipariş düzeniniz değiştikçe modeli ve kurye sayısını birlikte güncelleyebiliriz."
+       }
+      ],
+      "yayinda": true
+     },
+     {
+      "slug": "kurye-olmak-icin-hangi-ehliyet-gerekir",
+      "baslik": "Kurye Olmak İçin Hangi Ehliyet Gerekir? M, A1, A2, A ve B Sınıfı",
+      "kategori": "kurye",
+      "tarih": "2026-10-23",
+      "ozet": "B ehliyetle kurye olunur mu, 125 cc motosiklet için hangi ehliyet yeterli, A2'den A'ya nasıl geçilir? Yönetmeliğe göre ehliyet sınıflarını ve kurye için doğru seçimi anlattık.",
+      "seo_title": "Kurye Olmak İçin Hangi Ehliyet Gerekir? A1, A2, A, B | Yakında Kurye",
+      "seo_desc": "Moto kurye olmak için hangi ehliyet sınıfı gerekir? M, A1, A2, A ve B sınıfı ehliyetlerin yaş sınırları ve kullanılabilen motosikletler, yönetmeliğe göre tablo halinde.",
+      "gorsel": IMG + "canta5.jpg",
+      "gorsel_alt": "Yakında Kurye termal kurye çantası",
+      "icerik": "Kurye olmak isteyenlerin ilk sorusu genellikle aynıdır: \"Hangi ehliyet gerekiyor?\" Cevap, kullanacağınız motosikletin silindir hacmine ve gücüne göre değişir. Yanlış sınıfla motosiklet kullanmak hem cezaya hem de olası bir kazada sigorta sorunlarına yol açabileceği için doğru ehliyeti baştan bilmek önemlidir.\n\n## Motosiklet ehliyet sınıfları ve yaş sınırları\n\n[Karayolları Trafik Yönetmeliği](https://mevzuat.gov.tr/File/GeneratePdf?mevzuatNo=8182&mevzuatTur=KurumVeKurulusYonetmeligi&mevzuatTertip=5)'ne göre iki tekerlekli motorlu araçlar için ehliyet sınıfları şöyledir:\n\n| Sınıf | Asgari yaş | Kullanılabilen araç |\n|---|---|---|\n| **M** | 16 | Yalnızca mopet (50 cm³'e kadar, azami hızı 45 km/s) |\n| **A1** | 16 | 125 cm³ ve 11 kW'a kadar motosikletler |\n| **A2** | 18 | 35 kW'a kadar motosikletler (M ve A1'i de kapsar) |\n| **A** | 20 (2 yıllık A2 ile) veya 24 | Tüm motosikletler (M, A1 ve A2'yi de kapsar) |\n| **B** | 18 | Otomobil; motorlu iki tekerlilerden yalnızca M sınıfı mopet |\n\n## Kurye için hangi ehliyet yeterli?\n\n### 125 cm³'e kadar motosiklet: A1\n\nKuryelikte en yaygın kullanılan motosikletler 125 cm³ sınıfındadır. Bu motosikletler için **A1 sınıfı ehliyet** yeterlidir. A1 ehliyeti olan biri M sınıfı mopetleri de kullanabilir.\n\n### Daha güçlü motosikletler: A2 veya A\n\n125 cm³'ün ya da 11 kW'ın üzerindeki motosikletler için A2, 35 kW'ın üzerindeki motosikletler için A sınıfı ehliyet gerekir. Uzun mesafe ya da şehirlerarası teslimat yapacaksanız daha güçlü bir motosiklet ve buna uygun ehliyet tercih edilebilir.\n\n### B sınıfı ehliyetle kurye olunur mu?\n\nB sınıfı (otomobil) ehliyeti, motorlu iki tekerliler arasında yalnızca **M sınıfı mopetleri** kullanma hakkı verir. 50 cm³'lük bir mopetle teorik olarak kuryelik yapılabilir; ancak hız ve yük kapasitesi sınırlı olduğu için kurye firmalarının çoğu A1, A2 veya A sınıfı ehliyet ister. Yakında Kurye'de de [başvuru şartları](kuryeler.html#kurye-sartlar) arasında A1, A2 veya A sınıfı motosiklet ehliyeti bulunur.\n\n## A2'den A sınıfına geçiş\n\nA sınıfı ehliyet için iki yol vardır: en az iki yıl A2 sınıfı ehliyete sahip olup 20 yaşını doldurmak ya da doğrudan 24 yaşını doldurmuş olmak. Kuryeliğe A2 ile başlayıp ilerleyen dönemde A sınıfına geçmek mümkündür.\n\n## Ehliyet nasıl alınır?\n\nMotosiklet ehliyeti için bir sürücü kursuna kaydolup teorik ve uygulamalı eğitimi tamamlamanız, ardından yazılı ve direksiyon sınavlarını geçmeniz gerekir. Eğitim süresi ve sınav takvimi hakkında ayrıntılı bilgiyi kayıt olacağınız sürücü kursundan alabilirsiniz.\n\nKurye olmak için ehliyet dışındaki şartları merak ediyorsan [moto kurye nasıl olunur](blog/moto-kurye-nasil-olunur.html) rehberimize göz atabilirsin.\n\n> **Bilgi notu:** Bu yazı Ekim 2026 itibarıyla yürürlükteki düzenlemelere göre hazırlanmıştır. Mevzuat değişebileceği için başvurmadan önce güncel durumu resmî kaynaklardan kontrol edin.",
+      "sss": [
+       {
+        "q": "125 cc motosiklet için hangi ehliyet gerekir?",
+        "a": "125 cm³ ve 11 kW'a kadar motosikletler için A1 sınıfı ehliyet yeterlidir."
+       },
+       {
+        "q": "16 yaşında kurye olunur mu?",
+        "a": "A1 ehliyeti 16 yaşında alınabilse de kurye firmalarının çoğu, Yakında Kurye de dahil, 18 yaşını doldurmuş olmayı şart koşar."
+       },
+       {
+        "q": "B ehliyetle motosiklet kullanılabilir mi?",
+        "a": "B sınıfı ehliyet yalnızca M sınıfı mopetleri (50 cm³'e kadar) kullanma hakkı verir; A1 sınıfı motosikletleri kapsamaz."
+       }
+      ],
+      "yayinda": true
+     },
+     {
+      "slug": "yogun-saatlerde-paket-servis-gecikmesi",
+      "baslik": "Yoğun Saatlerde Paket Servis Gecikmelerini Azaltmanın 7 Yolu",
+      "kategori": "isletme",
+      "tarih": "2026-10-23",
+      "ozet": "Paket servisteki gecikmelerin çoğu yoğun saatlerde yaşanır. Mutfaktan kapıya kadar süreci hızlandıran, uygulaması kolay 7 yöntemi derledik.",
+      "seo_title": "Paket Servis Gecikmesi Nasıl Azaltılır? 7 Pratik Yöntem | Yakında Kurye",
+      "seo_desc": "Öğle ve akşam yoğunluğunda paket servis gecikmelerini azaltmak için 7 pratik yöntem: sipariş verisi, hazırlık senkronu, rota planı, ek kurye, paketleme ve müşteri iletişimi.",
+      "gorsel": IMG + "hizmet-banner2.jpg",
+      "gorsel_alt": "Yakında Kurye hızlı teslimat afişi",
+      "icerik": "Paket servisteki şikâyetlerin önemli bir kısmı aynı saatlerde toplanır: öğle arası, akşam yemeği, hafta sonu ve yağmurlu günler. Bu saatlerde gecikme, yalnızca bir siparişi değil o akşamki tüm siparişleri etkileyen zincirleme bir sorundur. İyi haber şu: gecikmelerin çoğu, birkaç basit düzenlemeyle azaltılabilir.\n\n## 1. Siparişlerinizi saat saat inceleyin\n\nYoğunluğu hissetmek ile ölçmek farklıdır. Son birkaç haftanın siparişlerini 30 dakikalık dilimlere ayırın. Hangi gün ve saatlerde sipariş patlıyor, hangi saatlerde kurye boş bekliyor; bu tablo hem kurye planınızın hem de mutfak vardiyanızın temelidir.\n\n## 2. Mutfak ile kurye çıkışını senkronize edin\n\nİki tür bekleme vardır: hazır paketin kuryeyi beklemesi ve kuryenin paketi beklemesi. İlkinde yemek soğur, ikincisinde kurye zamanı boşa gider. Sipariş ekranında tahmini hazırlanma süresini kuryenin varış süresiyle eşleştirin; paket hazır olmadan birkaç dakika önce kuryeyi çağırın.\n\n## 3. Teslimat bölgenizi ve rotaları netleştirin\n\nTeslimat bölgenizin sınırları belli değilse uzak siparişler yoğun saatte tüm planı bozar. Bölgenizi mahalle veya sokak bazında belirleyin. Aynı yöne giden siparişleri bir kuryeye vermek verimlidir; ancak ilk siparişin soğumaması için birleştirilecek paket sayısını sınırlı tutun.\n\n## 4. Yoğun saatlerde ek kurye desteği alın\n\nGün boyu aynı sayıda kuryeyle çalışmak, ya sakin saatte boş kurye ya da yoğun saatte eksik kurye demektir. Yoğun saatlerde kurye sayısını artırıp sakin saatlerde azaltmak gecikmeyi doğrudan azaltır. Kurye firmalarının [vardiyalı ve esnek modelleri](isletmeler.html#cozumler) bu ihtiyaç için tasarlanmıştır.\n\n## 5. Paketleme ve teslim noktasını standartlaştırın\n\nKuryenin paketi teslim aldığı nokta belli olsun; kurye mutfağa girip sipariş aramasın. Siparişleri numaralı raflara koymak, fişi paketin üzerine sabitlemek ve sızdırmaz kaplar kullanmak dakikalar kazandırır. Termal çanta kullanımı da yemeğin sıcak ulaşmasını sağlar.\n\n## 6. Müşteriye gerçekçi süre söyleyin\n\nYoğun saatte 20 dakika söyleyip 40 dakikada teslim etmek, baştan 35 dakika söyleyip 30 dakikada teslim etmekten çok daha fazla şikâyet doğurur. Sipariş platformlarındaki tahmini teslim sürenizi yoğun saatlere göre güncel tutun.\n\n## 7. Adres ve iletişim bilgisini doğrulayın\n\nKuryenin kapıda kaybettiği dakikalar çoğu zaman eksik adresten kaynaklanır. Telefonla gelen siparişlerde adres tarifini ve telefon numarasını teyit edin. Site, apartman veya kapı kodu gibi notları paketin üzerine yazın.\n\n## Bonus: neyi ölçüyorsanız onu iyileştirirsiniz\n\nTeslimat süresini, iptal edilen siparişleri ve müşteri yorumlarını haftalık olarak takip edin. Bir düzenleme yaptığınızda etkisini birkaç hafta sonra bu rakamlarda görürsünüz. Düzenli teslimat ve vardiya raporu sunan bir kurye firmasıyla çalışmak bu takibi kolaylaştırır.",
+      "sss": [
+       {
+        "q": "Paket servis siparişleri genelde hangi saatlerde yoğunlaşır?",
+        "a": "Çoğu restoranda öğle ve akşam yemeği saatleri, hafta sonları ve kötü hava koşullarının olduğu günler yoğun geçer. Kesin tabloyu kendi sipariş verinizden çıkarmanız en doğrusudur."
+       },
+       {
+        "q": "Birden fazla siparişi aynı kuryeye vermek doğru mu?",
+        "a": "Aynı yöne giden siparişleri birleştirmek verimlidir; ancak ilk teslim edilecek paketin bekleme süresini uzatmamak için birleştirilen sipariş sayısını sınırlı tutmak gerekir."
+       }
+      ],
+      "yayinda": true
+     },
+     {
+      "slug": "moto-kurye-ekipmanlari",
+      "baslik": "Moto Kurye Ekipmanları: Zorunlu ve Önerilen Ekipman Listesi (2026)",
+      "kategori": "kurye",
+      "tarih": "2026-10-23",
+      "ozet": "Kask ve eldiven artık zorunlu; peki bir moto kuryenin sahada güvende ve konforlu olması için başka neye ihtiyacı var? Zorunlu ve önerilen ekipmanları ayrı ayrı listeledik.",
+      "seo_title": "Moto Kurye Ekipmanları 2026: Zorunlu ve Önerilen Liste | Yakında Kurye",
+      "seo_desc": "Moto kuryeler için zorunlu ekipmanlar (kask, eldiven) ve önerilen ekipmanlar: koruyuculu mont, dizlik, yağmurluk, reflektör, termal çanta. Ankara kışı için ekipman önerileri.",
+      "gorsel": IMG + "canta4.jpg",
+      "gorsel_alt": "Yakında Kurye logolu termal kurye çantası",
+      "icerik": "Kuryelikte ekipman yalnızca bir konfor meselesi değildir. Doğru kask, eldiven ve mont; olası bir kazada yaralanma riskini azaltır, kötü havada çalışmayı mümkün kılar ve uzun vardiyaları daha az yorucu hâle getirir. Bu yazıda hem yasal olarak zorunlu olan hem de sahada fark yaratan ekipmanları listeledik.\n\n## Yasal olarak zorunlu ekipmanlar\n\n### Kask\n\nKarayolları Trafik Yönetmeliği'ne göre motosiklet sürücülerinin kask takması zorunludur. Kuryeler için tam yüz (full face) veya çene kısmı kapanabilen (modüler) kasklar en iyi korumayı sağlar. Kask alırken ECE 22.05 veya daha güncel ECE 22.06 gibi bir güvenlik sertifikası taşıdığından ve başınıza tam oturduğundan emin olun.\n\n### Koruyucu eldiven\n\n4 Kasım 2025'te Karayolları Trafik Yönetmeliği'nde yapılan değişiklikle motosiklet sürücüleri için koruyucu eldiven de zorunlu hâle geldi. Avuç içi ve parmak eklemlerinde koruması olan, kavrama hissini azaltmayan eldivenler tercih edilmelidir.\n\n### Kurye işletmelerinin yükümlülükleri\n\nMayıs 2025'te kurye işletmeciliğine yönelik yapılan düzenlemeyle, kurye işletmelerine kuryelerine koruyucu ekipman sağlama ve yelek ile kaskta \"KURYE\" ibaresine yer verme gibi yükümlülükler getirildi. Ayrıca kurye işletmelerinin motosikletlerinde kullanılan teslimat kutusunun ruhsata işlenmiş olması gerekiyor. Bir kurye firmasında çalışıyorsanız bu ekipmanların firmanızca sağlanması gerekir.\n\n## Önerilen ekipmanlar\n\n- **Koruyuculu mont ve pantolon:** Omuz, dirsek, sırt ve dizlerde CE sertifikalı koruma pedleri olan, nefes alabilen kumaşlar.\n- **Dizlik ve botlar:** Ayak bileğini destekleyen, kaymayan tabanlı botlar.\n- **Yağmurluk:** Mont üzerine giyilebilen, su geçirmez ve görünür renkte bir takım.\n- **Reflektörlü yelek veya şeritler:** Akşam ve gece vardiyalarında görünürlüğü artırır.\n- **Termal çanta veya kutu:** Yemeğin sıcak ya da soğuk kalmasını sağlar; düzenli bir çanta teslim süresini de kısaltır.\n- **Sabit telefon tutucu:** Navigasyonu sürüş sırasında elinize almadan takip etmenizi sağlar.\n- **Powerbank:** Uzun vardiyalarda telefonun şarjının bitmesini önler.\n\n## Ankara kışı için ekstra öneriler\n\nAnkara'da kış ayları soğuk ve zaman zaman karlı geçer. Kış vardiyalarında termal içlik, rüzgar geçirmeyen boyunluk ve kışlık eldiven büyük fark yaratır. Buzlanma riskine karşı lastiklerinizin diş derinliğini kontrol edin ve sabah erken saatlerde gölgede kalan yollarda hızınızı düşürün.\n\n## Ekipmanın bakımı\n\nKaskın vizörünü düzenli temizleyin, çizilen vizörü değiştirin. Bir darbe almış kaskı görünürde hasar olmasa bile yenileyin. Termal çantayı her gün silin; hem hijyen hem de işletmelerin gözünde profesyonellik açısından önemlidir.\n\n> **Bilgi notu:** Bu yazı Ekim 2026 itibarıyla yürürlükteki düzenlemelere göre hazırlanmıştır. Mevzuat değişebileceği için başvurmadan önce güncel durumu resmî kaynaklardan kontrol edin.",
+      "sss": [
+       {
+        "q": "Moto kuryeler için eldiven zorunlu mu?",
+        "a": "Evet. 4 Kasım 2025'te Karayolları Trafik Yönetmeliği'nde yapılan değişiklikle motosiklet sürücüleri için koruyucu eldiven zorunlu hâle geldi."
+       },
+       {
+        "q": "Kurye ekipmanlarını kim karşılar?",
+        "a": "Kurye işletmeleri kuryelerine koruyucu ekipman sağlamakla yükümlüdür. Yakında Kurye'de kask, mont, termal çanta ve telefon tutucu desteği verilir."
+       },
+       {
+        "q": "Kurye kutusunun ruhsata işlenmesi gerekir mi?",
+        "a": "Kurye işletmelerinin motosikletlerinde kullanılan teslimat kutusunun ruhsata işlenmiş olması gerekiyor. Kendi adınıza çalışıyorsanız güncel şartları bölge müdürlüğünden teyit edin."
+       }
+      ],
+      "yayinda": true
+     }
+    ],
     regions: [],
     calc: { perPackage: 40, minPackages: 5, maxPackages: 60, defPackages: 25, defDays: 6, configured: false },
-    sections: { marquee: true, stats: true, about: true, services: true, business: true, bizSolutions: true, bizSteps: true, bizForm: true, courier: true, calc: true, courForm: true, testimonials: true, refs: true, regions: true, faq: true, contact: true },
+    sections: { marquee: true, stats: true, about: true, services: true, business: true, bizSolutions: true, bizSteps: true, bizForm: true, courier: true, calc: true, courForm: true, testimonials: true, refs: true, regions: true, faq: true, contact: true, blog: true },
     formOptions: {},
     reviewed: {},
     faq: [
@@ -609,7 +801,7 @@
     password(user, old, pass) { return api('password', { user: user, old: old, pass: pass }).then(j => { remote.user = j.user; return j; }); },
     publish(content) {
       const c = clone(content);
-      return api('publish', { content: c }).then(j => { delete c.reviewed; window.YK_PUBLISHED = c; mem[KEYS.content] = clone(content); ls.set('yk_preview', content); remote.publishedAt = j.at; return j; });
+      return api('publish', { content: c, blog_html: blogPages(c) }).then(j => { delete c.reviewed; window.YK_PUBLISHED = c; if (j.result && Array.isArray(j.result.blog_files)) window.YK_BLOG_FILES = j.result.blog_files; mem[KEYS.content] = clone(content); ls.set('yk_preview', content); remote.publishedAt = j.at; return j; });
     },
     refresh: pollNow,
     hasDraft: () => !!mem[KEYS.content],
@@ -691,6 +883,111 @@
     return api('submit', { type: type, data: data, website: honeypot || '', kvkk: true });
   }
 
+  /* ---------- Blog ---------- */
+  const BLOG_KAT = { kurye: 'Kuryeler İçin', isletme: 'İşletmeler İçin' };
+  // Depoda hazır gelen yazı dosyaları (sunucu modunda "Yayınla" bu listeyi content.js'te günceller)
+  const BLOG_FILES = ['moto-kurye-nasil-olunur', 'restoran-kendi-kuryesi-mi-kurye-firmasi-mi', 'kurye-kazanci-nasil-artirilir', 'paket-basi-mi-vardiyali-kurye-mi', 'kurye-olmak-icin-hangi-ehliyet-gerekir', 'yogun-saatlerde-paket-servis-gecikmesi', 'moto-kurye-ekipmanlari'];
+  const AYLAR = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+  const TR_MAP = { ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u', â: 'a', î: 'i', û: 'u' };
+  const slugify = s => String(s || '').toLocaleLowerCase('tr-TR').replace(/['’`´]/g, '').replace(/[çğıöşüâîû]/g, c => TR_MAP[c]).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 70).replace(/-+$/, '');
+  const unesc = s => s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  const relUrl = u => !/^([a-z][a-z0-9+.-]*:|#|\/)/i.test(u);
+  function mdInline(s, R) {
+    return esc(s)
+      .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, t, u) => {
+        u = unesc(u);
+        if (/^(javascript|data|vbscript):/i.test(u)) return t;
+        const ext = /^https?:\/\//i.test(u);
+        return '<a href="' + esc(relUrl(u) ? (R || '') + u : u) + '"' + (ext ? ' target="_blank" rel="noopener"' : '') + '>' + t + '</a>';
+      })
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/(^|[\s(])_([^_]+)_(?=[\s).,;:!?]|$)/g, '$1<em>$2</em>');
+  }
+  // Sade yazım biçimini HTML'e çevirir: ## / ### başlık, - veya 1. liste, > not kutusu, | tablo |, **kalın**, _italik_, [metin](adres)
+  function md(src, R) {
+    const lines = String(src || '').replace(/\r\n?/g, '\n').split('\n'), ids = {};
+    const hid = t => { const b = slugify(t) || 'bolum'; let id = b, n = 2; while (ids[id]) id = b + '-' + n++; ids[id] = 1; return id; };
+    const blockStart = /^(#{2,3}\s|[-*•]\s|\d+[.)]\s|>|\|)/;
+    let out = '', i = 0;
+    while (i < lines.length) {
+      const t = lines[i].trim(); let m;
+      if (!t) { i++; continue; }
+      if ((m = t.match(/^(#{2,3})\s+(.+)$/))) {
+        const txt = m[2].replace(/\s+#+$/, '');
+        out += m[1].length === 2 ? '<h2 id="' + hid(txt) + '">' + mdInline(txt, R) + '</h2>' : '<h3>' + mdInline(txt, R) + '</h3>';
+        i++;
+      } else if (/^([-*•]|\d+[.)])\s+/.test(t)) {
+        const ol = /^\d/.test(t), re = ol ? /^\d+[.)]\s+/ : /^[-*•]\s+/, items = [];
+        while (i < lines.length && re.test(lines[i].trim())) items.push(lines[i++].trim().replace(re, ''));
+        out += (ol ? '<ol>' : '<ul>') + items.map(x => '<li>' + mdInline(x, R) + '</li>').join('') + (ol ? '</ol>' : '</ul>');
+      } else if (t[0] === '>') {
+        const q = [];
+        while (i < lines.length && lines[i].trim()[0] === '>') q.push(lines[i++].trim().replace(/^>\s?/, ''));
+        out += '<div class="not-kutu">' + q.map(x => mdInline(x, R)).join('<br>') + '</div>';
+      } else if (t[0] === '|') {
+        const rows = [];
+        while (i < lines.length && lines[i].trim()[0] === '|') { const r = lines[i++].trim(); if (!/^\|[\s:|-]+$/.test(r)) rows.push(r.replace(/^\||\|$/g, '').split('|').map(c => c.trim())); }
+        if (rows.length) out += '<div class="tablo-kap"><table><thead><tr>' + rows[0].map(c => '<th>' + mdInline(c, R) + '</th>').join('') + '</tr></thead><tbody>' +
+          rows.slice(1).map(r => '<tr>' + r.map(c => '<td>' + mdInline(c, R) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>';
+      } else {
+        const p = [];
+        while (i < lines.length && lines[i].trim() && !blockStart.test(lines[i].trim())) p.push(lines[i++].trim());
+        out += '<p>' + mdInline(p.join(' '), R) + '</p>';
+      }
+    }
+    return out;
+  }
+  // Yayındaki yazılar: yeniden eskiye, aynı tarihte paneldeki sıraya göre
+  function blogList(c) {
+    return (c.blog || []).map((p, i) => [p, i]).filter(x => x[0] && x[0].slug && x[0].baslik && x[0].yayinda !== false)
+      .sort((a, b) => String(b[0].tarih || '').localeCompare(String(a[0].tarih || '')) || a[1] - b[1]).map(x => x[0]);
+  }
+  // Dosyası olan yazı blog/<adres>.html, henüz dosyası olmayan blog/yazi.html?s=<adres> adresinde açılır
+  const blogUrl = (p, R, statik) => (R || '') + 'blog/' + (statik || (window.YK_BLOG_FILES || BLOG_FILES).indexOf(p.slug) >= 0 ? p.slug + '.html' : 'yazi.html?s=' + encodeURIComponent(p.slug));
+  const blogDate = t => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t || ''); return m ? +m[3] + ' ' + AYLAR[+m[2] - 1] + ' ' + m[1] : ''; };
+  const blogMin = p => Math.max(2, Math.round((String(p.icerik || '') + ' ' + (p.sss || []).map(x => (x.q || '') + ' ' + (x.a || '')).join(' ')).split(/\s+/).length / 200));
+  const blogImg = (src, R, alt, lazy) => !src ? '' : '<img ' + (String(src).indexOf('media:') === 0 ? 'data-bimg="' + esc(src) + '"' : 'src="' + esc(relUrl(src) ? (R || '') + src : src) + '"') + ' alt="' + esc(alt || '') + '"' + (lazy ? ' loading="lazy" decoding="async"' : '') + '>';
+  function blogCard(p, R, h, statik) {
+    h = h || 'h3'; const u = esc(blogUrl(p, R, statik)), k = p.kategori === 'isletme' ? 'isletme' : 'kurye';
+    return '<article class="post-card" data-cat="' + k + '"><a href="' + u + '" class="pc-img" tabindex="-1" aria-hidden="true">' + (blogImg(p.gorsel, R, '', true) || '<span class="pc-noimg"></span>') + '</a>' +
+      '<div class="pc-body"><span class="pc-cat pc-' + k + '">' + BLOG_KAT[k] + '</span><' + h + '><a href="' + u + '">' + esc(p.baslik) + '</a></' + h + '><p>' + esc(p.ozet || '') + '</p>' +
+      '<span class="pc-meta">' + blogDate(p.tarih) + ' · ' + blogMin(p) + ' dk okuma</span></div></article>';
+  }
+  function blogCta(k, R, tx) {
+    tx = tx || {};
+    return k === 'isletme'
+      ? { txt: '<h2 data-t="bizform_title">' + esc(tx.bizform_title || 'İşletmeniz için kurye talep edin') + '</h2><p data-t="bizform_text">' + esc(tx.bizform_text || '') + '</p>', btn: '<a href="' + R + 'basvuru.html#isletme-basvuru" class="btn btn-y btn-lg" data-sec="bizForm"><span data-t="business_cta">Ücretsiz Teklif Alın</span><span data-icon="ok"></span></a><a data-href="tel" class="btn btn-ghost btn-lg"><span data-icon="telefon"></span>Hemen Arayın</a>',
+          kutu: ['İşletmeniz için doğru kurye planını birlikte çıkaralım', 'Ücretsiz ihtiyaç analiziyle yoğun saatlerinizi ve paket hacminizi inceleyip size özel teklif hazırlayalım.', 'Ücretsiz Teklif Alın', 'basvuru.html#isletme-basvuru'] }
+      : { txt: '<h2 data-t="courform_title">' + esc(tx.courform_title || 'Başvurunu 2 dakikada tamamla') + '</h2><p data-t="courform_text">' + esc(tx.courform_text || '') + '</p>', btn: '<a href="' + R + 'basvuru.html#kurye-basvuru" class="btn btn-y btn-lg" data-sec="courForm"><span data-t="req_btn">Kurye Başvurusu Yap</span><span data-icon="ok"></span></a><a data-href="wa" target="_blank" rel="noopener" class="btn btn-ghost btn-lg"><span data-icon="whatsapp"></span><span data-t="wa_label">WhatsApp ile yazın</span></a>',
+          kutu: ['Yakında Kurye ekibine katılmak ister misin?', 'Haftalık ödeme, sigorta, ekipman desteği ve tam ya da yarı zamanlı çalışma seçenekleri seni bekliyor.', 'Hemen Başvur', 'basvuru.html#kurye-basvuru'] };
+  }
+  // Yazı sayfasının gövdesi (başlık, kapak, içindekiler, içerik, SSS, ilgili yazılar, çağrı bandı)
+  function blogArticle(p, c, R, statik) {
+    R = R || ''; const k = p.kategori === 'isletme' ? 'isletme' : 'kurye', cta = blogCta(k, R, c.texts);
+    const body = md(p.icerik, R), sss = (p.sss || []).filter(x => x && x.q && x.a);
+    const toc = Array.from(body.matchAll(/<h2 id="([^"]+)">(.*?)<\/h2>/g)).map(m => '<li><a href="#' + m[1] + '">' + m[2].replace(/<[^>]+>/g, '') + '</a></li>').join('') + (sss.length ? '<li><a href="#sik-sorulanlar">Sık sorulan sorular</a></li>' : '');
+    const all = blogList(c).filter(x => x.slug !== p.slug);
+    const rel = all.filter(x => x.kategori === p.kategori).concat(all.filter(x => x.kategori !== p.kategori)).slice(0, 3);
+    return '<article class="yazi"><header class="yazi-head"><div class="container narrow">' +
+      '<nav class="breadcrumb" aria-label="Konum"><a href="' + R + 'index.html">Ana Sayfa</a><span>›</span><a href="' + R + 'blog.html">Blog</a><span>›</span><span aria-current="page">' + esc(p.baslik) + '</span></nav>' +
+      '<span class="pc-cat pc-' + k + '">' + BLOG_KAT[k] + '</span><h1>' + esc(p.baslik) + '</h1>' + (p.ozet ? '<p class="yazi-ozet">' + esc(p.ozet) + '</p>' : '') +
+      '<div class="yazi-meta"><span>Yakında Kurye</span><span>' + blogDate(p.tarih) + '</span>' + (p.guncelleme && p.guncelleme !== p.tarih ? '<span>Güncellendi: ' + blogDate(p.guncelleme) + '</span>' : '') + '<span>' + blogMin(p) + ' dk okuma</span></div></div></header>' +
+      '<div class="container narrow">' + (p.gorsel ? '<figure class="yazi-kapak">' + blogImg(p.gorsel, R, p.gorsel_alt || p.baslik) + '</figure>' : '') +
+      (toc ? '<nav class="toc" aria-label="İçindekiler"><b>İçindekiler</b><ol>' + toc + '</ol></nav>' : '') +
+      '<div class="yazi-icerik">' + body +
+      '<aside class="yazi-cta"><div><b>' + cta.kutu[0] + '</b><p>' + cta.kutu[1] + '</p></div><a href="' + R + cta.kutu[3] + '" class="btn btn-y">' + cta.kutu[2] + '</a></aside>' +
+      (sss.length ? '<h2 id="sik-sorulanlar">Sık sorulan sorular</h2><div class="faq yazi-sss">' + sss.map(x => '<details class="faq-item"><summary>' + esc(x.q) + '<span class="pm"></span></summary><div class="faq-a">' + esc(x.a).replace(/\n/g, '<br>') + '</div></details>').join('') + '</div>' : '') +
+      '</div></div></article>' +
+      (rel.length ? '<section class="section bg-soft blog-son"><div class="container"><div class="sec-head"><span class="kicker">Blog</span><h2>Bunlar da ilginizi çekebilir</h2></div><div class="blog-grid m-kay">' + rel.map(x => blogCard(x, R, 'h3', statik)).join('') + '</div></div></section>' : '') +
+      '<section class="cta-band"><div class="hero-bg soft" aria-hidden="true"><span class="hb hb1"></span><span class="hb hb2"></span></div><div class="container cta-in"><div class="cta-txt">' + cta.txt + '</div><div class="cta-btns">' + cta.btn + '</div></div></section>';
+  }
+  // Sunucuya gönderilecek yazı sayfaları (blog/<adres>.html dosyalarının gövdesi)
+  function blogPages(c) {
+    const o = {};
+    blogList(c).forEach(p => { if (/^[a-z0-9]+(-[a-z0-9]+)*$/.test(p.slug) && p.slug !== 'yazi') o[p.slug] = blogArticle(p, c, '../', true); });
+    return o;
+  }
+
   /* ---------- Site içeriği ---------- */
   // Katmanlar: varsayılan → yayındaki içerik (content.js) → bu tarayıcıdaki taslak (panel)
   function mergeLayer(c, layer) {
@@ -731,14 +1028,13 @@
     for (const t of c.testimonials) if (t.photo) t.photo = await fix(t.photo);
     return '/* Yakında Kurye — yayındaki site içeriği (' + new Date().toLocaleString('tr-TR') + ' tarihinde yönetim panelinden oluşturuldu). */\nwindow.YK_PUBLISHED = ' + JSON.stringify(c, null, 1) + ';\n';
   }
-  // Sitedeki sayfalar (yeni blog yazısı eklenince bu listeye de eklenir)
-  const PAGES = /*SAYFALAR*/['', 'isletmeler.html', 'kuryeler.html', 'basvuru.html', 'blog.html', 'blog/moto-kurye-nasil-olunur.html', 'blog/restoran-kendi-kuryesi-mi-kurye-firmasi-mi.html', 'blog/kurye-kazanci-nasil-artirilir.html', 'blog/paket-basi-mi-vardiyali-kurye-mi.html', 'blog/kurye-olmak-icin-hangi-ehliyet-gerekir.html', 'blog/yogun-saatlerde-paket-servis-gecikmesi.html', 'blog/moto-kurye-ekipmanlari.html']/*/SAYFALAR*/;
   function sitemapXML(base) {
     base = (base || '').replace(/\/+$/, '');
-    const day = new Date().toISOString().slice(0, 10);
-    const pri = p => p === '' ? '1.0' : /^blog\//.test(p) ? '0.7' : /^(isletmeler|kuryeler)/.test(p) ? '0.9' : '0.8';
+    const day = new Date().toISOString().slice(0, 10), c = getContent();
+    const pages = [['', 'weekly', '1.0', day], ['isletmeler.html', 'weekly', '0.9', day], ['kuryeler.html', 'weekly', '0.9', day], ['basvuru.html', 'monthly', '0.8', day]]
+      .concat(blogList(c).length && c.sections.blog !== false ? [['blog.html', 'weekly', '0.8', day]].concat(blogList(c).map(p => [blogUrl(p, '').replace(/&/g, '&amp;'), 'monthly', '0.7', p.guncelleme || p.tarih || day])) : []);
     return '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-      PAGES.map(p => '  <url><loc>' + base + '/' + p + '</loc><lastmod>' + day + '</lastmod><changefreq>' + (/^blog\//.test(p) ? 'monthly' : 'weekly') + '</changefreq><priority>' + pri(p) + '</priority></url>\n').join('') + '</urlset>\n';
+      pages.map(p => '  <url><loc>' + base + '/' + p[0] + '</loc><lastmod>' + p[3] + '</lastmod><changefreq>' + p[1] + '</changefreq><priority>' + p[2] + '</priority></url>\n').join('') + '</urlset>\n';
   }
   function robotsTXT(base, noindex) {
     base = (base || '').replace(/\/+$/, '');
@@ -937,7 +1233,7 @@
 
   window.YK = {
     ICONS, ICON_CHOICES, icon, BUNDLED_IMAGES, DEFAULT_CONTENT, FORMS, getForms, ILLER, APP_STATUSES, EMP_FIELDS, EMP_DOCS, CUST_FIELDS, CUST_STATUSES, EXPIRY_FIELDS, RECORD_TYPES, log, getLog,
-    getContent, publishedContent, hasUnpublished, isPreview, buildPublishFile, sitemapXML, robotsTXT, saveContent, resetContent, list, saveList, add, update, remove, get,
+    getContent, publishedContent, hasUnpublished, isPreview, buildPublishFile, sitemapXML, robotsTXT, md, slugify, blogList, blogUrl, blogCard, blogArticle, blogDate, BLOG_KAT, BLOG_FILES, saveContent, resetContent, list, saveList, add, update, remove, get,
     serverSettings, saveServerSettings, uid, refNo, esc, fmtDate, fmtMoney, waNumber, media, resolve, setImg, setBg, fileToDataUrl, auth,
     exportAll, importAll, toCSV, download, remote, server, submitForm
   };

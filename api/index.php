@@ -5,7 +5,7 @@
    - Yönetim panelinin verilerini (başvurular, müşteriler, çalışanlar,
      kayıtlar, site içeriği) sunucuda saklar; panel her cihazdan aynı veriyi görür.
    - "Yayınla" ile assets/js/content.js, index.html SEO etiketleri,
-     sitemap.xml ve robots.txt dosyalarını günceller.
+     blog/<adres>.html yazı sayfalarını, sitemap.xml ve robots.txt dosyalarını günceller.
    Veriler api/data klasöründe, doğrudan okunamayan .php dosyalarında tutulur.
    Hosting'de PHP yoksa site ve panel otomatik olarak "yerel mod"da çalışır.
    ========================================================================== */
@@ -237,11 +237,64 @@ function seo_block(array $c): string {
   if ($hero !== '' && !preg_match('#^(data|media):#', $hero)) $o[] = '<link rel="preload" as="image" href="' . h($hero) . '">';
   return "<!--SEO-->\n  " . implode("\n  ", $o) . "\n  <!--/SEO-->";
 }
-function publish(array $c): array {
-  $res = ['content' => false, 'index' => false, 'sitemap' => false, 'robots' => false];
+/* ---------------- Blog sayfaları ---------------- */
+// Yayındaki her yazı için blog/yazi.html şablonundan blog/<adres>.html üretir.
+// Sayfa gövdesini panel gönderir (sitedeki görünümle birebir aynı); panelden silinen veya taslağa alınan yazıların eski sayfaları kaldırılır.
+function blog_files(array $c, array $pages): array {
+  $dir = YK_ROOT . '/blog';
+  $tpl = is_file($dir . '/yazi.html') ? (string) file_get_contents($dir . '/yazi.html') : '';
+  $res = ['files' => [], 'failed' => 0, 'ok' => false];
+  if ($tpl === '' || strpos($tpl, '<!--YAZI-->') === false || !preg_match('/<!--META-->.*?<!--\/META-->/s', $tpl)) return $res;
+  $res['ok'] = true;
+  $s = $c['settings'] ?? [];
+  $base = rtrim(trim((string) ($s['site_url'] ?? '')), '/');
+  $kat = ['kurye' => 'Kuryeler İçin', 'isletme' => 'İşletmeler İçin'];
+  foreach (($c['blog'] ?? []) as $p) {
+    if (!is_array($p)) continue;
+    $slug = (string) ($p['slug'] ?? '');
+    if (!preg_match('/^[a-z0-9]+(-[a-z0-9]+)*$/', $slug) || $slug === 'yazi' || ($p['yayinda'] ?? true) === false) continue;
+    if (!isset($pages[$slug]) || !is_string($pages[$slug]) || strlen($pages[$slug]) > 800000) continue;
+    $t = trim((string) ($p['seo_title'] ?? '')); if ($t === '') $t = (string) ($p['baslik'] ?? '') . ' | Yakında Kurye';
+    $d = trim((string) ($p['seo_desc'] ?? '')); if ($d === '') $d = (string) ($p['ozet'] ?? '');
+    $img = (string) ($p['gorsel'] ?? '');
+    $img = preg_match('#^(media|data):#', $img) ? '' : abs_url($base, $img);
+    $url = $base ? $base . '/blog/' . $slug . '.html' : '';
+    $o = ['<title>' . h($t) . '</title>', '<meta name="description" content="' . h($d) . '">', '<meta name="robots" content="' . (!empty($s['noindex']) ? 'noindex, nofollow' : 'index, follow, max-image-preview:large') . '">'];
+    if ($url) $o[] = '<link rel="canonical" href="' . h($url) . '">';
+    $o[] = '<meta property="og:type" content="article">';
+    $o[] = '<meta property="og:site_name" content="Yakında Kurye">';
+    $o[] = '<meta property="og:locale" content="tr_TR">';
+    $o[] = '<meta property="og:title" content="' . h($t) . '">';
+    $o[] = '<meta property="og:description" content="' . h($d) . '">';
+    if ($url) $o[] = '<meta property="og:url" content="' . h($url) . '">';
+    if ($img) $o[] = '<meta property="og:image" content="' . h($img) . '">';
+    $o[] = '<meta name="twitter:card" content="summary_large_image">';
+    $o[] = '<meta property="article:published_time" content="' . h($p['tarih'] ?? '') . '">';
+    $o[] = '<meta property="article:modified_time" content="' . h(($p['guncelleme'] ?? '') ?: ($p['tarih'] ?? '')) . '">';
+    $o[] = '<meta property="article:section" content="' . h($kat[$p['kategori'] ?? ''] ?? '') . '">';
+    $meta = "<!--META-->\n  " . implode("\n  ", $o) . "\n  <!--/META-->";
+    $html = $pages[$slug];
+    $page = preg_replace_callback('/<!--META-->.*?<!--\/META-->/s', function () use ($meta) { return $meta; }, $tpl, 1);
+    $page = preg_replace_callback('/<!--YAZI-->.*?<!--\/YAZI-->/s', function () use ($html) { return '<!--YAZI-->' . $html . '<!--/YAZI-->'; }, (string) $page, 1);
+    $page = preg_replace('/<body[^>]*>/', '<body data-page="yazi" data-root="../" data-path="blog/' . $slug . '.html" data-slug="' . $slug . '">', (string) $page, 1);
+    $page = preg_replace('/^<!doctype html>/i', "<!doctype html>\n<!--YK-BLOG: panelden \"Yayınla\" ile üretilir, elle düzenlemeyin-->", (string) $page, 1);
+    if (is_string($page) && $page !== '' && write_file_atomic($dir . '/' . $slug . '.html', $page)) $res['files'][] = $slug; else $res['failed']++;
+  }
+  foreach (glob($dir . '/*.html') ?: [] as $f) {
+    $b = basename($f, '.html');
+    if ($b === 'yazi' || in_array($b, $res['files'], true)) continue;
+    if (strpos((string) @file_get_contents($f, false, null, 0, 300), '<!--YK-BLOG') !== false) @unlink($f);
+  }
+  return $res;
+}
+function publish(array $c, array $blogPages = []): array {
+  $res = ['content' => false, 'index' => false, 'sitemap' => false, 'robots' => false, 'blog' => 0, 'blog_files' => []];
   unset($c['reviewed']);
+  $blog = blog_files($c, $blogPages);
+  $res['blog'] = count($blog['files']); $res['blog_files'] = $blog['files']; $res['blog_failed'] = $blog['failed'];
   $js = "/* Yakında Kurye — yayındaki site içeriği (" . date('d.m.Y H:i') . " tarihinde yönetim panelinden yayınlandı). */\nwindow.YK_PUBLISHED = "
-    . json_encode($c, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) . ";\n";
+    . json_encode($c, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) . ";\n"
+    . ($blog['ok'] ? "// Sayfası oluşturulmuş blog yazıları (diğerleri blog/yazi.html?s=adres ile açılır)\nwindow.YK_BLOG_FILES = " . json_encode($blog['files'], JSON_UNESCAPED_SLASHES) . ";\n" : '');
   $res['content'] = write_file_atomic(YK_ROOT . '/assets/js/content.js', $js);
 
   $idx = YK_ROOT . '/index.html';
@@ -256,7 +309,7 @@ function publish(array $c): array {
   if ($base && preg_match('#^https?://#i', $base)) {
     // Ana sayfalar + blog klasöründeki tüm yazılar
     $pages = [['', 'weekly', '1.0'], ['isletmeler.html', 'weekly', '0.9'], ['kuryeler.html', 'weekly', '0.9'], ['basvuru.html', 'monthly', '0.8'], ['blog.html', 'weekly', '0.8']];
-    foreach (glob(YK_ROOT . '/blog/*.html') ?: [] as $f) $pages[] = ['blog/' . basename($f), 'monthly', '0.7', date('Y-m-d', (int) filemtime($f))];
+    foreach (glob(YK_ROOT . '/blog/*.html') ?: [] as $f) if (basename($f) !== 'yazi.html') $pages[] = ['blog/' . basename($f), 'monthly', '0.7', date('Y-m-d', (int) filemtime($f))];
     $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
     foreach ($pages as $p) {
       if ($p[0] !== '' && !is_file(YK_ROOT . '/' . $p[0])) continue;
@@ -485,8 +538,9 @@ switch ($a) {
     $b = body();
     $c = $b['content'] ?? null;
     if (!is_array($c) || !isset($c['texts'], $c['settings'])) fail('Geçersiz içerik.', 400);
-    $res = locked(function () use ($c) {
-      $r = publish($c);
+    $bh = is_array($b['blog_html'] ?? null) ? $b['blog_html'] : [];
+    $res = locked(function () use ($c, $bh) {
+      $r = publish($c, $bh);
       if ($r['content']) { write_store('published', $c); write_store('draft', $c); }
       return $r;
     });

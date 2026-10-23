@@ -29,6 +29,36 @@
   const src = u => (ROOT && typeof u === 'string' && u && !/^(https?:|data:|media:|blob:|\/)/.test(u)) ? ROOT + u : u;
   const FORM_URL = k => (PAGE === 'basvuru' ? '' : ROOT + 'basvuru.html') + '#' + k + '-basvuru';
 
+  /* ---------- Blog: yazılar panelden yönetilir, sayfalar içerikten çizilir ---------- */
+  const BLOG = C.sections.blog === false ? [] : YK.blogList(C);
+  let post = null;
+  if (PAGE === 'yazi') {
+    const slug = new URLSearchParams(location.search).get('s') || document.body.dataset.slug || decodeURIComponent(location.pathname.split('/').pop() || '').replace(/\.html$/, '');
+    // Önizlemede (panelden) taslak yazılar da açılabilir
+    post = BLOG.find(p => p.slug === slug) || (YK.isPreview() && (C.blog || []).find(p => p && p.slug === slug && p.baslik)) || null;
+    const kap = $('#yaziKap');
+    if (post) {
+      kap.innerHTML = YK.blogArticle(post, C, ROOT);
+      document.title = post.seo_title || post.baslik + ' | Yakında Kurye';
+      setMeta('name', 'description', post.seo_desc || post.ozet || '');
+      setMeta('property', 'article:published_time', post.tarih);
+      setMeta('property', 'article:modified_time', post.guncelleme || post.tarih);
+      setMeta('property', 'article:section', YK.BLOG_KAT[post.kategori] || '');
+      document.body.dataset.path = YK.blogUrl(post, '');
+      if (post.gorsel && !/^(media|data):/.test(post.gorsel)) document.body.dataset.img = post.gorsel;
+    } else {
+      kap.innerHTML = '<div class="container narrow yazi-yok"><h1>Yazı bulunamadı</h1><p>Aradığınız yazı yayından kaldırılmış ya da adresi değişmiş olabilir.</p><a href="' + ROOT + 'blog.html" class="btn btn-k">Tüm yazılar</a></div>';
+      document.title = 'Yazı bulunamadı | Yakında Kurye';
+    }
+  }
+  $$('[data-blog]').forEach(box => {
+    const t = box.dataset.blog, list = (t === 'tum' || t === 'son' ? BLOG : BLOG.filter(p => p.kategori === t)).slice(0, t === 'tum' ? BLOG.length : 3);
+    if (list.length) box.innerHTML = list.map(p => YK.blogCard(p, ROOT, t === 'tum' ? 'h2' : 'h3')).join('');
+    else if (t === 'tum') box.innerHTML = '<p class="blog-bos">Henüz yayınlanmış yazı yok.</p>';
+    else { const sec = box.closest('section'); if (sec) sec.remove(); }
+  });
+  $$('[data-bimg]').forEach(im => YK.setImg(im, im.dataset.bimg));
+
   /* ---------- Metinler, görseller, ayarlar ---------- */
   $$('[data-t]').forEach(el => { const v = TX[el.dataset.t] || ''; el.innerHTML = el.dataset.t === 'about_text' ? paras(v) : nl(v); });
   $$('[data-s]').forEach(el => { el.textContent = S[el.dataset.s] || ''; });
@@ -115,6 +145,7 @@
   if (!faqs.length) hidden.faq = true;
   if (!C.gallery.some(g => g && g.src)) hidden.refs = true;
   if (!(Number(C.calc.perPackage) > 0)) hidden.calc = true;
+  if (!BLOG.length) hidden.blog = true;
   if (['services', 'business', 'bizSolutions', 'bizSteps', 'bizForm'].every(k => hidden[k])) hidden.zoneBiz = true;
   if (['courier', 'calc', 'courForm'].every(k => hidden[k])) hidden.zoneCour = true;
   $$('[data-section]').forEach(el => { if (hidden[el.dataset.section]) el.remove(); });
@@ -153,7 +184,7 @@
   });
 
   // Önizlemede sayfalar arası geçişte önizleme kalsın
-  if (YK.isPreview()) $$('a[href]').forEach(a => { const h = a.getAttribute('href'); if (/^[^:?#]+\.html(#|$)/.test(h)) a.setAttribute('href', h.replace('.html', '.html?onizleme=1')); });
+  if (YK.isPreview()) $$('a[href]').forEach(a => { const h = a.getAttribute('href'); if (/^[^:?#]+\.html([?#]|$)/.test(h)) a.setAttribute('href', h.replace(/\.html(\?[^#]*)?/, (m, q) => '.html' + (q ? q + '&' : '?') + 'onizleme=1')); });
 
   // Yana kaydırılan kart listelerinin altındaki noktalar
   $$('.m-kay').forEach(row => {
@@ -190,7 +221,7 @@
   function seo() {
     const base = (S.site_url || '').trim().replace(/\/+$/, '');
     const abs = u => !u ? '' : /^https?:/.test(u) ? u : u.indexOf('media:') === 0 ? '' : base ? base + '/' + u.replace(/^\.?\//, '') : '';
-    const home = PAGE === 'home', post = PAGE === 'yazi';
+    const home = PAGE === 'home', isPost = PAGE === 'yazi' && !!post;
     const metaOf = (a, k) => { const m = document.head.querySelector('meta[' + a + '="' + k + '"]'); return m ? m.getAttribute('content') : ''; };
     // Ana sayfanın başlık/açıklaması panelden gelir; diğer sayfalarınki kendi HTML'inde yazılıdır
     const title = home ? (TX.seo_title || TX.site_title || document.title) : document.title;
@@ -201,7 +232,7 @@
     document.title = title;
     setMeta('name', 'description', desc);
     setMeta('name', 'keywords', S.seo_keywords);
-    setMeta('name', 'robots', S.noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large');
+    setMeta('name', 'robots', S.noindex ? 'noindex, nofollow' : PAGE === 'yazi' && !post ? 'noindex, follow' : 'index, follow, max-image-preview:large');
     setMeta('name', 'google-site-verification', S.gsc_verify);
     setMeta('name', 'geo.region', 'TR' + (S.city ? '-' + S.city : ''));
     setMeta('name', 'geo.placename', [S.district, S.city].filter(Boolean).join(', '));
@@ -235,13 +266,13 @@
       hasOfferCatalog: { '@type': 'OfferCatalog', name: 'Kurye hizmetleri', itemListElement: C.services.map(s => ({ '@type': 'Offer', itemOffered: { '@type': 'Service', name: s.title, description: s.desc, serviceType: 'Kurye hizmeti', provider: { '@id': id + '#business' }, areaServed: S.city || undefined } })) } });
     if (!home) {
       const crumbs = [{ name: 'Ana Sayfa', item: id }];
-      if (post) crumbs.push({ name: 'Blog', item: id + 'blog.html' });
+      if (PAGE === 'yazi') crumbs.push({ name: 'Blog', item: id + 'blog.html' });
       crumbs.push({ name: h1, item: url });
       graph.push({ '@type': 'BreadcrumbList', '@id': url + '#breadcrumb', itemListElement: crumbs.map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c.name, item: c.item })) });
     }
     const faqEl = $('#faq');
     if (faqEl && faqs.length) graph.push({ '@type': 'FAQPage', '@id': url + '#faq', mainEntity: faqs.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) });
-    if (post) {
+    if (isPost) {
       const qa = $$('.yazi-sss .faq-item').map(d => ({ '@type': 'Question', name: $('summary', d).textContent.trim(), acceptedAnswer: { '@type': 'Answer', text: $('.faq-a', d).textContent.trim() } }));
       graph.push({ '@type': 'BlogPosting', '@id': url + '#article', headline: h1, description: desc, image: ogImg || undefined, inLanguage: 'tr-TR', mainEntityOfPage: url,
         datePublished: metaOf('property', 'article:published_time'), dateModified: metaOf('property', 'article:modified_time') || metaOf('property', 'article:published_time'),

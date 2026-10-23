@@ -110,6 +110,67 @@
   if (hidden.stats && hidden.marquee) { const ch = $$('.checker')[0]; if (ch) ch.remove(); }
   const mCta0 = $('#mCta'); if (mCta0 && !mCta0.querySelector('a')) mCta0.remove();
 
+  /* ---------- Telefon görünümü ---------- */
+  const mobil = matchMedia('(max-width: 760px)');
+
+  // İşletmeler / Kuryeler sekmeleri: telefonda iki bölümden yalnızca seçili olan görünür
+  const kitle = $('#kitle'), kTabs = $$('#kitleTabs button');
+  const kitleOf = el => { const z = el && el.closest('[data-kitle]'); return z ? z.dataset.kitle : null; };
+  if (kitle && $('#isletmeler') && $('#kuryeler')) {
+    const setKitle = k => {
+      document.body.classList.toggle('k-biz', k === 'biz');
+      document.body.classList.toggle('k-cour', k === 'cour');
+      kTabs.forEach(b => { const on = b.dataset.k === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+      store.set('yk_kitle', k);
+      if (mobil.matches) { const fb = $('#faqTabs [data-cat="' + (k === 'cour' ? 'kurye' : 'isletme') + '"]'); if (fb && !fb.classList.contains('on')) fb.click(); }
+    };
+    const hashEl = () => { try { return location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1))); } catch (e) { return null; } };
+    const h0 = hashEl();
+    setKitle(kitleOf(h0) || (store.get('yk_kitle') === 'cour' ? 'cour' : 'biz'));
+    window.addEventListener('hashchange', () => {
+      const el = hashEl(), k = kitleOf(el);
+      if (k && !document.body.classList.contains('k-' + k)) { setKitle(k); el.scrollIntoView({ behavior: 'instant' }); }
+    });
+    kTabs.forEach(b => b.addEventListener('click', () => {
+      setKitle(b.dataset.k);
+      // Aşağıdayken sekme değişirse yeni bölümün başına dön
+      const top = kitle.getBoundingClientRect().top + scrollY - $('.header').offsetHeight;
+      if (scrollY > top + 2) window.scrollTo({ top: top, behavior: 'instant' });
+    }));
+    // Diğer sekmedeki bir bölüme giden bağlantı önce o sekmeyi açar
+    document.addEventListener('click', e => {
+      const a = e.target.closest('a[href^="#"]'); if (!a || a.getAttribute('href').length < 2) return;
+      const k = kitleOf(document.getElementById(a.getAttribute('href').slice(1)));
+      if (k && !document.body.classList.contains('k-' + k)) setKitle(k);
+    }, true);
+    if (h0 && kitleOf(h0)) window.addEventListener('load', () => h0.scrollIntoView({ behavior: 'instant' }));
+  } else { const kt = $('#kitleTabs'); if (kt) kt.remove(); }
+
+  // Yana kaydırılan kart listelerinin altındaki noktalar
+  $$('.m-kay').forEach(row => {
+    const items = Array.from(row.children); if (items.length < 2) return;
+    const dots = document.createElement('div'); dots.className = 'm-dots'; dots.setAttribute('aria-hidden', 'true');
+    dots.innerHTML = items.map(() => '<i></i>').join('');
+    row.after(dots);
+    const mark = () => {
+      const step = items[1].offsetLeft - items[0].offsetLeft || 1;
+      const n = row.scrollLeft >= row.scrollWidth - row.clientWidth - 4 ? items.length - 1 : Math.round(row.scrollLeft / step);
+      Array.from(dots.children).forEach((d, i) => d.classList.toggle('on', i === n));
+    };
+    row.addEventListener('scroll', () => requestAnimationFrame(mark), { passive: true });
+    mark();
+  });
+
+  // Hakkımızda metni telefonda kısaltılır
+  const abt = $('.about-text');
+  if (abt) {
+    const mb = document.createElement('button'); mb.type = 'button'; mb.className = 'more-btn'; mb.setAttribute('aria-expanded', 'false');
+    const setMb = o => { abt.classList.toggle('open', o); mb.setAttribute('aria-expanded', o); mb.innerHTML = (o ? 'Daha az göster' : 'Devamını oku') + YK.icon(o ? 'yukari' : 'asagi'); };
+    setMb(false); abt.after(mb);
+    mb.addEventListener('click', () => setMb(!abt.classList.contains('open')));
+    if (mobil.matches && abt.scrollHeight <= abt.clientHeight + 4) { setMb(true); mb.hidden = true; }
+  }
+
   /* ---------- SEO ---------- */
   seo();
   function setMeta(attr, key, val) {
@@ -321,10 +382,13 @@
 
   function mountForm(box, type) {
     const def = FORMS[type], ui = FORM_UI[type], DRAFT = 'yk_draft_' + type;
+    const opts = def.fields.filter(f => !f.required);
+    // Telefonda isteğe bağlı alanlar "Ek bilgiler" düğmesinin altında katlanır
+    const moreBtn = opts.length ? '<button type="button" class="form-more" aria-expanded="false">' + YK.icon('arti') + '<span><b>Ek bilgiler</b> <small>(isteğe bağlı)</small><em>' + opts.map(f => esc(f.label)).join(', ') + '</em></span></button>' : '';
     box.innerHTML =
       '<div class="form-head"><span class="fh-ic">' + YK.icon(ui.icon) + '</span><div><b>' + ui.head + '</b><small>' + ui.sub + '</small></div></div>' +
       '<div class="form-progress" aria-hidden="true"><span></span></div>' +
-      '<form novalidate><div class="form-grid">' + def.fields.map(f => fieldHTML(f, type)).join('') + '</div>' +
+      '<form novalidate><div class="form-grid">' + def.fields.map(f => fieldHTML(f, type)).join('') + moreBtn + '</div>' +
       '<input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">' +
       '<label class="kvkk"><input type="checkbox" name="kvkk" required> <span>' + nl(TX.kvkk_text) + ' <button type="button" class="kvkk-link" data-kvkk>Aydınlatma metnini oku</button></span></label>' +
       '<p class="form-error" role="alert" hidden></p>' +
@@ -337,6 +401,11 @@
     const d0 = store.get(DRAFT);
     if (d0) Object.keys(d0).forEach(k => { if (form.elements[k] && d0[k]) form.elements[k].value = d0[k]; });
     draftNote.hidden = !d0 || !Object.values(d0).some(v => v && String(v).trim());
+
+    const more = $('.form-more', form);
+    const setMore = o => { if (!more) return; form.classList.toggle('more-open', o); more.setAttribute('aria-expanded', o); more.hidden = o; };
+    if (more) more.addEventListener('click', () => { setMore(true); const f0 = $('.field.opt input, .field.opt select, .field.opt textarea', form); if (f0) f0.focus(); });
+    if (d0 && opts.some(f => d0[f.name])) setMore(true);
 
     function progress() {
       const req = def.fields.filter(f => f.required);
@@ -379,7 +448,7 @@
         if (msg && !firstBad) firstBad = el;
       });
       err.hidden = true;
-      if (firstBad) { err.textContent = 'Lütfen işaretli alanları kontrol edin.'; err.hidden = false; firstBad.focus(); return; }
+      if (firstBad) { if (firstBad.closest('.opt')) setMore(true); err.textContent = 'Lütfen işaretli alanları kontrol edin.'; err.hidden = false; firstBad.focus(); return; }
       if (!form.elements.kvkk.checked) { err.textContent = 'Devam etmek için KVKK onayını işaretleyin.'; err.hidden = false; return; }
 
       btn.disabled = true; btn.classList.add('loading');
@@ -444,7 +513,7 @@
         (f.type === 'number' ? ' min="0" max="999" inputmode="numeric"' : '') + (f.type === 'tel' ? ' inputmode="tel" autocomplete="tel"' : '') +
         (f.type === 'email' ? ' autocomplete="email"' : '') + (f.type === 'date' ? ' max="' + maxDate(f) + '"' : '') + '>';
     }
-    return '<div class="field' + (f.full ? ' full' : '') + '"><label for="' + id + '">' + esc(f.label) + (f.required ? ' <i>*</i>' : '') + '</label>' + input + '<small class="f-msg"></small></div>';
+    return '<div class="field' + (f.full ? ' full' : '') + (f.required ? '' : ' opt') + '" data-n="' + f.name + '"><label for="' + id + '">' + esc(f.label) + (f.required ? ' <i>*</i>' : '') + '</label>' + input + '<small class="f-msg"></small></div>';
   }
   function maxDate(f) {
     const d = new Date(); if (f.name === 'dogumTarihi') d.setFullYear(d.getFullYear() - 18);

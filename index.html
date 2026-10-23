@@ -24,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/style.css?v=7">
+  <link rel="stylesheet" href="assets/css/style.css?v=8">
 </head>
 <body>
   <a class="skip" href="#main">İçeriğe geç</a>
@@ -121,8 +121,15 @@
       </div>
     </section>
 
+    <!-- Telefonda işletme ve kurye bölümleri sekmeyle ayrılır (masaüstünde ikisi de görünür) -->
+    <div class="kitle" id="kitle">
+    <div class="kitle-tabs" id="kitleTabs" role="tablist" aria-label="Kimin için?">
+      <button type="button" role="tab" data-k="biz" aria-selected="true"><span data-icon="magaza"></span>İşletmeler İçin</button>
+      <button type="button" role="tab" data-k="cour" aria-selected="false"><span data-icon="motor"></span>Kuryeler İçin</button>
+    </div>
+
     <!-- ================= İŞLETMELER İÇİN ================= -->
-    <div class="zone zone-biz" id="isletmeler" data-section="zoneBiz">
+    <div class="zone zone-biz" id="isletmeler" data-section="zoneBiz" data-kitle="biz">
       <div class="container zone-in">
         <span class="zone-ic" data-icon="magaza"></span>
         <div class="zone-txt"><span class="zone-tag" data-t="biz_zone_tag">Restoran · Market · Eczane · E-ticaret</span><h2 data-t="biz_zone_title">İşletmeler İçin</h2><p data-t="biz_zone_text">Restoran, kafe, market, eczane ve e-ticaret işletmelerine özel kurye çözümleri</p></div>
@@ -132,18 +139,18 @@
       </div>
     </div>
 
-    <section class="section" id="hizmetler" data-section="services">
+    <section class="section" id="hizmetler" data-section="services" data-kitle="biz">
       <div class="container">
         <div class="sec-head">
           <span class="kicker" data-t="services_kicker">Hizmetlerimiz</span>
           <h2 data-t="services_title">Her teslimat için doğru kurye</h2>
           <p data-t="services_text">Paketten yemeğe, acil gönderilerden gün boyu hizmete kadar işletmenizin ihtiyacı olan tüm kurye çözümleri tek çatı altında.</p>
         </div>
-        <div class="grid-4" id="services"></div>
+        <div class="grid-4 m-kay" id="services"></div>
       </div>
     </section>
 
-    <section class="section dark" id="isletme-avantaj" data-section="business">
+    <section class="section dark" id="isletme-avantaj" data-section="business" data-kitle="biz">
       <div class="hero-bg soft" aria-hidden="true"><span class="hb hb1"></span><span class="hb hb2"></span></div>
       <div class="container">
         <div class="split rev">
@@ -162,27 +169,27 @@
       </div>
     </section>
 
-    <section class="section bg-soft" id="cozumler" data-section="bizSolutions">
+    <section class="section bg-soft" id="cozumler" data-section="bizSolutions" data-kitle="biz">
       <div class="container">
         <div class="sec-head">
           <span class="kicker" data-t="bizmodels_kicker">Çözümler</span>
           <h2 data-t="bizmodels_title">İşletmenize uygun hizmet modeli</h2>
           <p data-t="bizmodels_text">Yoğunluğunuza ve bütçenize en uygun modeli birlikte belirleyelim.</p>
         </div>
-        <div class="bizmodels" id="bizModels"></div>
+        <div class="bizmodels m-kay" id="bizModels"></div>
         <h3 class="h3-center" data-t="sectors_title">Hizmet verdiğimiz sektörler</h3>
         <div class="sectors" id="sectors"></div>
       </div>
     </section>
 
-    <section class="section" id="nasil-calisir" data-section="bizSteps">
+    <section class="section" id="nasil-calisir" data-section="bizSteps" data-kitle="biz">
       <div class="container">
         <div class="sec-head"><span class="kicker" data-t="bizsteps_kicker">Nasıl Çalışır?</span><h2 data-t="bizsteps_title">4 adımda kuryeniz kapınızda</h2></div>
         <ol class="steps steps-4" id="bizSteps"></ol>
       </div>
     </section>
 
-    <section class="section apply-sec apply-biz" id="isletme-basvuru" data-section="bizForm">
+    <section class="section apply-sec apply-biz" id="isletme-basvuru" data-section="bizForm" data-kitle="biz">
       <div class="container apply-in">
         <aside class="apply-side">
           <span class="kicker" data-t="bizform_kicker">Ücretsiz Teklif</span>
@@ -204,7 +211,7 @@
     </section>
 
     <!-- ================= KURYELER İÇİN ================= -->
-    <div class="zone zone-cour" id="kuryeler" data-section="zoneCour">
+    <div class="zone zone-cour" id="kuryeler" data-section="zoneCour" data-kitle="cour">
       <div class="container zone-in">
         <span class="zone-ic" data-icon="motor"></span>
         <div class="zone-txt"><span class="zone-tag" data-t="cour_zone_tag">Moto kurye · Tam / yarı zamanlı</span><h2 data-t="cour_zone_title">Kuryeler İçin</h2><p data-t="cour_zone_text">Yakında Kurye ekibine katıl: düzenli kazanç, esnek vardiya ve tam destek</p></div>
@@ -214,7 +221,7 @@
       </div>
     </div>
 
-    <section class="section bg-soft" id="kurye-ol" data-section="courier">
+    <section class="section bg-soft" id="kurye-ol" data-section="courier" data-kitle="cour">
       <div class="container">
         <div class="split">
           <div class="split-img tilt"><img data-img="courier" alt="Yakında Kurye çantası ile kurye" loading="lazy"><span class="img-tag"><span data-icon="kask"></span><span data-t="courier_img_tag">Ekipman desteği</span></span></div>
@@ -233,7 +240,7 @@
           </div>
           <div>
             <h3 class="h3-pad" data-t="models_title">Çalışma modelleri</h3>
-            <div class="models" id="workModels"></div>
+            <div class="models m-kay" id="workModels"></div>
           </div>
         </div>
         <h3 class="h3-center" data-t="steps_title">Başvuru süreci nasıl işliyor?</h3>
@@ -241,7 +248,7 @@
       </div>
     </section>
 
-    <section class="section calc-sec" id="kazanc" data-section="calc">
+    <section class="section calc-sec" id="kazanc" data-section="calc" data-kitle="cour">
       <div class="container calc-in">
         <div class="calc-text">
           <span class="kicker" data-t="calc_kicker">Kazanç Hesaplayıcı</span>
@@ -269,7 +276,7 @@
       </div>
     </section>
 
-    <section class="section apply-sec" id="kurye-basvuru" data-section="courForm">
+    <section class="section apply-sec" id="kurye-basvuru" data-section="courForm" data-kitle="cour">
       <div class="container apply-in">
         <aside class="apply-side">
           <span class="kicker" data-t="courform_kicker">Kurye Başvurusu</span>
@@ -289,6 +296,7 @@
         <div class="apply-card" data-form="kurye"></div>
       </div>
     </section>
+    </div>
 
     <!-- ================= ORTAK BÖLÜMLER ================= -->
     <section class="section" id="yorumlar" data-section="testimonials">
@@ -297,7 +305,7 @@
           <span class="kicker" data-t="testimonials_kicker">Yorumlar</span>
           <h2 data-t="testimonials_title">Bizimle çalışanlar ne diyor?</h2>
         </div>
-        <div class="testis" id="testimonials"></div>
+        <div class="testis m-kay" id="testimonials"></div>
       </div>
     </section>
 
@@ -372,11 +380,11 @@
         <h4>Kurumsal</h4>
         <a href="#hakkimizda" data-sec="about">Hakkımızda</a><a href="#referanslar" data-sec="refs">Referanslar</a><a href="#sss" data-sec="faq">SSS</a><a href="#iletisim" data-sec="contact">İletişim</a><button type="button" class="f-link" data-kvkk>KVKK Aydınlatma Metni</button>
       </div>
-      <div>
+      <div class="f-col-kitle">
         <h4>İşletmeler İçin</h4>
         <a href="#hizmetler" data-sec="services">Hizmetlerimiz</a><a href="#cozumler" data-sec="bizSolutions">Hizmet Modelleri</a><a href="#nasil-calisir" data-sec="bizSteps">Nasıl Çalışır</a><a href="#isletme-basvuru" data-sec="bizForm">Kurye Talep Et</a>
       </div>
-      <div>
+      <div class="f-col-kitle">
         <h4>Kuryeler İçin</h4>
         <a href="#kurye-ol" data-sec="courier">Neden Yakında Kurye</a><a href="#kurye-sartlar" data-sec="courier">Başvuru Şartları</a><a href="#kazanc" data-sec="calc">Kazanç Hesapla</a><a href="#kurye-basvuru" data-sec="courForm">Kurye Başvurusu</a>
       </div>
@@ -413,8 +421,8 @@
     </div>
   </div>
 
-  <script src="assets/js/content.js?v=7"></script>
-  <script src="assets/js/store.js?v=7"></script>
-  <script src="assets/js/site.js?v=7"></script>
+  <script src="assets/js/content.js?v=8"></script>
+  <script src="assets/js/store.js?v=8"></script>
+  <script src="assets/js/site.js?v=8"></script>
 </body>
 </html>

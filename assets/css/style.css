@@ -672,6 +672,212 @@ a.c-item:hover { border-color: var(--y); transform: translateX(6px); }
   .topbar-in { justify-content: center; }
 }
 
+/* ===== Telefon görünümü (760px ve altı) — masaüstü ve tablet düzeni değişmez ===== */
+.kitle-tabs, .m-dots, .more-btn, .form-more { display: none; }
+@media (max-width: 760px) {
+  html { scroll-padding-top: 72px; }
+  [data-kitle] { scroll-margin-top: 58px; }
+  h2 { font-size: 1.6rem; }
+  .section { padding: 46px 0; }
+  .sec-head { margin-bottom: 24px; }
+  .sec-head p { font-size: .94rem; margin-bottom: 0; }
+  .kicker { font-size: .68rem; padding: 5px 10px; margin-bottom: 12px; }
+  .h3-center { font-size: 1.2rem; margin: 36px 0 16px; }
+  .header-in, .header.scrolled .header-in { height: 60px; }
+  .brand img, .header.scrolled .brand img { height: 40px; }
+
+  /* Hero: kısa, ilk ekranda seçim butonları görünür */
+  .hero { padding: 24px 0 26px; }
+  .hb1 { width: 100px; height: 100px; }
+  .hb2 { width: 170px; height: 170px; }
+  .badge { font-size: .74rem; padding: 5px 12px; margin-bottom: 14px; }
+  .hero h1 { font-size: clamp(2.3rem, 11.5vw, 3rem); margin-bottom: 12px; }
+  .lead { font-size: .95rem; line-height: 1.55; margin-bottom: 18px; }
+  .hero-in { gap: 32px; }
+  .paths { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .path { flex-direction: column; align-items: flex-start; gap: 8px; padding: 14px; border-radius: 18px; }
+  .path-biz { border: 2px solid var(--y); }
+  .path-ic { width: 38px; height: 38px; border-radius: 12px; }
+  .path-ic .ic { width: 20px; height: 20px; }
+  .path-body { flex: none; }
+  .path-body b { font-size: 1.08rem; }
+  .path-body small { display: none; }
+  .path-cta { margin-top: auto; font-size: .82rem; }
+  .path-cta > span:first-child { display: inline; }
+  .hero-img { aspect-ratio: 16/9; border-radius: 20px; box-shadow: 8px 8px 0 var(--y); }
+  .chip { padding: 7px 10px; font-size: .74rem; gap: 7px; border-radius: 12px; }
+  .chip .ic { width: 24px; height: 24px; padding: 4px; border-radius: 7px; }
+  .chip-a { left: 8px; bottom: -14px; }
+  .chip-b { right: 6px; top: -14px; }
+  .road { margin-top: 16px; height: 32px; }
+
+  .marquee { padding: 10px 0; }
+  .mq-set span { font-size: 1rem; }
+  .mq-set i .ic { width: 20px; height: 20px; }
+  .stat { padding: 14px 8px; }
+  .stat b { font-size: 1.35rem; }
+  .stat span { display: block; font-size: .76rem; line-height: 1.3; }
+
+  /* Hakkımızda */
+  .about-split { gap: 30px; }
+  .about-visual .split-img { aspect-ratio: 16/10; border-radius: 20px; box-shadow: 8px 8px 0 var(--y); }
+  .about-badge { left: 10px; bottom: -16px; gap: 8px; padding: 8px 12px; font-size: .8rem; border-radius: 14px; }
+  .about-badge img { width: 44px; }
+  .about-text:not(.open) { max-height: 8em; overflow: hidden; -webkit-mask-image: linear-gradient(#000 50%, transparent); mask-image: linear-gradient(#000 50%, transparent); }
+  .more-btn { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; border-bottom: 2px solid var(--y); padding: 2px 0; font: 700 .88rem var(--font); color: var(--k); cursor: pointer; }
+  .more-btn .ic { width: 16px; height: 16px; }
+  .mv { gap: 10px; margin-top: 20px; }
+  .mv-card { gap: 12px; padding: 14px; }
+  .mv-card .ic-box { width: 40px; height: 40px; border-radius: 12px; }
+  .mv-card p { font-size: .84rem; }
+  .values { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .card.value { text-align: left; padding: 16px 14px; }
+  .value .ic-box { width: 40px; height: 40px; border-radius: 12px; margin: 0 0 10px; }
+  .value .ic-box .ic { width: 22px; height: 22px; }
+  .value h3 { font-size: .98rem; margin-bottom: 4px; }
+  .value p { font-size: .8rem; line-height: 1.45; }
+
+  /* İşletmeler / Kuryeler sekmeleri */
+  .kitle-tabs { display: flex; gap: 6px; position: sticky; top: 60px; z-index: 45; padding: 8px 16px; background: rgba(255, 255, 255, .95); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  body:not(.k-biz):not(.k-cour) .kitle-tabs { display: none; }
+  .kitle-tabs button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 6px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--soft); color: var(--m); font: 700 .88rem var(--font); cursor: pointer; transition: background .2s, color .2s, border-color .2s; }
+  .kitle-tabs button .ic { width: 18px; height: 18px; }
+  .kitle-tabs button.on[data-k="biz"] { background: var(--k); border-color: var(--k); color: #fff; }
+  .kitle-tabs button.on[data-k="biz"] .ic { color: var(--y); }
+  .kitle-tabs button.on[data-k="cour"] { background: var(--y); border-color: var(--y); color: var(--k); }
+  body.k-biz [data-kitle="cour"], body.k-cour [data-kitle="biz"] { display: none !important; }
+  .zone { padding: 22px 0 18px; }
+  .zone::after { width: 150px; }
+  .zone-in { grid-template-columns: 1fr; gap: 12px; }
+  .zone-ic { display: none; }
+  .zone-tag { font-size: .66rem; }
+  .zone h2 { font-size: 1.55rem; }
+  .zone-txt p { font-size: .88rem; }
+  .zone-nav { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; margin: 0 -16px; padding: 2px 16px; scrollbar-width: none; }
+  .zone-nav::-webkit-scrollbar { display: none; }
+  .zone-nav a { flex: none; padding: 7px 12px; font-size: .8rem; }
+
+  /* Yana kaydırılan kart listeleri */
+  .m-kay { display: flex !important; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 4px 16px 6px; scroll-padding: 0 16px; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .m-kay::-webkit-scrollbar { display: none; }
+  .m-kay > * { flex: 0 0 82%; scroll-snap-align: start; }
+  .m-kay > .reveal { opacity: 1; transform: none; transition-delay: 0s !important; }
+  .m-kay > :hover { transform: none; }
+  .bizmodels.m-kay, .models.m-kay { padding-top: 16px; }
+  .m-dots { display: flex; justify-content: center; gap: 6px; margin-top: 10px; }
+  .m-dots i { width: 7px; height: 7px; border-radius: 4px; background: #d5d3ca; transition: width .25s var(--ease), background .25s; }
+  .m-dots i.on { width: 20px; background: var(--k); }
+
+  /* İşletmeler */
+  .split { gap: 30px; }
+  .split-img { aspect-ratio: 16/10; border-radius: 20px; }
+  .split.rev .split-img { box-shadow: -8px 8px 0 var(--y); }
+  .biz-sticker { width: 26%; right: 4px; bottom: -22px; }
+  .benefits { grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0 22px; }
+  .benefit { flex-direction: column; gap: 8px; padding: 14px; border-radius: 16px; background: #fff; border: 1px solid var(--line); }
+  .on-dark .benefit { background: #1a1a1a; border-color: #2a2a2a; }
+  .benefit .ic-box { width: 38px; height: 38px; border-radius: 11px; }
+  .benefit .ic-box .ic { width: 20px; height: 20px; }
+  .benefit h3 { font-size: .92rem; }
+  .benefit p { font-size: .8rem; line-height: 1.45; }
+  .bizmodel { padding: 24px 20px 20px; }
+  .sectors { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .sector { gap: 6px; padding: 12px 6px; border-radius: 14px; font-size: .76rem; line-height: 1.25; }
+  .sector .ic { width: 22px; height: 22px; padding: 6px; border-radius: 10px; }
+
+  /* Adımlar: dikey zaman çizelgesi */
+  .steps, .steps-4 { grid-template-columns: 1fr; gap: 0; }
+  .steps li { display: grid; grid-template-columns: 38px 1fr; column-gap: 14px; align-items: start; padding: 0 0 16px; background: none; border: 0; border-radius: 0; }
+  .steps li:last-child { padding-bottom: 0; }
+  .steps li:hover { transform: none; }
+  .steps .num { grid-row: span 2; position: relative; z-index: 1; width: 38px; height: 38px; margin: 0; }
+  .steps h4 { margin: 8px 0 2px; font-size: .98rem; }
+  .steps p { font-size: .85rem; }
+  .steps li:not(:last-child)::after { display: block; top: 38px; bottom: 0; left: 18px; right: auto; width: 2px; height: auto; background: #d9d6cc; }
+
+  /* Kurye */
+  .courier-grid { gap: 22px; margin-top: 36px; }
+  .req-card { padding: 20px 18px; }
+  .checklist { margin-bottom: 18px; }
+  .checklist li { padding: 8px 0; font-size: .9rem; }
+  .h3-pad { margin: 0; }
+  .model { padding: 16px; }
+  .calc-in { gap: 22px; }
+  .calc-card { padding: 20px 18px; }
+  .range { margin-bottom: 18px; }
+  .range-top b { font-size: 1.35rem; }
+  .calc-out > div { padding: 10px 14px; }
+  .calc-out b { font-size: 1.1rem; }
+  .calc-out .big b { font-size: 1.6rem; }
+  .calc-note { margin-bottom: 14px; }
+
+  /* Başvuru formları */
+  .apply-in { gap: 22px; }
+  .apply-points { gap: 6px; margin-top: 12px; }
+  .apply-points li { gap: 8px; font-size: .86rem; }
+  .apply-points .ic { width: 22px; height: 22px; padding: 3px; border-radius: 50%; }
+  .apply-contact { flex-direction: row; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+  .apply-contact a { gap: 6px; padding: 5px 10px 5px 5px; font-size: .78rem; background: #fff; border: 1px solid var(--line); border-radius: 999px; }
+  .apply-contact .ic { width: 24px; height: 24px; padding: 5px; border-radius: 50%; }
+  .apply-card { padding: 2px 16px 20px; }
+  .form-head { gap: 12px; padding: 16px 0 12px; margin-bottom: 12px; }
+  .fh-ic { width: 42px; height: 42px; border-radius: 12px; }
+  .fh-ic .ic { width: 22px; height: 22px; }
+  .form-head b { font-size: 1.02rem; }
+  .form-head small { font-size: .8rem; }
+  .form-grid { grid-template-columns: 1fr 1fr; gap: 12px 10px; }
+  .form-grid > .field { grid-column: 1 / -1; }
+  .form-grid > .field[data-n="il"], .form-grid > .field[data-n="ilce"] { grid-column: auto; }
+  .field label { font-size: .8rem; }
+  .field input, .field select, .field textarea { min-height: 46px; padding: 10px 12px; }
+  .form-grid > .opt { order: 2; }
+  form:not(.more-open) .field.opt { display: none; }
+  .form-more { order: 1; grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 14px; border: 1.5px dashed #cfcdc4; border-radius: 12px; background: var(--soft); color: var(--t); font: inherit; text-align: left; cursor: pointer; }
+  .form-more .ic { flex: none; width: 28px; height: 28px; padding: 5px; border-radius: 8px; background: var(--y); color: var(--k); }
+  .form-more span { display: block; min-width: 0; font-size: .9rem; }
+  .form-more small { color: var(--m); font-weight: 500; }
+  .form-more em { display: block; font-style: normal; font-size: .74rem; color: var(--m); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kvkk { margin: 16px 0 14px; font-size: .8rem; }
+
+  /* Ortak bölümler */
+  .gallery { grid-template-columns: none; grid-template-rows: repeat(2, 132px); grid-auto-flow: column dense; grid-auto-columns: 132px; gap: 8px; overflow-x: auto; scroll-snap-type: x proximity; margin: 0 -16px; padding: 0 16px 4px; scroll-padding: 0 16px; scrollbar-width: none; }
+  .gallery::-webkit-scrollbar { display: none; }
+  .g-item { aspect-ratio: auto; border-radius: 14px; scroll-snap-align: start; }
+  .g-item.reveal { opacity: 1; transform: none; transition-delay: 0s !important; }
+  .regions-sec { padding: 46px 0; }
+  .regions-in { gap: 20px; }
+  .region { padding: 8px 13px; font-size: .86rem; }
+  .seg-tabs { margin: -8px auto 18px; }
+  .faq { gap: 8px; }
+  .faq-item { border-radius: 14px; }
+  .faq-item summary { padding: 14px 16px; font-size: .94rem; }
+  .faq-a { padding: 0 16px 16px; font-size: .9rem; }
+  .contact-in { gap: 26px; }
+  .contact-list { gap: 8px; margin-top: 18px; }
+  .c-item { gap: 12px; padding: 10px 12px; border-radius: 14px; }
+  .c-ic { width: 40px; height: 40px; border-radius: 11px; }
+  .c-item b { font-size: .92rem; }
+  .contact-visual { aspect-ratio: 16/10; border-radius: 20px; box-shadow: 8px 8px 0 var(--y); }
+
+  /* Footer: menüde zaten bulunan bölüm bağlantıları gizlenir */
+  .footer { padding-top: 36px; }
+  .footer-in { grid-template-columns: 1fr; gap: 20px; }
+  .f-logo { width: 140px; margin-bottom: 10px; }
+  .f-brand p { font-size: .85rem; }
+  .footer h4 { font-size: .92rem; margin-bottom: 6px; }
+  .footer-in > div:not(.f-brand) { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 18px; }
+  .footer-in > div:not(.f-brand) h4 { flex-basis: 100%; }
+  .footer-in > div:not(.f-brand) a, .f-addr, .footer .f-link { display: inline-block; padding: 3px 0; }
+  .footer-in > div.f-col-kitle { display: none; }
+  .f-bottom { margin-top: 24px; padding-top: 14px; }
+}
+@media (max-width: 380px) {
+  .path { padding: 12px; }
+  .path-cta { gap: 4px; font-size: .76rem; }
+  .kitle-tabs { padding: 8px 12px; }
+  .kitle-tabs button { gap: 5px; font-size: .8rem; }
+}
+
 /* Yazdırma */
 @media print {
   .topbar, .header, .marquee, .wa-float, .to-top, .m-cta, .progress, .hero-bg, .road, .preview-bar, .cookie { display: none !important; }

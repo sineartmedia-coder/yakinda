@@ -672,9 +672,10 @@ a.c-item:hover { border-color: var(--y); transform: translateX(6px); }
   .topbar-in { justify-content: center; }
 }
 
-/* ===== Telefon görünümü (760px ve altı) — masaüstü ve tablet düzeni değişmez ===== */
+/* ===== Telefon ve tablet görünümü (960px ve altı) — masaüstü düzeni değişmez =====
+   Bu blok telefona göre yazılmıştır; hemen altındaki blok tablet için genişletir. */
 .kitle-tabs, .m-dots, .more-btn, .form-more { display: none; }
-@media (max-width: 760px) {
+@media (max-width: 960px) {
   html { scroll-padding-top: 72px; }
   [data-kitle] { scroll-margin-top: 58px; }
   h2 { font-size: 1.6rem; }
@@ -684,6 +685,8 @@ a.c-item:hover { border-color: var(--y); transform: translateX(6px); }
   .kicker { font-size: .68rem; padding: 5px 10px; margin-bottom: 12px; }
   .h3-center { font-size: 1.2rem; margin: 36px 0 16px; }
   .header-in, .header.scrolled .header-in { height: 60px; }
+  .tb-note { flex: 1; overflow: hidden; }
+  .tb-note > span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .brand img, .header.scrolled .brand img { height: 40px; }
 
   /* Hero: kısa, ilk ekranda seçim butonları görünür */
@@ -870,6 +873,79 @@ a.c-item:hover { border-color: var(--y); transform: translateX(6px); }
   .footer-in > div:not(.f-brand) a, .f-addr, .footer .f-link { display: inline-block; padding: 3px 0; }
   .footer-in > div.f-col-kitle { display: none; }
   .f-bottom { margin-top: 24px; padding-top: 14px; }
+}
+/* Tablet (601–960px): iki sütunlu bölümler, geniş ızgaralar */
+@media (min-width: 601px) and (max-width: 960px) {
+  h2 { font-size: 2rem; }
+  .section { padding: 60px 0; }
+  .sec-head { margin-bottom: 32px; }
+  .kitle-tabs { justify-content: center; padding: 10px 20px; }
+  .kitle-tabs button { flex: 0 1 320px; padding: 11px 10px; font-size: .95rem; }
+  .zone { padding: 28px 0 24px; }
+  .zone h2 { font-size: 2.1rem; }
+  .zone-nav, .m-kay, .gallery { margin: 0 -20px; padding-left: 20px; padding-right: 20px; scroll-padding: 0 20px; }
+  .m-kay > * { flex-basis: 45%; }
+
+  .hero { padding: 40px 0 30px; }
+  .hero-in { grid-template-columns: 1.1fr .9fr; gap: 32px; }
+  .hero h1 { font-size: clamp(2.8rem, 6.6vw, 3.6rem); }
+  .lead { font-size: 1rem; }
+  .hero-img { aspect-ratio: 4/4.6; box-shadow: 12px 12px 0 var(--y); }
+  .chip-a { left: -12px; bottom: 26px; }
+  .chip-b { right: -6px; top: 18px; }
+  .stats-in { grid-template-columns: repeat(4, 1fr); }
+  .stats-in .stat { border-bottom: 0; border-right: 1px solid rgba(0, 0, 0, .12); }
+  .stats-in .stat:last-child { border-right: 0; }
+  .stat b { font-size: 1.6rem; }
+  .stat span { font-size: .82rem; }
+
+  /* Görsel + metin bölümleri: görsel bir yanda, kartlar altta tam genişlik */
+  .split { grid-template-columns: 1fr 1fr; column-gap: 36px; row-gap: 0; align-items: start; }
+  .split > div:not(.split-img):not(.biz-visual):not(.about-visual) { display: contents; }
+  .split > .split-img, .split > .biz-visual, .split > .about-visual { grid-column: 1; grid-row: 1 / span 3; align-self: stretch; min-height: 300px; }
+  .split > .about-visual { grid-row: 1 / span 4; }
+  .split.rev > .biz-visual { grid-column: 2; }
+  .split .split-img { aspect-ratio: auto; height: 100%; min-height: 300px; }
+  .split .split-img img { position: absolute; inset: 0; }
+  .about-visual .split-img { aspect-ratio: auto; box-shadow: 12px 12px 0 var(--y); }
+  .split > div > .kicker { grid-column: 2; justify-self: start; }
+  .split > div > h2, .split > div > .muted, .split > div > .more-btn { grid-column: 2; }
+  .split.rev > div > .kicker, .split.rev > div > h2, .split.rev > div > .muted { grid-column: 1; }
+  .split > div > .more-btn { justify-self: start; }
+  .split > div > .benefits, .split > div > .mv { grid-column: 1 / -1; margin-top: 28px; }
+  .split > div > .btn { grid-column: 1 / -1; justify-self: start; }
+  .mv { grid-template-columns: 1fr 1fr; }
+  .values { grid-template-columns: repeat(4, 1fr); }
+  #businessBenefits { grid-template-columns: repeat(4, 1fr); }
+  #courierBenefits { grid-template-columns: repeat(3, 1fr); }
+  .sectors { grid-template-columns: repeat(6, 1fr); }
+  #bizModels.m-kay { display: grid !important; grid-template-columns: repeat(3, 1fr); gap: 14px; overflow: visible; margin: 0; padding: 14px 0 0; }
+  #bizModels + .m-dots, #workModels + .m-dots { display: none; }
+
+  /* Adımlar: yatay çizgi üzerinde */
+  .steps { grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  .steps-4 { grid-template-columns: repeat(4, 1fr); }
+  .steps li { display: block; padding: 0; }
+  .steps .num { margin-bottom: 10px; }
+  .steps h4 { margin: 0 0 4px; }
+  .steps li:not(:last-child)::after { top: 19px; bottom: auto; left: 46px; right: -6px; width: auto; height: 2px; }
+
+  .courier-grid { grid-template-columns: 1fr 1fr; }
+  #workModels.m-kay { display: grid !important; gap: 14px; overflow: visible; margin: 0; padding: 14px 0 0; }
+  .model { grid-template-columns: 1fr; }
+  .model .hours { grid-row: auto; justify-self: start; margin: 6px 0; }
+  .calc-in { grid-template-columns: .9fr 1.1fr; gap: 32px; }
+  .calc-text h2 { font-size: clamp(1.6rem, 3.6vw, 2rem); }
+  .apply-in { grid-template-columns: .8fr 1.2fr; gap: 28px; }
+  .form-grid > .field { grid-column: auto; }
+  .form-grid > .field.full { grid-column: 1 / -1; }
+
+  .gallery { grid-template-rows: repeat(2, 170px); grid-auto-columns: 170px; gap: 10px; }
+  .regions-in { grid-template-columns: .9fr 1.1fr; gap: 32px; }
+  .contact-in { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .contact-visual { aspect-ratio: 1/1.05; box-shadow: 12px 12px 0 var(--y); }
+  .footer-in { grid-template-columns: 1.3fr 1fr 1fr; gap: 28px; }
+  .footer-in > .f-brand { grid-column: auto; }
 }
 @media (max-width: 380px) {
   .path { padding: 12px; }

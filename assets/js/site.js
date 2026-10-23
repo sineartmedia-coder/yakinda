@@ -110,10 +110,10 @@
   if (hidden.stats && hidden.marquee) { const ch = $$('.checker')[0]; if (ch) ch.remove(); }
   const mCta0 = $('#mCta'); if (mCta0 && !mCta0.querySelector('a')) mCta0.remove();
 
-  /* ---------- Telefon görünümü ---------- */
-  const mobil = matchMedia('(max-width: 760px)');
+  /* ---------- Telefon ve tablet görünümü ---------- */
+  const mobil = matchMedia('(max-width: 960px)');
 
-  // İşletmeler / Kuryeler sekmeleri: telefonda iki bölümden yalnızca seçili olan görünür
+  // İşletmeler / Kuryeler sekmeleri: telefon ve tablette iki bölümden yalnızca seçili olan görünür
   const kitle = $('#kitle'), kTabs = $$('#kitleTabs button');
   const kitleOf = el => { const z = el && el.closest('[data-kitle]'); return z ? z.dataset.kitle : null; };
   if (kitle && $('#isletmeler') && $('#kuryeler')) {

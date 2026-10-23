@@ -58,13 +58,14 @@ Panelin sol alt köşesinde hangi modda çalıştığı yazar.
 - **SEO:** SEO puanı, Google önizlemesi, başlık/açıklama, alan adı, yerel SEO, Search Console, Google Analytics (çerez onaylı), kurye iş ilanı yapısal verisi.
 - **Ayarlar:** Şifre, bildirim e-postası (sunucu modu), yedek indir / geri yükle, işlem geçmişi, örnek veri, sıfırlama.
 
-## Telefon görünümü
+## Telefon ve tablet görünümü
 
-Masaüstü ve tablet düzeni aynıdır; telefonda (760 px ve altı) site daha kısa ve sade gösterilir:
+Masaüstü düzeni (960 px üstü) aynıdır; telefon ve tablette (960 px ve altı) site daha kısa ve sade gösterilir:
 
 - **İşletmeler İçin / Kuryeler İçin** bölümleri sekmeyle ayrılır; aynı anda yalnızca seçili olan görünür. Hero'daki "İşletmeyim / Kuryeyim" kartları, menü ve alt butonlar doğru sekmeyi kendiliğinden açar. Seçim o cihazda hatırlanır.
 - Hizmetler, hizmet modelleri, çalışma modelleri ve yorumlar yana kaydırılan kartlar; referans galerisi yana kaydırılan iki sıralı galeri olur. Adımlar kısa bir zaman çizelgesine dönüşür.
 - Hakkımızda metni "Devamını oku" ile açılır. Formlarda isteğe bağlı alanlar "Ek bilgiler" düğmesinin altında durur.
+- Tablette (601–960 px) hero, görselli bölümler, hesaplayıcı, formlar ve iletişim iki sütunlu; değerler, sektörler ve hizmet modelleri tek satırda; adımlar yatay çizgi üzerinde gösterilir.
 
 ## Bildirimler
 

@@ -132,9 +132,14 @@
   /* =================== Giriş & oturum =================== */
   const R = YK.remote;
   const IDLE_MIN = 60;
+  // Geçici inceleme ayarı: yerel modda (PHP'siz hosting, ör. GitHub Pages) panel şifresiz açılır.
+  // Yerel modda panel yalnızca o tarayıcının verisini gösterir. Sunucu modunda giriş her zaman zorunludur.
+  // Şifreyi geri açmak için false yapın.
+  const YEREL_SIFRESIZ = true;
+  const sifresiz = () => YEREL_SIFRESIZ && !R.on;
   let lastAct = Date.now();
   ['click', 'keydown', 'mousemove', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { lastAct = Date.now(); }, { passive: true }));
-  setInterval(() => { if (YK.auth.isLogged() && !$('#app').hidden && Date.now() - lastAct > IDLE_MIN * 60000 && !dirty) doLogout('Güvenlik için oturum kapatıldı (60 dk işlem yapılmadı).'); }, 60000);
+  setInterval(() => { if (!sifresiz() && YK.auth.isLogged() && !$('#app').hidden && Date.now() - lastAct > IDLE_MIN * 60000 && !dirty) doLogout('Güvenlik için oturum kapatıldı (60 dk işlem yapılmadı).'); }, 60000);
 
   let fails = 0, lockUntil = 0;
   try { lockUntil = Number(sessionStorage.getItem('yk_lock')) || 0; } catch (e) {}
@@ -185,6 +190,7 @@
     knownNew = newCount(); renderSync(); route();
   }
   async function doLogout(msg) {
+    if (sifresiz()) { YK.auth.logout(); location.href = 'index.html'; return; }
     if (R.on) await YK.server.logout(); else YK.auth.logout();
     history.replaceState(null, '', location.pathname); lastHash = ''; dirty = false;
     showLogin(msg);
@@ -235,6 +241,7 @@
     dirty = false; route();
   });
   function route() {
+    if (!YK.auth.isLogged() && sifresiz()) YK.auth.login();
     if (!YK.auth.isLogged()) return showLogin();
     lastHash = location.hash;
     const parts = (location.hash.slice(1) || 'panel').split('/');
@@ -1639,6 +1646,7 @@
     if (st && st.logged) {
       try { await YK.server.pull(); return showApp(); } catch (e) { return showLogin(e.message); }
     }
+    if (!st && sifresiz()) YK.auth.login();
     if (!st && YK.auth.isLogged()) return showApp();
     showLogin();
   })();

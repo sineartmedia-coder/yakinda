@@ -29,6 +29,8 @@ Site ve panel, yüklendiği yere göre kendiliğinden doğru modu seçer:
   - Veriler yalnızca o tarayıcıda saklanır. Farklı cihazlardan gelen başvurular panele düşmez; e-posta bildirimi (Web3Forms) ve "WhatsApp ile ilet" butonuyla size ulaşır.
   - Panel değişikliklerini yayınlamak için indirilen `content.js` dosyası `assets/js/` klasörüne konur.
   - Varsayılan giriş bilgileri: kullanıcı adı `admin`, şifre `yakinda2026` (Ayarlar'dan değiştirin).
+  - **Geçici inceleme ayarı:** Yerel modda panel şu an şifre sormadan açılır (`assets/js/admin.js` içinde `YEREL_SIFRESIZ = true`). Yerel modda panel yalnızca o tarayıcının verisini gösterdiği için siteyi değiştirmez; yine de inceleme bitince `false` yapılması önerilir. Sunucu modunda giriş her zaman şifrelidir.
+  - Ana sayfanın en altındaki **©** işareti yönetim paneline gider (görünüşte normal metindir).
 
 Panelin sol alt köşesinde hangi modda çalıştığı yazar.
 

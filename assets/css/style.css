@@ -380,6 +380,8 @@ a.c-item:hover { border-color: var(--y); transform: translateX(6px); }
 .socials a:hover { background: var(--y); color: var(--k); transform: translateY(-3px); }
 .f-bottom { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-top: 1px solid #222; margin-top: 48px; padding-top: 20px; padding-bottom: 24px; font-size: .85rem; }
 .slogan { color: var(--y); font-weight: 800; font-style: italic; }
+/* Ana sayfa alt bilgisindeki © işareti yönetim paneline gider (görünüşte normal metin) */
+.footer .gizli-giris, .footer .gizli-giris:hover { color: inherit; cursor: text; }
 
 /* Yüzen butonlar */
 .wa-float { position: fixed; right: 20px; bottom: 20px; width: 58px; height: 58px; border-radius: 50%; background: #25D366; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 24px rgba(0, 0, 0, .25); z-index: 60; transition: transform .2s, bottom .3s var(--ease); }

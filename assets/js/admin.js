@@ -132,11 +132,11 @@
   /* =================== Giriş & oturum =================== */
   const R = YK.remote;
   const IDLE_MIN = 60;
-  // Geçici inceleme ayarı: yerel modda (PHP'siz hosting, ör. GitHub Pages) panel şifresiz açılır.
-  // Yerel modda panel yalnızca o tarayıcının verisini gösterir. Sunucu modunda giriş her zaman zorunludur.
+  // Geçici inceleme ayarı: Firebase ayarı olmayan kopyada (yerel mod) panel şifresiz açılır.
+  // Yerel modda panel yalnızca o tarayıcının verisini gösterir. Firebase ayarlıysa giriş her zaman Google hesabıyla yapılır.
   // Şifreyi geri açmak için false yapın.
   const YEREL_SIFRESIZ = true;
-  const sifresiz = () => YEREL_SIFRESIZ && !R.on;
+  const sifresiz = () => YEREL_SIFRESIZ && !R.on && !YK.cloud;
   let lastAct = Date.now();
   ['click', 'keydown', 'mousemove', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { lastAct = Date.now(); }, { passive: true }));
   setInterval(() => { if (!sifresiz() && YK.auth.isLogged() && !$('#app').hidden && Date.now() - lastAct > IDLE_MIN * 60000 && !dirty) doLogout('Güvenlik için oturum kapatıldı (60 dk işlem yapılmadı).'); }, 60000);
@@ -145,16 +145,19 @@
   try { lockUntil = Number(sessionStorage.getItem('yk_lock')) || 0; } catch (e) {}
   function showLogin(msg) {
     $('#login').hidden = false; $('#app').hidden = true; $$('.m-wrap').forEach(m => m.remove());
-    const f = $('#loginForm'), setup = R.on && R.setup, errEl = $('#loginErr'), btn = $('#loginBtn');
+    const f = $('#loginForm'), setup = R.on && R.setup, errEl = $('#loginErr'), btn = $('#loginBtn'), cloud = R.on && YK.cloud;
+    // Firebase: kullanıcı adı/şifre yerine yönetici Google hesabıyla giriş
+    $$('.fld', f).forEach(l => { l.hidden = cloud || (l.id === 'pass2Row' && !setup) || (l.id === 'codeRow' && !setup); });
+    f.user.required = f.pass.required = !cloud;
     $('#loginTitle').textContent = setup ? 'İlk kurulum' : 'Yönetim Paneli';
-    $('#loginSub').textContent = setup ? 'Sunucu bağlantısı hazır. Panel için yönetici hesabınızı oluşturun.' : 'Devam etmek için giriş yapın.';
-    $('#pass2Row').hidden = !setup; f.pass2.required = setup;
-    $('#codeRow').hidden = !setup; f.code.required = setup;
+    $('#loginSub').textContent = cloud ? 'Yönetici Google hesabınızla (' + YK.admins.join(', ') + ') giriş yapın.' : setup ? 'Sunucu bağlantısı hazır. Panel için yönetici hesabınızı oluşturun.' : 'Devam etmek için giriş yapın.';
+    f.pass2.required = setup; f.code.required = setup;
     f.pass.autocomplete = setup ? 'new-password' : 'current-password';
-    btn.textContent = setup ? 'Hesabı oluştur ve giriş yap' : 'Giriş Yap';
-    $('#loginMode').innerHTML = R.on ? I('kalkan') + '<span><b>Sunucu modu</b> · başvurular ve tüm veriler sunucuda saklanır</span>'
-      : R.problem ? I('uyari') + '<span><b>Sunucu bulundu ama çalışmıyor:</b> ' + esc(R.problem) + ' Bu sorun giderilene kadar panel yerel modda açılır.</span>'
-      : I('uyari') + '<span><b>Yerel mod</b> · veriler yalnızca bu tarayıcıda saklanır (sunucu/PHP bulunamadı)</span>';
+    btn.innerHTML = cloud ? '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5a5.6 5.6 0 0 1-2.4 3.6v3h3.9c2.3-2.1 3.5-5.2 3.5-8.8z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-2.9l-3.9-3c-1.1.7-2.5 1.2-4.1 1.2-3.1 0-5.8-2.1-6.7-5H1.3v3.1A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.3 14.3a7.2 7.2 0 0 1 0-4.6V6.6H1.3a12 12 0 0 0 0 10.8z"/><path fill="#EA4335" d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4A12 12 0 0 0 1.3 6.6l4 3.1c.9-2.9 3.6-4.9 6.7-4.9z"/></svg> Google ile giriş yap' : setup ? 'Hesabı oluştur ve giriş yap' : 'Giriş Yap';
+    $('#loginMode').innerHTML = cloud ? I('kalkan') + '<span><b>Bulut modu (Firebase)</b> · başvurular ve tüm veriler her cihazdan erişilebilir</span>'
+      : R.on ? I('kalkan') + '<span><b>Sunucu modu</b> · başvurular ve tüm veriler sunucuda saklanır</span>'
+      : R.problem ? I('uyari') + '<span><b>Firebase’e bağlanılamadı:</b> ' + esc(R.problem) + '</span>'
+      : I('uyari') + '<span><b>Yerel mod</b> · veriler yalnızca bu tarayıcıda saklanır (Firebase ayarı yok)</span>';
     $('#loginMode').className = 'login-mode ' + (R.on ? 'on' : 'off');
     const showErr = m => { errEl.textContent = m; errEl.hidden = !m; };
     showErr(msg || '');
@@ -182,7 +185,7 @@
         showErr('Kullanıcı adı veya şifre hatalı.'); f.pass.value = ''; f.pass.focus();
       }
     };
-    setTimeout(() => (setup || !f.user.value ? f.user : f.pass).focus(), 50);
+    if (!cloud) setTimeout(() => (setup || !f.user.value ? f.user : f.pass).focus(), 50);
   }
   function showApp() {
     $('#login').hidden = true; $('#app').hidden = false; lastAct = Date.now();
@@ -206,10 +209,10 @@
   // Sunucu kayıt durumu (kenar menüde)
   function renderSync() {
     const el = $('#syncState'); if (!el) return;
-    if (!R.on) { el.className = 'sync local'; el.innerHTML = I('uyari') + '<span><b>Yerel mod</b><small>Veriler bu tarayıcıda</small></span>'; el.title = 'Sunucu (PHP) bulunamadı. Başvurular ve veriler yalnızca bu tarayıcıda saklanır.'; return; }
+    if (!R.on) { el.className = 'sync local'; el.innerHTML = I('uyari') + '<span><b>Yerel mod</b><small>Veriler bu tarayıcıda</small></span>'; el.title = 'Firebase ayarı yok (assets/js/firebase-config.js). Başvurular ve veriler yalnızca bu tarayıcıda saklanır.'; return; }
     const st = YK.server.state();
     el.className = 'sync ' + (st.error ? 'err' : st.pending ? 'busy' : 'ok');
-    el.innerHTML = I(st.error ? 'uyari' : st.pending ? 'gecmis' : 'check') + '<span><b>' + (st.error ? 'Kaydedilemedi' : st.pending ? 'Kaydediliyor…' : 'Sunucuya kaydedildi') + '</b><small>' + esc(st.error || 'Sunucu modu · veriler güvende') + '</small></span>' + (st.error ? '<button class="link-btn" id="syncRetry">Tekrar dene</button>' : '');
+    el.innerHTML = I(st.error ? 'uyari' : st.pending ? 'gecmis' : 'check') + '<span><b>' + (st.error ? 'Kaydedilemedi' : st.pending ? 'Kaydediliyor…' : YK.cloud ? 'Buluta kaydedildi' : 'Sunucuya kaydedildi') + '</b><small>' + esc(st.error || (YK.cloud ? 'Firebase · veriler güvende' : 'Sunucu modu · veriler güvende')) + '</small></span>' + (st.error ? '<button class="link-btn" id="syncRetry">Tekrar dene</button>' : '');
     el.title = '';
     const rb = $('#syncRetry'); if (rb) rb.onclick = () => YK.server.retry();
   }
@@ -267,7 +270,7 @@
     const c = YK.getContent(), D = YK.DEFAULT_CONTENT, s = c.settings;
     let lastBackup = null; try { lastBackup = localStorage.getItem('yk_last_backup'); } catch (e) {}
     return [
-      { ok: R.on, t: 'Siteyi PHP destekli bir hostinge yükleyin (başvuruların panele düşmesi için sunucu modu)', href: '#ayarlar' },
+      { ok: R.on, t: 'Firebase bağlantısını kurun (başvuruların her cihazdan panele düşmesi için, bkz. README)', href: '#ayarlar' },
       { ok: !YK.auth.isDefault(), t: 'Panel şifresini değiştirin', href: '#ayarlar' },
       { ok: s.phone && s.phone !== D.settings.phone, t: 'Gerçek telefon numaranızı girin', href: '#icerik/genel' },
       { ok: s.whatsapp && s.whatsapp !== D.settings.whatsapp, t: 'WhatsApp numaranızı girin', href: '#icerik/genel' },
@@ -275,7 +278,7 @@
       { ok: s.email && s.email !== D.settings.email || !!(c.reviewed || {}).email, t: 'E-posta adresini kontrol edin', href: '#icerik/genel', confirm: 'email' },
       { ok: !!c.calc.configured || c.sections.calc === false, t: 'Kazanç hesaplayıcıdaki paket ücretini ayarlayın', href: '#icerik/kazanc' },
       { ok: !!(c.reviewed || {}).stats, t: 'İstatistik bandındaki değerleri doğrulayın', href: '#icerik/hero', confirm: 'stats' },
-      { ok: !!s.notify_key || (R.on && !!YK.serverSettings().notify_email), t: 'Yeni başvurular için e-posta bildirimini kurun (önerilir)', href: R.on ? '#ayarlar' : '#icerik/genel' },
+      { ok: !!s.notify_key || (R.on && !YK.cloud && !!YK.serverSettings().notify_email), t: 'Yeni başvurular için e-posta bildirimini kurun (Web3Forms, önerilir)', href: '#icerik/genel' },
       { ok: !!s.site_url, t: 'SEO: sitenizin alan adını girin (ör. https://yakindakurye.com)', href: '#icerik/seo' },
       { ok: !YK.hasUnpublished(), t: 'Site değişikliklerini yayınlayın', href: '#icerik/yayin' },
       { ok: lastBackup && Date.now() - new Date(lastBackup) < 7 * 864e5, t: 'Son 7 gün içinde yedek alın', href: '#ayarlar' }
@@ -1254,10 +1257,11 @@
       (pending ? (R.on ? 'Kaydettiğiniz içerik henüz ziyaretçilere görünmüyor.' : 'Panelde kaydettiğiniz içerik şu an yalnızca bu tarayıcıda görünüyor.') : 'Panel içeriği ile yayındaki içerik aynı.') + '</p></div></div>';
     if (R.on) {
       box.innerHTML = state +
-        '<p class="muted">“Sitede yayınla” butonu; site içeriğini, arama motoru etiketlerini (başlık, açıklama, paylaşım görseli), blog yazılarının sayfalarını ve alan adı girildiyse <code>sitemap.xml</code> / <code>robots.txt</code> dosyalarını sunucuda anında günceller.</p>' +
+        (YK.cloud ? '<p class="muted">“Sitede yayınla” butonu site içeriğini Firebase’e kaydeder; ziyaretçiler sayfayı yenilediğinde yeni hali anında görür. Dosya yüklemeye gerek yoktur.</p>'
+          : '<p class="muted">“Sitede yayınla” butonu; site içeriğini, arama motoru etiketlerini (başlık, açıklama, paylaşım görseli), blog yazılarının sayfalarını ve alan adı girildiyse <code>sitemap.xml</code> / <code>robots.txt</code> dosyalarını sunucuda anında günceller.</p>') +
         '<div class="btn-row"><a class="btn btn-light btn-lg" href="' + previewHref() + '" target="_blank" rel="noopener">' + I('goz') + 'Önce önizle</a><button class="btn btn-yellow btn-lg" id="pubGo"' + (pending ? '' : ' disabled') + '>' + I('gonder') + 'Sitede yayınla</button></div>' +
         '<div id="pubRes"></div>' +
-        '<details class="pub-alt mt"><summary>Alternatif: content.js dosyasını indir</summary><p class="muted small">Sunucu dosyaya yazamıyorsa (izin hatası) indirilen <code>content.js</code> dosyasını FTP ile <code>assets/js/</code> klasörüne yükleyebilirsiniz.</p><button class="btn btn-light sm" id="pubDl">' + I('indir') + 'content.js indir</button></details>' +
+        '<details class="pub-alt mt"><summary>Alternatif: content.js dosyasını indir</summary><p class="muted small">İndirilen <code>content.js</code> dosyası <code>assets/js/</code> klasörüne konursa, Firebase’e ulaşılamadığı durumlarda da site bu içerikle açılır (yedek).</p><button class="btn btn-light sm" id="pubDl">' + I('indir') + 'content.js indir</button></details>' +
         '<p class="muted small mt">Not: Başvurular, müşteriler, çalışanlar ve kayıtlar yayınlanmaz; yalnızca site içeriği yayınlanır.</p>';
       $('#pubGo', box).onclick = async () => {
         const b = $('#pubGo', box); b.disabled = true; b.classList.add('loading');
@@ -1266,7 +1270,7 @@
           const r = j.result || {};
           YK.log('Site içeriği yayınlandı'); toast('Site yayınlandı');
           updateBadges(); rerender();
-          setTimeout(() => { const pr = $('#pubRes'); if (pr) pr.innerHTML = '<div class="alert ok mt">' + I('check') + '<div><b>Yayınlandı.</b> İçerik ' + (r.index ? '+ SEO etiketleri ' : '') + (r.blog ? '+ ' + r.blog + ' blog sayfası ' : '') + (r.sitemap ? '+ sitemap.xml ' : '') + 'güncellendi. Ziyaretçiler sayfayı yenilediğinde yeni hali görür.' + (r.index ? '' : ' <br><small>index.html’deki SEO etiketleri güncellenemedi (dosya izni); site içeriği yine de yayında.</small>') + '</div></div>'; }, 50);
+          setTimeout(() => { const pr = $('#pubRes'); if (pr) pr.innerHTML = '<div class="alert ok mt">' + I('check') + '<div><b>Yayınlandı.</b> İçerik ' + (r.index ? '+ SEO etiketleri ' : '') + (r.blog ? '+ ' + r.blog + ' blog sayfası ' : '') + (r.sitemap ? '+ sitemap.xml ' : '') + 'güncellendi. Ziyaretçiler sayfayı yenilediğinde yeni hali görür.' + (r.index || r.cloud ? '' : ' <br><small>index.html’deki SEO etiketleri güncellenemedi (dosya izni); site içeriği yine de yayında.</small>') + '</div></div>'; }, 50);
         } catch (e) {
           b.disabled = false; b.classList.remove('loading');
           $('#pubRes', box).innerHTML = '<div class="alert warn mt">' + I('uyari') + '<div><b>Yayınlanamadı.</b> ' + esc(e.message) + '</div></div>';
@@ -1279,7 +1283,7 @@
         '<li><b>Dosyayı yerine koyun</b><span>İnen dosyayı sitenizin <code>assets/js/</code> klasöründeki <code>content.js</code> ile değiştirin (bilgisayarınızda ve hosting’e yüklerken).</span></li>' +
         '<li><b>Siteyi yükleyin</b><span>Hosting’e (FTP / dosya yöneticisi) yükleyin. SEO sekmesindeki <code>sitemap.xml</code> ve <code>robots.txt</code> dosyalarını da ana klasöre koyun.</span></li></ol>' +
         '<div class="btn-row"><button class="btn btn-yellow btn-lg" id="pubDl">' + I('indir') + 'content.js indir</button></div>' +
-        '<div class="alert mt">' + I('kalkan') + '<div><b>İpucu:</b> Site PHP destekli bir hostingde çalıştığında panel otomatik olarak <b>sunucu modu</b>na geçer: “Yayınla” tek tıkla siteyi günceller ve başvurular her cihazdan panele düşer.</div></div>' +
+        '<div class="alert mt">' + I('kalkan') + '<div><b>İpucu:</b> <code>assets/js/firebase-config.js</code> dosyasına Firebase ayarları girildiğinde panel otomatik olarak <b>bulut moduna</b> geçer: “Yayınla” tek tıkla siteyi günceller ve başvurular her cihazdan panele düşer. Site her hostingte aynı şekilde çalışır (bkz. README).</div></div>' +
         '<p class="muted small mt">Not: Başvurular, müşteriler, çalışanlar ve kayıtlar bu dosyaya <b>eklenmez</b>; yalnızca site içeriği yayınlanır.</p>';
     }
     $('#pubDl', box).onclick = async () => {
@@ -1670,27 +1674,34 @@
 
   /* =================== Ayarlar =================== */
   function viewSettings() {
-    setTop('Ayarlar', '', R.on ? 'Sunucu modu · veriler sunucuda saklanıyor' : 'Yerel mod · veriler bu tarayıcıda saklanıyor');
+    const cloud = R.on && YK.cloud;
+    setTop('Ayarlar', '', cloud ? 'Bulut modu (Firebase) · veriler her cihazdan erişilebilir' : R.on ? 'Sunucu modu · veriler sunucuda saklanıyor' : 'Yerel mod · veriler bu tarayıcıda saklanıyor');
     const c = YK.auth.creds();
     let lastBackup = null; try { lastBackup = localStorage.getItem('yk_last_backup'); } catch (e) {}
     let usage = 0; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); usage += (localStorage.getItem(k) || '').length; } } catch (e) {}
     const logs = YK.getLog(), ss = YK.serverSettings();
-    const serverCard = R.on
+    const serverCard = cloud
+      ? '<section class="card"><div class="card-head"><h2>' + I('kalkan') + ' Firebase bağlantısı</h2><span class="pill green">Bağlı</span></div>' +
+        '<p class="muted">Site formlarından gelen tüm talep ve başvurular Firebase veritabanına (Firestore) kaydedilir ve bu panelde her cihazdan görünür. Site içeriği “Yayınla” ile anında güncellenir; site hangi hostingde olursa olsun aynı şekilde çalışır.</p>' +
+        '<p class="muted"><b>E-posta bildirimi:</b> Yeni başvuruların e-postanıza da gelmesi için <a href="#icerik/genel">Site İçeriği › Genel & İletişim</a> bölümüne ücretsiz Web3Forms anahtarı girin.</p>' +
+        '<p class="muted small">Proje: <code>' + esc((window.YK_FIREBASE || {}).projectId || '') + '</code> · Yönetici hesapları: ' + esc(YK.admins.join(', ')) + '</p></section>'
+      : R.on
       ? '<section class="card"><div class="card-head"><h2>' + I('kalkan') + ' Sunucu ve bildirimler</h2><span class="pill green">Bağlı</span></div>' +
         '<p class="muted">Site formlarından gelen tüm talep ve başvurular doğrudan sunucuya kaydedilir ve bu panelde görünür. Panel her cihazdan aynı veriyi gösterir.</p>' +
         '<form id="srvForm" class="f-grid one"><label class="fld"><span>Yeni başvuru bildirim e-postası</span><input name="notify_email" type="email" placeholder="ornek@alanadiniz.com" value="' + esc(ss.notify_email || '') + '"><small>Her yeni talep/başvuruda bu adrese e-posta gönderilir' + (R.mail ? '' : ' (bu sunucuda PHP mail() kapalı görünüyor; Web3Forms anahtarını kullanabilirsiniz)') + '. Spam klasörünü de kontrol edin.</small></label><button class="btn btn-dark">' + I('check') + 'Kaydet</button></form></section>'
       : '<section class="card"><div class="card-head"><h2>' + I('uyari') + ' Yerel mod</h2><span class="pill red">Sunucu yok</span></div>' +
-        '<p class="muted">Panel şu an sunucuya bağlı değil; veriler yalnızca bu tarayıcıda saklanıyor. Site internette yayınlandığında ziyaretçilerin başvuruları bu panele <b>düşmez</b> (e-posta bildirimi ve WhatsApp ile iletilir).</p>' +
-        '<p class="muted"><b>Sunucu modunu açmak için:</b> sitenin tüm dosyalarını (api klasörü dahil) PHP 7.4+ destekleyen bir hostinge yükleyin ve <code>admin.html</code> adresini açın. Panel sunucuyu otomatik algılar ve ilk girişte yönetici hesabı oluşturmanızı ister. Bu tarayıcıdaki verileri sonra tek tıkla sunucuya aktarabilirsiniz.</p></section>';
+        '<p class="muted">Panel şu an buluta (Firebase) bağlı değil; veriler yalnızca bu tarayıcıda saklanıyor. Site internette yayınlandığında ziyaretçilerin başvuruları bu panele <b>düşmez</b> (e-posta bildirimi ve WhatsApp ile iletilir).</p>' +
+        '<p class="muted"><b>Bulut modunu açmak için:</b> Firebase projesinin ayarlarını <code>assets/js/firebase-config.js</code> dosyasına girin ve siteyi yeniden yükleyin (README › Firebase). Panel Google hesabıyla girişe geçer; bu tarayıcıdaki verileri sonra tek tıkla buluta aktarabilirsiniz.</p></section>';
     view.innerHTML =
       migrateCard() +
       '<div class="grid-2">' +
+      (cloud ? '<section class="card"><div class="card-head"><h2>Giriş bilgileri</h2><span class="pill green">Google</span></div><p class="muted">Panele <b>' + esc(R.user) + '</b> Google hesabıyla giriş yaptınız. Şifre Google hesabınızda yönetilir; iki adımlı doğrulamayı açmanız önerilir.</p><p class="muted small">Yönetici hesabı eklemek veya değiştirmek için <code>assets/js/firebase-config.js</code> ve <code>firestore.rules</code> dosyalarındaki e-posta listesini güncelleyin (README › Firebase).</p></section>' :
       '<section class="card"><div class="card-head"><h2>Giriş bilgileri</h2></div><form id="pwForm" class="f-grid one">' +
       '<label class="fld"><span>Kullanıcı adı</span><input name="user" value="' + esc(c.user) + '" required autocomplete="username" autocapitalize="off"></label>' +
       '<label class="fld"><span>Mevcut şifre</span><input name="old" type="password" required autocomplete="current-password"></label>' +
       '<label class="fld"><span>Yeni şifre (en az 8 karakter, harf ve rakam)</span><input name="pw" type="password" required minlength="8" autocomplete="new-password"><span class="pw-meter"><i id="pwBar"></i></span></label>' +
       '<label class="fld"><span>Yeni şifre (tekrar)</span><input name="pw2" type="password" required autocomplete="new-password"></label>' +
-      '<button class="btn btn-dark">Şifreyi güncelle</button></form><p class="muted small mt">' + (R.on ? 'Şifreniz sunucuda şifrelenmiş (hash) olarak saklanır. 60 dakika işlem yapılmazsa oturum kapanır; 5 hatalı denemede giriş 5 dakika kilitlenir.' : 'Güvenlik: 60 dakika işlem yapılmazsa oturum kapanır; 5 hatalı denemede giriş 1 dakika kilitlenir.') + '</p></section>' +
+      '<button class="btn btn-dark">Şifreyi güncelle</button></form><p class="muted small mt">' + (R.on ? 'Şifreniz sunucuda şifrelenmiş (hash) olarak saklanır. 60 dakika işlem yapılmazsa oturum kapanır; 5 hatalı denemede giriş 5 dakika kilitlenir.' : 'Güvenlik: 60 dakika işlem yapılmazsa oturum kapanır; 5 hatalı denemede giriş 1 dakika kilitlenir.') + '</p></section>') +
       serverCard + '</div>' +
       '<div class="grid-2"><section class="card"><div class="card-head"><h2>Yedekleme</h2>' + (lastBackup ? '<span class="pill">Son yedek: ' + YK.fmtDate(lastBackup, true) + '</span>' : '<span class="pill red">Hiç yedek alınmadı</span>') + '</div><p class="muted">Tüm başvuruları, müşterileri, çalışanları, kayıtları ve site içeriğini tek bir dosyaya yedekleyin. ' + (R.on ? 'Yüklenen görseller sunucudaki <code>uploads</code> klasöründe kalır.' : 'Yüklenen görseller de yedeğe eklenir; başka bir bilgisayara/tarayıcıya taşımak için de kullanabilirsiniz.') + '</p>' +
       '<div class="btn-row"><button class="btn btn-dark" id="bExport">' + I('indir') + 'Yedek indir</button><label class="btn btn-light">' + I('yukle') + 'Yedekten geri yükle<input type="file" accept=".json,application/json" id="bImport" hidden></label></div>' +
@@ -1704,8 +1715,8 @@
       '<button class="btn btn-danger-ghost" id="rRecs">Tüm kayıtları sil</button>' +
       '<button class="btn btn-danger" id="rAll">Tüm verileri sil</button></div></section>';
 
-    const f = $('#pwForm');
-    f.pw.oninput = () => { const v = f.pw.value; let sc = 0; if (v.length >= 8) sc++; if (/[A-ZÇĞİÖŞÜ]/.test(v) && /[a-zçğıöşü]/.test(v)) sc++; if (/\d/.test(v)) sc++; if (/[^\wçğıöşüÇĞİÖŞÜ]/.test(v) || v.length >= 12) sc++; const bar = $('#pwBar'); bar.style.width = sc * 25 + '%'; bar.style.background = ['#dc2626', '#dc2626', '#d97706', '#65a30d', '#16a34a'][sc]; };
+    const f = $('#pwForm') || document.createElement('form');
+    if (f.pw) f.pw.oninput = () => { const v = f.pw.value; let sc = 0; if (v.length >= 8) sc++; if (/[A-ZÇĞİÖŞÜ]/.test(v) && /[a-zçğıöşü]/.test(v)) sc++; if (/\d/.test(v)) sc++; if (/[^\wçğıöşüÇĞİÖŞÜ]/.test(v) || v.length >= 12) sc++; const bar = $('#pwBar'); bar.style.width = sc * 25 + '%'; bar.style.background = ['#dc2626', '#dc2626', '#d97706', '#65a30d', '#16a34a'][sc]; };
     f.onsubmit = async e => {
       e.preventDefault();
       if (f.pw.value.length < 8 || !/\d/.test(f.pw.value) || !/\D/.test(f.pw.value)) return toast('Yeni şifre en az 8 karakter olmalı ve harf + rakam içermeli', 'err');

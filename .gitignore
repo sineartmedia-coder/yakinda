@@ -1,14 +1,7 @@
-# Sunucu verileri (başvurular, şifre, oturumlar) — kişisel veri içerir, asla depoya eklenmez
-api/data/
-
-# Panelden yüklenen görseller (sunucuda oluşur)
-uploads/*
-!uploads/.htaccess
-!uploads/index.html
-
-# Yayınla ile sunucuda oluşan dosya
-sitemap.xml
-
 # Sistem dosyaları
 .DS_Store
 Thumbs.db
+
+# Firebase komut satırı aracı
+firebase-debug.log
+.firebase/

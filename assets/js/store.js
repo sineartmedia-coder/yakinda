@@ -1,11 +1,11 @@
 /* ==========================================================================
    Yakında Kurye — Ortak veri katmanı (site + admin paneli)
    İki çalışma modu vardır:
-   • Sunucu modu: hosting'de PHP varsa (api/index.php yanıt veriyorsa) tüm
-     başvurular ve panel verileri sunucuda saklanır, her cihazdan aynı veri görünür.
-   • Yerel mod: PHP yoksa (ör. dosyayı çift tıklayarak açma, statik hosting)
-     veriler tarayıcıda saklanır: JSON veriler localStorage'da, yüklenen
-     görseller IndexedDB'de (desteklenmezse localStorage'da).
+   • Bulut modu (Firebase): assets/js/firebase-config.js doluysa tüm başvurular ve
+     panel verileri Firestore'da saklanır, her cihazdan aynı veri görünür.
+     Panel girişi yönetici Google hesabıyla yapılır.
+   • Yerel mod: Firebase ayarı yoksa veriler tarayıcıda saklanır: JSON veriler
+     localStorage'da, yüklenen görseller IndexedDB'de (desteklenmezse localStorage'da).
    ========================================================================== */
 (function () {
   'use strict';
@@ -757,33 +757,135 @@
     catch (e) { alert('Veri kaydedilemedi. Tarayıcı depolama alanı dolmuş veya engellenmiş olabilir.'); return false; }
   }
 
-  /* ---------- Sunucu bağlantısı ---------- */
-  const API = 'api/index.php';
+  /* ---------- Bulut bağlantısı (Firebase) ----------
+     Ayarlar assets/js/firebase-config.js dosyasındadır; ayar yoksa site ve panel yerel modda çalışır.
+     Firestore'da: site/published (yayındaki içerik) · meta/draft (panel taslağı) · meta/log · meta/settings
+     · applications, employees, customers, records koleksiyonları · media (yüklenen görseller, data URL).
+     Ziyaretçiler yalnızca başvuru oluşturabilir, yayındaki içeriği ve görselleri okuyabilir (firestore.rules). */
+  const FBC = window.YK_FIREBASE || {};
+  const FB = FBC.apiKey && FBC.projectId ? FBC : null;
+  const ADMINS = (FBC.admins || []).map(e => String(e).trim().toLowerCase());
+  const SDK = 'https://www.gstatic.com/firebasejs/10.14.1/firebase-';
+  const REST = FB ? 'https://firestore.googleapis.com/v1/projects/' + FB.projectId + '/databases/(default)/documents/' : '';
   const emit = (name, detail) => { try { window.dispatchEvent(new CustomEvent('yk:' + name, { detail: detail || {} })); } catch (e) {} };
-  // e.absent = bu adreste sunucu (PHP) yok: dosyadan açma veya statik hosting → yerel mod
-  // e.offline = sunucudan geçerli yanıt alınamadı (bağlantı kopması, güvenlik duvarı, çökme)
-  // e.status = HTTP kodu
-  function api(action, body) {
-    if (location.protocol === 'file:') { const e = new Error('Sunucu yok'); e.offline = e.absent = true; return Promise.reject(e); }
-    const o = { method: body === undefined ? 'GET' : 'POST', credentials: 'same-origin', cache: 'no-store', headers: { 'X-YK': '1', Accept: 'application/json' } };
-    if (body !== undefined) { o.headers['Content-Type'] = 'application/json'; o.body = JSON.stringify(body); }
-    return fetch(API + '?a=' + action, o).then(r => r.text().then(t => {
-      let j = null; try { j = JSON.parse(t); } catch (e) {}
-      if (!j || typeof j !== 'object') {
-        const e = new Error(r.status >= 500 ? 'Sunucuda teknik bir sorun oluştu.' : 'Sunucudan geçerli yanıt alınamadı.'); e.offline = true; e.status = r.status;
-        // Statik hostingler PHP dosyasını bulamaz (404), POST'u desteklemez (405/501) ya da dosyayı düz metin olarak verir (200)
-        e.absent = [404, 405, 501].indexOf(r.status) >= 0 || r.status === 200;
-        throw e;
-      }
-      if (!r.ok || j.ok === false) {
-        const e = new Error(j.error || ('Sunucu hatası (' + r.status + ')')); e.status = r.status; e.code = j.code || ''; e.data = j;
-        if (r.status === 401 && remote.logged) { remote.logged = false; emit('auth'); }
-        throw e;
-      }
-      return j;
-    }), () => { const e = new Error('Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edin.'); e.offline = true; e.network = true; throw e; });
+  const isAdmin = u => !!u && u.emailVerified !== false && ADMINS.indexOf(String(u.email || '').toLowerCase()) >= 0;
+  const plain = o => JSON.parse(JSON.stringify(o == null ? null : o));
+  const byDate = a => a.sort((x, y) => String(y.createdAt || '').localeCompare(String(x.createdAt || '')));
+  // Firebase kütüphanesi yalnızca panelde ve düzenleme modunda yüklenir; ziyaretçi sayfaları REST ile okur/yazar
+  let sdkP = null;
+  function sdk() {
+    if (!sdkP) sdkP = Promise.all(['app', 'auth', 'firestore'].map(m => import(SDK + m + '.js'))).then(([A, U, F]) => {
+      const app = A.initializeApp({ apiKey: FB.apiKey, authDomain: FB.authDomain, projectId: FB.projectId, appId: FB.appId, messagingSenderId: FB.messagingSenderId });
+      const auth = U.getAuth(app), db = F.getFirestore(app);
+      return new Promise(res => { const off = U.onAuthStateChanged(auth, () => { off(); res({ U, F, auth, db }); }); });
+    }, () => { sdkP = null; const e = new Error('Firebase’e ulaşılamadı. İnternet bağlantınızı kontrol edip sayfayı yenileyin.'); e.offline = e.network = true; throw e; });
+    return sdkP;
   }
-
+  const FB_ERR = {
+    'permission-denied': 'Bu işlem için yetkiniz yok. Yönetici hesabıyla giriş yapın.',
+    'unavailable': 'Firebase’e ulaşılamadı. İnternet bağlantınızı kontrol edin.',
+    'auth/popup-closed-by-user': 'Giriş penceresi kapatıldı.',
+    'auth/cancelled-popup-request': 'Giriş penceresi kapatıldı.',
+    'auth/popup-blocked': 'Tarayıcı giriş penceresini engelledi; bu site için açılır pencerelere izin verin.',
+    'auth/unauthorized-domain': 'Bu alan adı Firebase’de yetkili değil (Firebase › Authentication › Settings › Authorized domains bölümüne ekleyin).',
+    'auth/operation-not-allowed': 'Firebase’de Google ile giriş açık değil (Firebase › Authentication › Sign-in method › Google).',
+    'auth/configuration-not-found': 'Firebase’de Google ile giriş açık değil (Firebase › Authentication › Sign-in method › Google).',
+    'auth/network-request-failed': 'Bağlantı kurulamadı. İnternet bağlantınızı kontrol edin.'
+  };
+  function fbErr(e) {
+    if (e && (e.status || e.offline || !e.code)) return e;
+    const er = new Error(FB_ERR[e.code] || e.message || 'Firebase işlemi tamamlanamadı.'); er.code = e.code;
+    if (e.code === 'permission-denied' || e.code === 'unauthenticated') er.status = 401;
+    if (e.code === 'unavailable' || e.code === 'auth/network-request-failed') er.offline = er.network = true;
+    return er;
+  }
+  function need(auth) { if (!isAdmin(auth.currentUser)) { const e = new Error('Oturum süresi doldu. Lütfen yeniden giriş yapın.'); e.status = 401; throw e; } }
+  async function fbApi(action, body) {
+    const S = await sdk(), { U, F, auth, db } = S;
+    const ref = (c, id) => F.doc(db, c, String(id));
+    const all = c => F.getDocs(F.collection(db, c)).then(q => q.docs.map(x => x.data()));
+    const json = (c, id) => F.getDoc(ref(c, id)).then(x => x.exists() && x.data().json ? JSON.parse(x.data().json) : null);
+    const setJson = (c, id, v) => F.setDoc(ref(c, id), { json: JSON.stringify(v), at: new Date().toISOString() });
+    const write = async (c, up, del) => {
+      const w = (up || []).filter(x => x && x.id).map(x => b => b.set(ref(c, x.id), plain(x))).concat((del || []).map(id => b => b.delete(ref(c, id))));
+      for (let i = 0; i < w.length; i += 400) { const b = F.writeBatch(db); w.slice(i, i + 400).forEach(f => f(b)); await b.commit(); }
+    };
+    const act = action.split('&')[0];
+    if (act === 'status') return { setup: false, logged: isAdmin(auth.currentUser), user: auth.currentUser ? auth.currentUser.email : '' };
+    if (act === 'login') {
+      const r = await U.signInWithPopup(auth, new U.GoogleAuthProvider());
+      if (!isAdmin(r.user)) { const em = r.user.email; await U.signOut(auth); const e = new Error(em + ' hesabının bu panele yetkisi yok. Yönetici hesabıyla (' + ADMINS.join(', ') + ') giriş yapın.'); e.status = 403; throw e; }
+      return { user: r.user.email };
+    }
+    if (act === 'logout') { await U.signOut(auth); return {}; }
+    need(auth);
+    if (act === 'pull') {
+      if (/only=applications/.test(action)) return { applications: byDate(await all('applications')) };
+      const r = await Promise.all([all('applications'), all('employees'), all('customers'), all('records'), F.getDoc(ref('meta', 'log')), json('meta', 'draft'), json('meta', 'settings'), json('site', 'published')]);
+      return { applications: byDate(r[0]), employees: r[1], customers: r[2], records: r[3], log: r[4].exists() ? r[4].data().items || [] : [], draft: r[5], settings: r[6] || {}, published: r[7], mail: false };
+    }
+    if (act === 'sync') {
+      const op = body || {};
+      if (LIST_COLLS.indexOf(op.coll) >= 0) { await write(op.coll, op.upsert, op.delete); return {}; }
+      if (op.coll === 'log') {
+        await F.runTransaction(db, async t => { const lr = ref('meta', 'log'), cur = await t.get(lr); t.set(lr, { items: plain((op.append || []).concat(cur.exists() ? cur.data().items || [] : []).slice(0, 300)) }); });
+        return {};
+      }
+      if (op.coll === 'draft' || op.coll === 'settings') { if (op.value == null) await F.deleteDoc(ref('meta', op.coll)); else await setJson('meta', op.coll, op.value); return {}; }
+      throw new Error('Bilinmeyen veri türü.');
+    }
+    if (act === 'restore') {
+      for (const c of LIST_COLLS) { const cur = await all(c); await write(c, body[c] || [], cur.map(x => x.id).filter(id => !(body[c] || []).some(y => y && y.id === id))); }
+      await F.setDoc(ref('meta', 'log'), { items: plain((body.log || []).slice(0, 300)) });
+      if (body.draft) await setJson('meta', 'draft', body.draft); else await F.deleteDoc(ref('meta', 'draft'));
+      return {};
+    }
+    if (act === 'publish') {
+      const c = plain(body.content); delete c.reviewed;
+      const txt = JSON.stringify(c);
+      if (txt.length > 950000) throw new Error('Site içeriği çok büyük (' + Math.round(txt.length / 1024) + ' KB). Blog yazılarındaki ya da içerikteki gömülü görselleri Görseller sayfasından yükleyip yeniden seçin.');
+      const at = new Date().toISOString();
+      await F.setDoc(ref('site', 'published'), { json: txt, at: at });
+      await setJson('meta', 'draft', c);
+      return { result: { content: true, cloud: true }, at: at };
+    }
+    if (act === 'upload') {
+      const data = String(body.data || '');
+      if (!/^data:image\/(jpeg|png|webp|gif);base64,/.test(data)) throw new Error('Yalnızca JPG, PNG, WEBP veya GIF görsel yüklenebilir.');
+      if (data.length > 1000000) throw new Error('Görsel çok büyük. Daha küçük bir görsel seçin.');
+      const item = { id: uid(), name: String(body.name || 'görsel').slice(0, 80), createdAt: new Date().toISOString(), data: data };
+      await F.setDoc(ref('media', item.id), item);
+      return { item: { id: item.id, src: 'media:' + item.id, name: item.name, createdAt: item.createdAt } };
+    }
+    if (act === 'media') return { items: byDate(await all('media')).map(x => ({ id: x.id, src: 'media:' + x.id, url: x.data, name: x.name, createdAt: x.createdAt })) };
+    if (act === 'media_delete') { await F.deleteDoc(ref('media', String(body.id || '').replace(/^media:/, ''))); return { removed: true }; }
+    throw new Error('Bilinmeyen işlem.');
+  }
+  // e.absent = bulut bağlantısı ayarlı değil → yerel mod; e.offline = Firebase'e ulaşılamadı; e.status = 401 oturum yok
+  function api(action, body) {
+    if (!FB) { const e = new Error('Bulut bağlantısı ayarlı değil'); e.offline = e.absent = true; return Promise.reject(e); }
+    return fbApi(action, body).catch(e => {
+      const er = fbErr(e);
+      if (er.status === 401 && remote.logged) { remote.logged = false; emit('auth'); }
+      throw er;
+    });
+  }
+  // Ziyaretçi sayfaları: Firestore REST (Firebase kütüphanesi yüklenmeden)
+  function fsVal(v) {
+    if (v == null) return { nullValue: null };
+    if (typeof v === 'boolean') return { booleanValue: v };
+    if (typeof v === 'number') return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+    if (Array.isArray(v)) return { arrayValue: { values: v.map(fsVal) } };
+    if (typeof v === 'object') { const f = {}; Object.keys(v).forEach(k => { f[k] = fsVal(v[k]); }); return { mapValue: { fields: f } }; }
+    return { stringValue: String(v) };
+  }
+  const restGet = path => fetch(REST + path + '?key=' + encodeURIComponent(FB.apiKey), { cache: 'no-store' }).then(r => r.ok ? r.json() : null);
+  const restStr = (doc, f) => doc && doc.fields && doc.fields[f] ? doc.fields[f].stringValue : '';
+  // Yayındaki site içeriği: Firebase'den okunur; ulaşılamazsa assets/js/content.js kullanılır
+  const ready = !FB || /admin\.html$/.test(location.pathname) ? Promise.resolve() : Promise.race([
+    restGet('site/published').then(d => { const t = restStr(d, 'json'); if (t) window.YK_PUBLISHED = JSON.parse(t); }).catch(() => {}),
+    new Promise(r => setTimeout(r, 3500))
+  ]);
   // Bekleyen değişiklikler sırayla sunucuya gönderilir; hata olursa tekrar denenir
   const ops = [];
   let busy = false, retryT = null, dropped = 0;
@@ -940,10 +1042,25 @@
     const map = {}; let failed = 0;
     return items.reduce((p, m) => p.then(() => {
       if (!m || !m.data || m.data.indexOf('data:image/') !== 0) return null;
-      return (m.data.indexOf('data:image/svg') === 0 ? svgToPng(m.data) : Promise.resolve(m.data))
+      return (m.data.indexOf('data:image/svg') === 0 ? svgToPng(m.data) : Promise.resolve(m.data)).then(fitCloud)
         .then(data => api('upload', { data: data, name: m.name || 'görsel' }))
         .then(j => { map[m.id] = j.item.src; }, () => { failed++; });
     }), Promise.resolve()).then(() => { Object.defineProperty(map, 'failed', { value: failed }); return map; });
+  }
+  // Firestore belgesi 1 MB ile sınırlı: büyük görseller sığana kadar küçültülüp JPEG'e çevrilir
+  function fitCloud(url, step) {
+    step = step || 0;
+    if (url.length <= 900000 || step > 4) return Promise.resolve(url);
+    return new Promise((res, rej) => {
+      const im = new Image();
+      im.onload = () => {
+        const max = [1600, 1400, 1200, 1000, 800][step], k = Math.min(1, max / Math.max(im.width, im.height));
+        const c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+        const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
+        fitCloud(c.toDataURL('image/jpeg', [0.8, 0.75, 0.72, 0.7, 0.65][step]), step + 1).then(res, rej);
+      };
+      im.onerror = rej; im.src = url;
+    });
   }
   function svgToPng(url) {
     return new Promise((res, rej) => {
@@ -953,9 +1070,21 @@
     });
   }
 
-  // Site formları: sunucu varsa oraya gönderilir
+  // Site formları: Firebase'e kaydedilir (ziyaretçi yalnızca yeni başvuru oluşturabilir, okuyamaz); ayar yoksa yerel moda düşer
   function submitForm(type, data, honeypot) {
-    return api('submit', { type: type, data: data, website: honeypot || '', kvkk: true });
+    if (!FB || !FORMS[type]) return api('submit');
+    if (honeypot) return new Promise(r => setTimeout(() => r({ ref: refNo() }), 500));
+    // Aynı cihazdan aynı telefonla 24 saatte tek başvuru
+    const phone = String(data.telefon || '').replace(/\D/g, ''), key = type + ':' + phone, sent = ls.get('yk_sent') || {};
+    if (phone && sent[key] && Date.now() - sent[key].t < 864e5) { const e = new Error('Tekrarlanan başvuru'); e.code = 'dup'; e.data = { ref: sent[key].ref }; return Promise.reject(e); }
+    const clean = {}; FORMS[type].fields.forEach(f => { clean[f.name] = String(data[f.name] || '').slice(0, f.type === 'textarea' ? 1000 : 160); });
+    const app = { id: uid(), type: type, status: 'yeni', ref: refNo(), data: clean, kvkk: true, notes: [], source: location.hostname || 'site', createdAt: new Date().toISOString() };
+    return fetch(REST + 'applications?documentId=' + app.id + '&key=' + encodeURIComponent(FB.apiKey), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: fsVal(app).mapValue.fields }) })
+      .then(r => {
+        if (!r.ok) { const e = new Error('Başvurunuz kaydedilemedi (hata ' + r.status + ').'); e.status = r.status; throw e; }
+        sent[key] = { t: Date.now(), ref: app.ref }; ls.set('yk_sent', sent);
+        return { ref: app.ref };
+      }, () => { const e = new Error('Bağlantı kurulamadı.'); e.network = true; throw e; });
   }
 
   /* ---------- Blog ---------- */
@@ -1218,7 +1347,7 @@
     // Görseli kaydeder, sitede kullanılacak adresi döndürür
     put(dataUrl, name) {
       if (remote.on) {
-        return (/^data:image\/svg/.test(dataUrl) ? svgToPng(dataUrl) : Promise.resolve(dataUrl))
+        return (/^data:image\/svg/.test(dataUrl) ? svgToPng(dataUrl) : Promise.resolve(dataUrl)).then(fitCloud)
           .then(d => api('upload', { data: d, name: name || 'görsel' })).then(j => j.item.src);
       }
       const item = { id: uid(), data: dataUrl, name: name || 'görsel', createdAt: new Date().toISOString() };
@@ -1226,6 +1355,7 @@
         .catch(() => { save('yk_media_' + item.id, item); return 'media:' + item.id; });
     },
     get(id) {
+      if (FB) return restGet('media/' + id).then(d => { const data = restStr(d, 'data'); return data ? { id: id, data: data } : null; }).catch(() => null);
       return idb('readonly', s => s.get(id)).then(r => r || ls.get('yk_media_' + id)).catch(() => ls.get('yk_media_' + id));
     },
     // id, 'media:<id>' veya sunucudaki adres (uploads/…) kabul eder
@@ -1238,7 +1368,7 @@
     },
     // Görsel seçici için liste: { id, src (kullanılacak değer), url (önizleme), name }
     all() {
-      if (remote.on) return api('media').then(j => (j.items || []).map(x => ({ id: x.id, src: x.src, url: x.src, name: x.name, createdAt: x.createdAt })));
+      if (remote.on) return api('media').then(j => (j.items || []).map(x => ({ id: x.id, src: x.src, url: x.url || x.src, name: x.name, createdAt: x.createdAt })));
       return localMedia().then(items => items.map(x => ({ id: x.id, src: 'media:' + x.id, url: x.data, name: x.name, createdAt: x.createdAt })));
     }
   };
@@ -1329,6 +1459,6 @@
     ICONS, ICON_CHOICES, icon, BUNDLED_IMAGES, FONTS, DEFAULT_CONTENT, FORMS, getForms, ILLER, APP_STATUSES, EMP_FIELDS, EMP_DOCS, CUST_FIELDS, CUST_STATUSES, EXPIRY_FIELDS, RECORD_TYPES, log, getLog,
     getContent, publishedContent, hasUnpublished, isPreview, buildPublishFile, sitemapXML, robotsTXT, md, slugify, blogList, blogUrl, blogCard, blogArticle, blogDate, BLOG_KAT, BLOG_FILES, saveContent, resetContent, list, saveList, add, update, remove, get,
     serverSettings, saveServerSettings, uid, refNo, esc, fmtDate, fmtMoney, waNumber, media, resolve, setImg, setBg, fileToDataUrl, auth,
-    exportAll, importAll, toCSV, download, remote, server, submitForm
+    exportAll, importAll, toCSV, download, remote, server, submitForm, ready, cloud: !!FB, admins: ADMINS
   };
 })();

@@ -1,0 +1,37 @@
+rules_version = '2';
+// Yakında Kurye — Firestore güvenlik kuralları
+// • Ziyaretçiler: yayındaki site içeriğini ve görselleri okuyabilir, yalnızca YENİ başvuru oluşturabilir (okuyamaz, değiştiremez).
+// • Yönetici: aşağıdaki Google hesap(lar)ıyla giriş yapan kişi her şeyi okuyup yazabilir.
+//   Yönetici eklemek için listeye e-posta ekleyin ve assets/js/firebase-config.js içindeki "admins" listesini de güncelleyin.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email_verified == true
+        && request.auth.token.email in ['kuryeyakinda@gmail.com'];
+    }
+
+    // Yayındaki site içeriği ve yüklenen görseller: herkese açık okuma
+    match /site/{doc} { allow read: if true; allow write: if isAdmin(); }
+    match /media/{id} { allow read: if true; allow write: if isAdmin(); }
+
+    // Site formlarından gelen başvurular
+    match /applications/{id} {
+      allow read, update, delete: if isAdmin();
+      allow create: if isAdmin() || (
+        request.resource.data.keys().hasOnly(['id', 'type', 'status', 'ref', 'data', 'kvkk', 'notes', 'source', 'createdAt'])
+        && request.resource.data.id == id
+        && request.resource.data.type in ['kurye', 'isletme']
+        && request.resource.data.status == 'yeni'
+        && request.resource.data.kvkk == true
+        && request.resource.data.ref is string && request.resource.data.ref.size() < 40
+        && request.resource.data.data is map && request.resource.data.data.size() <= 30
+        && request.resource.data.notes is list && request.resource.data.notes.size() == 0
+        && request.resource.data.source is string && request.resource.data.source.size() < 120
+        && request.resource.data.createdAt is string && request.resource.data.createdAt.size() < 40
+      );
+    }
+
+    // Çalışanlar, müşteriler, kayıtlar, panel taslağı ve işlem geçmişi: yalnızca yönetici
+    match /{coll}/{id} { allow read, write: if isAdmin(); }
+  }
+}

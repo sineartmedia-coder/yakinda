@@ -231,7 +231,7 @@
   window.addEventListener('yk:remote', e => { if (e.detail.key === 'yk_applications') onAppsChanged(); });
 
   /* =================== Yönlendirme =================== */
-  const ROUTES = { panel: viewPanel, basvurular: viewApps, musteriler: viewCustomers, musteri: viewCustomer, calisanlar: viewEmps, calisan: viewEmp, kayitlar: viewRecords, icerik: viewContent, ayarlar: viewSettings };
+  const ROUTES = { panel: viewPanel, basvurular: viewApps, musteriler: viewCustomers, musteri: viewCustomer, calisanlar: viewEmps, calisan: viewEmp, kayitlar: viewRecords, icerik: viewContent, gorseller: viewMedia, ayarlar: viewSettings };
   let dirty = false, lastHash = location.hash, skip = false;
   function leaveOk() { return !dirty || confirm('Kaydedilmemiş değişiklikler var. Çıkmak istediğinize emin misiniz?'); }
   window.addEventListener('beforeunload', e => { if (dirty || (R.on && YK.server.pending())) { e.preventDefault(); e.returnValue = ''; } });
@@ -303,6 +303,9 @@
     if (no) no.onclick = async () => { if (await confirmBox('Bu tarayıcıdaki yerel kopyalar silinsin mi? Sunucudaki veriler etkilenmez.', 'Sil')) { await YK.server.clearLocal(); toast('Yerel kopyalar silindi'); rerender(); } };
   }
   const previewHref = () => R.on ? 'index.html?onizleme=1' : 'index.html';
+  // Sitede düzenleme modu: site sayfası açılır, yazılara/görsellere tıklayarak yerinde düzenlenir
+  const editBtn = cls => '<a href="index.html?onizleme=1&duzenle=1" target="_blank" class="btn ' + (cls || 'btn-light') + '" data-edit title="Siteyi açıp yazılara ve görsellere tıklayarak düzenleyin">' + I('kalem') + '<span class="hide-sm">Sitede düzenle</span></a>';
+  document.addEventListener('click', e => { if (e.target.closest('[data-edit]')) { try { localStorage.setItem('yk_edit_ok', String(Date.now())); } catch (er) {} } });
 
   function viewPanel() {
     setTop('Genel Bakış', '<a href="index.html" target="_blank" rel="noopener" class="btn btn-light">' + I('dis') + '<span class="hide-sm">Siteyi aç</span></a>');
@@ -341,7 +344,7 @@
     const miniApps = (t, title) => { const l = apps.filter(a => a.type === t).slice(0, 5); return '<section class="card"><div class="card-head"><h2>' + I(t === 'kurye' ? 'motor' : 'magaza') + title + '</h2><a href="#basvurular/' + t + '" class="link">Tümü →</a></div>' +
       (l.length ? '<ul class="mini-list">' + l.map(a => '<li data-app="' + a.id + '"><span class="type-dot ' + a.type + '">' + esc(initials(appName(a))) + '</span><div><b>' + esc(appName(a)) + '</b><small>' + esc(t === 'kurye' ? [a.data.ilce, a.data.calismaModeli].filter(Boolean).join(' · ') : [a.data.sektor, a.data.ilce].filter(Boolean).join(' · ')) + ' · ' + YK.fmtDate(a.createdAt, true) + '</small></div>' + badge(a.status) + '</li>').join('') + '</ul>'
         : empty(t === 'kurye' ? 'motor' : 'magaza', t === 'kurye' ? 'Henüz kurye başvurusu yok' : 'Henüz işletme talebi yok', 'Sitedeki ' + (t === 'kurye' ? 'kurye başvuru' : 'işletme talep') + ' formundan gelenler burada listelenir.')) + '</section>'; };
-    view.innerHTML = '<section class="welcome"><div><small>' + new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '</small><h2>' + greet + ', ' + esc(YK.auth.creds().user) + '</h2><p>' + (nBiz + nCour ? '<b>' + nBiz + '</b> yeni işletme talebi ve <b>' + nCour + '</b> yeni kurye başvurusu sizi bekliyor.' : 'Bekleyen yeni başvuru yok. Her şey yolunda!') + '</p></div><div class="welcome-btns"><a href="#basvurular/isletme" class="btn btn-yellow">' + I('magaza') + 'İşletme talepleri</a><a href="#basvurular/kurye" class="btn btn-ghost-w">' + I('motor') + 'Kurye başvuruları</a></div></section>' + (YK.auth.isDefault() ? '<div class="alert">' + I('kalkan') + '<div><b>Varsayılan şifre kullanılıyor.</b> Güvenliğiniz için <a href="#ayarlar">Ayarlar</a> bölümünden şifrenizi değiştirin.</div></div>' : '') +
+    view.innerHTML = '<section class="welcome"><div><small>' + new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '</small><h2>' + greet + ', ' + esc(YK.auth.creds().user) + '</h2><p>' + (nBiz + nCour ? '<b>' + nBiz + '</b> yeni işletme talebi ve <b>' + nCour + '</b> yeni kurye başvurusu sizi bekliyor.' : 'Bekleyen yeni başvuru yok. Her şey yolunda!') + '</p></div><div class="welcome-btns"><a href="#basvurular/isletme" class="btn btn-yellow">' + I('magaza') + 'İşletme talepleri</a><a href="#basvurular/kurye" class="btn btn-ghost-w">' + I('motor') + 'Kurye başvuruları</a>' + editBtn('btn-ghost-w') + '</div></section>' + (YK.auth.isDefault() ? '<div class="alert">' + I('kalkan') + '<div><b>Varsayılan şifre kullanılıyor.</b> Güvenliğiniz için <a href="#ayarlar">Ayarlar</a> bölümünden şifrenizi değiştirin.</div></div>' : '') +
       migrateCard() + checkCard +
       '<div class="kpis">' +
       kpi('magaza', 'Yeni işletme talebi', nBiz, '#basvurular/isletme', nBiz ? 'hot' : '', 'biz') +
@@ -364,7 +367,7 @@
       '</div></section><section class="card"><div class="card-head"><h2>' + I('gecmis') + 'Son işlemler</h2><a href="#ayarlar" class="link">Geçmiş →</a></div>' +
       (logs.length ? '<ul class="log">' + logs.map(l => '<li><span>' + esc(l.text) + '</span><small>' + YK.fmtDate(l.t, true) + '</small></li>').join('') + '</ul>' : '<p class="muted small">Henüz işlem yok.</p>') +
       '</section></div>' +
-      '<section class="quick"><a href="#musteriler" data-q="cust" class="q-btn">' + I('bina') + 'Yeni müşteri ekle</a><a href="#calisanlar" data-q="emp" class="q-btn">' + I('kullanici') + 'Yeni çalışan ekle</a><a href="#kayitlar" data-q="puantaj" class="q-btn">' + I('takvim') + 'Günlük puantaj gir</a><a href="#kayitlar" data-q="rapor" class="q-btn">' + I('hesap') + 'Hakediş raporu</a><a href="#icerik" class="q-btn">' + I('kalem') + 'Site içeriğini düzenle</a></section>';
+      '<section class="quick"><a href="#musteriler" data-q="cust" class="q-btn">' + I('bina') + 'Yeni müşteri ekle</a><a href="#calisanlar" data-q="emp" class="q-btn">' + I('kullanici') + 'Yeni çalışan ekle</a><a href="#kayitlar" data-q="puantaj" class="q-btn">' + I('takvim') + 'Günlük puantaj gir</a><a href="#kayitlar" data-q="rapor" class="q-btn">' + I('hesap') + 'Hakediş raporu</a><a href="#icerik" class="q-btn">' + I('yazi') + 'Site içeriğini düzenle</a><a href="index.html?onizleme=1&duzenle=1" target="_blank" data-edit class="q-btn">' + I('kalem') + 'Sitede tıklayarak düzenle</a><a href="#gorseller" class="q-btn">' + I('gorsel') + 'Görsel kütüphanesi</a></section>';
 
     $$('[data-app]', view).forEach(li => li.onclick = () => openApp(li.dataset.app));
     $$('[data-emp]', view).forEach(li => li.onclick = () => { location.hash = '#calisan/' + li.dataset.emp; });
@@ -999,9 +1002,21 @@
       { type: 'images', title: 'Logolar', items: [['logo', 'Logo (açık zemin / üst menü)'], ['logo_dark', 'Logo (koyu zemin / alt bilgi)']] },
       { type: 'settings', title: 'İletişim bilgileri', items: [T('phone', 'Telefon'), T('whatsapp', 'WhatsApp numarası (ör. 905321234567)'), T('email', 'E-posta'), T('address', 'Açık adres'), T('hours', 'Çalışma saatleri'), T('instagram', 'Instagram bağlantısı (https://…)'), T('facebook', 'Facebook bağlantısı (https://…)'), T('linkedin', 'LinkedIn bağlantısı (https://…)'), T('map_embed', 'Google Haritalar yerleştirme kodu (iframe) — boşsa iletişim görseli gösterilir', 1)] },
       { type: 'settings', title: 'Başvuru bildirimleri', note: 'Web3Forms (web3forms.com) üzerinden ücretsiz bir “Access Key” alıp girerseniz, sitede gönderilen her talep ve başvuru e-posta adresinize de gelir. Site internette yayınlandığında farklı cihazlardan gelenleri kaçırmamanızı sağlar.', items: [T('notify_key', 'Web3Forms erişim anahtarı (Access Key)'), { k: 'wa_forward', l: 'Form gönderiminden sonra “WhatsApp ile ilet” butonunu göster', bool: true }] },
-      { type: 'texts', title: 'Genel metinler', items: [T('slogan', 'Slogan'), T('top_note', 'Üst duyuru bandı (boş bırakılırsa gizlenir)'), T('footer_text', 'Alt bilgi açıklaması', 1)] },
-      { type: 'texts', title: 'Buton yazıları', items: [T('nav_cta_biz', 'Üst menü – işletme butonu'), T('nav_cta_cour', 'Üst menü – kurye butonu'), T('wa_label', 'Form yanındaki WhatsApp bağlantısı')] }
+      { type: 'texts', title: 'Genel metinler', items: [T('slogan', 'Slogan'), T('top_note', 'Üst duyuru bandı (boş bırakılırsa gizlenir)')] },
+      { type: 'texts', title: 'Buton yazıları', items: [T('nav_cta_biz', 'İşletme butonu (menü, alt bilgi, bantlar)'), T('nav_cta_cour', 'Kurye butonu (menü, bantlar)'), T('wa_label', 'WhatsApp bağlantısı'), T('call_btn', '“Hemen Arayın” butonu'), T('all_posts_btn', '“Tüm yazılar” butonu')] }
     ] },
+    { id: 'menu', group: 'Genel', label: 'Menü & Alt Bilgi', blocks: [
+      { type: 'texts', title: 'Üst menü', note: 'Menü bağlantılarının yazıları. Bağlantıların gittiği sayfalar sabittir; bir bölümü kapatırsanız (Bölümler & Bant) menüden de kalkar.', items: [T('nav_home', 'Ana Sayfa'), T('nav_biz', 'İşletmeler İçin'), T('nav_cour', 'Kuryeler İçin'), T('nav_about', 'Hakkımızda'), T('nav_blog', 'Blog'), T('nav_contact', 'İletişim')] },
+      { type: 'texts', title: 'Alt bilgi (footer)', items: [T('footer_text', 'Logo altındaki açıklama', 1), T('footer_col1', '1. sütun başlığı'), T('footer_col2', '2. sütun başlığı'), T('footer_col3', '3. sütun başlığı'), T('footer_col4', '4. sütun başlığı'), T('kvkk_link', 'KVKK bağlantısı'), T('footer_copy', 'Telif satırı (yıl otomatik eklenir)')] }
+    ] },
+    { id: 'sayfalar', group: 'Genel', label: 'Sayfa Başlıkları', blocks: [
+      { type: 'texts', title: 'İşletmeler sayfası', note: 'Üst etiket ve açıklama ana sayfadaki “İşletmeler İçin” kartında da görünür.', items: [T('biz_zone_tag', 'Üst etiket'), T('biz_page_title', 'Sayfa başlığı (H1)'), T('biz_zone_text', 'Açıklama', 1), T('biz_zone_title', 'Ana sayfa kartının başlığı'), T('biz_blog_title', 'Sayfa altı blog bölümü başlığı'), T('biz_blog_text', 'Blog bölümü açıklaması')] },
+      { type: 'texts', title: 'Kuryeler sayfası', note: 'Üst etiket ve açıklama ana sayfadaki “Kuryeler İçin” kartında da görünür.', items: [T('cour_zone_tag', 'Üst etiket'), T('cour_page_title', 'Sayfa başlığı (H1)'), T('cour_zone_text', 'Açıklama', 1), T('cour_zone_title', 'Ana sayfa kartının başlığı'), T('calc_link', '“Kazancını Hesapla” butonu'), T('cour_blog_title', 'Sayfa altı blog bölümü başlığı'), T('cour_blog_text', 'Blog bölümü açıklaması')] },
+      { type: 'texts', title: 'Başvuru & İletişim sayfası', items: [T('bv_page_tag', 'Üst etiket'), T('bv_page_title', 'Sayfa başlığı (H1)'), T('bv_page_text', 'Açıklama', 1), T('bv_tab_biz_sub', 'İşletme sekmesi alt yazısı'), T('bv_tab_cour_sub', 'Kurye sekmesi alt yazısı')] },
+      { type: 'texts', title: 'Blog sayfası', items: [T('blog_page_tag', 'Üst etiket'), T('blog_page_title', 'Sayfa başlığı (H1)'), T('blog_page_text', 'Açıklama', 1)] }
+    ] },
+    { id: 'tema', group: 'Genel', label: 'Tema & Renkler', blocks: [{ type: 'theme', title: 'Site renkleri ve yazı tipi' }] },
+    { id: 'duyuru', group: 'Genel', label: 'Duyuru Penceresi', blocks: [{ type: 'popup', title: 'Duyuru / kampanya penceresi' }] },
     { id: 'bolumler', group: 'Genel', label: 'Bölümler & Bant', blocks: [
       { type: 'sections', title: 'Sitede gösterilecek bölümler' },
       { type: 'list', key: 'marquee', title: 'Kayan yazı bandı (işletmelere yönelik hizmetler önerilir)', item: 'ifade', plain: true },
@@ -1011,7 +1026,8 @@
       { type: 'images', title: 'Görsel', items: [['hero', 'Ana bölüm görseli']] },
       { type: 'texts', title: 'Başlık ve açıklama', items: [T('hero_badge', 'Üst etiket'), T('hero_title', 'Başlık – 1. satır'), T('hero_title_highlight', 'Başlık – sarı 2. satır'), T('hero_text', 'Açıklama', 1), T('hero_chip1', 'Görsel etiketi 1'), T('hero_chip2', 'Görsel etiketi 2')] },
       { type: 'texts', title: 'İki yol kartı: İşletme / Kurye', items: [T('path_biz_label', 'İşletme kartı başlığı'), T('path_biz_btn', 'İşletme kartı buton yazısı'), T('path_biz_text', 'İşletme kartı açıklaması', 1), T('path_cour_label', 'Kurye kartı başlığı'), T('path_cour_btn', 'Kurye kartı buton yazısı'), T('path_cour_text', 'Kurye kartı açıklaması', 1)] },
-      { type: 'list', key: 'stats', title: 'Sarı istatistik bandı (ortak – sayılar sayarak gösterilir)', item: 'istatistik', review: 'stats', fields: [['value', 'Değer'], ['label', 'Açıklama']] }
+      { type: 'list', key: 'stats', title: 'Sarı istatistik bandı (ortak – sayılar sayarak gösterilir)', item: 'istatistik', review: 'stats', fields: [['value', 'Değer'], ['label', 'Açıklama']] },
+      { type: 'texts', title: 'Ana sayfa: “Size nasıl yardımcı olalım?” ve blog bölümü', items: [T('home_help_kicker', 'Küçük etiket'), T('home_help_title', 'Başlık'), T('biz_card_cta', 'İşletme kartı bağlantı yazısı'), T('cour_card_cta', 'Kurye kartı bağlantı yazısı'), T('home_blog_kicker', 'Blog bölümü küçük etiketi (tüm sayfalarda)'), T('home_blog_title', 'Blog bölümü başlığı'), T('home_blog_text', 'Blog bölümü açıklaması')] }
     ] },
     { id: 'hakkimizda', group: 'Genel', label: 'Hakkımızda', blocks: [
       { type: 'images', title: 'Görsel', items: [['about', 'Hakkımızda görseli']] },
@@ -1019,7 +1035,6 @@
       { type: 'list', key: 'values', title: 'Değerlerimiz', item: 'değer', fields: [['icon', 'İkon', 'icon'], ['title', 'Başlık'], ['desc', 'Açıklama', 'ta']] }
     ] },
     { id: 'isletme', group: 'İşletmeler', label: 'Hizmetler & Avantajlar', blocks: [
-      { type: 'texts', title: 'Bölüm bandı', items: [T('biz_zone_tag', 'Bant üst etiketi'), T('biz_zone_title', 'Bant başlığı'), T('biz_zone_text', 'Bant açıklaması')] },
       { type: 'texts', title: 'Hizmetler başlığı', items: [T('services_kicker', 'Küçük etiket'), T('services_title', 'Başlık'), T('services_text', 'Açıklama', 1)] },
       { type: 'list', key: 'services', title: 'Hizmet kartları', item: 'hizmet', fields: [['icon', 'İkon', 'icon'], ['title', 'Başlık'], ['desc', 'Açıklama', 'ta']] },
       { type: 'images', title: 'Avantajlar görselleri', items: [['business', 'Avantajlar bölümü görseli'], ['business_sticker', 'Yuvarlak sticker']] },
@@ -1036,11 +1051,10 @@
     ] },
     { id: 'isletmeform', group: 'İşletmeler', label: 'Talep Formu', blocks: [
       { type: 'images', title: 'Görsel', items: [['bizform', 'Talep formu yan görseli']] },
-      { type: 'texts', title: 'Metinler', items: [T('bizform_kicker', 'Küçük etiket'), T('bizform_title', 'Başlık'), T('bizform_text', 'Açıklama', 1), T('bizform_p1', 'Madde 1'), T('bizform_p2', 'Madde 2'), T('bizform_p3', 'Madde 3'), T('bizform_btn', 'Gönder butonu yazısı'), T('bizform_success_title', 'Gönderim sonrası başlık'), T('bizform_success_text', 'Gönderim sonrası mesaj', 1)] },
+      { type: 'texts', title: 'Metinler', items: [T('bizform_head', 'Form kutusu başlığı'), T('bizform_sub', 'Form kutusu alt yazısı'), T('bizform_kicker', 'Küçük etiket'), T('bizform_title', 'Başlık'), T('bizform_text', 'Açıklama', 1), T('bizform_p1', 'Madde 1'), T('bizform_p2', 'Madde 2'), T('bizform_p3', 'Madde 3'), T('bizform_btn', 'Gönder butonu yazısı'), T('bizform_success_title', 'Gönderim sonrası başlık'), T('bizform_success_text', 'Gönderim sonrası mesaj', 1)] },
       { type: 'formopts', forms: ['isletme'], title: 'Talep formu açılır liste seçenekleri' }
     ] },
     { id: 'kurye', group: 'Kuryeler', label: 'Kurye Ol', blocks: [
-      { type: 'texts', title: 'Bölüm bandı', items: [T('cour_zone_tag', 'Bant üst etiketi'), T('cour_zone_title', 'Bant başlığı'), T('cour_zone_text', 'Bant açıklaması')] },
       { type: 'images', title: 'Görsel', items: [['courier', 'Kurye Ol bölümü görseli']] },
       { type: 'texts', title: 'Metinler', items: [T('courier_kicker', 'Küçük etiket'), T('courier_title', 'Başlık'), T('courier_text', 'Açıklama', 1), T('courier_img_tag', 'Görsel üzerindeki etiket'), T('req_title', 'Şartlar başlığı'), T('req_btn', 'Şartlar altındaki buton'), T('models_title', 'Çalışma modelleri başlığı'), T('steps_title', 'Süreç başlığı')] },
       { type: 'list', key: 'courierBenefits', title: 'Kurye avantajları', item: 'avantaj', fields: [['icon', 'İkon', 'icon'], ['title', 'Başlık'], ['desc', 'Açıklama', 'ta']] },
@@ -1051,11 +1065,12 @@
     { id: 'kazanc', group: 'Kuryeler', label: 'Kazanç Hesaplayıcı', blocks: [
       { type: 'calc', title: 'Hesaplama ayarları' },
       { type: 'texts', title: 'Metinler', items: [T('calc_kicker', 'Küçük etiket'), T('calc_title', 'Başlık'), T('calc_text', 'Açıklama', 1), T('calc_note', 'Uyarı notu (tahmini olduğunu belirtin)', 1), T('calc_btn', 'Buton yazısı')] },
+      { type: 'texts', title: 'Hesaplayıcı etiketleri', items: [T('calc_l_pkg', 'Günlük paket etiketi'), T('calc_l_days', 'Gün seçimi etiketi'), T('calc_l_day', 'Günlük sonuç'), T('calc_l_week', 'Haftalık sonuç'), T('calc_l_month', 'Aylık sonuç')] },
       { type: 'images', title: 'Görsel', items: [['calc', 'Hesaplayıcı yan görseli']] }
     ] },
     { id: 'kuryeform', group: 'Kuryeler', label: 'Başvuru Formu', blocks: [
       { type: 'images', title: 'Görsel', items: [['courform', 'Başvuru formu yan görseli']] },
-      { type: 'texts', title: 'Metinler', items: [T('courform_kicker', 'Küçük etiket'), T('courform_title', 'Başlık'), T('courform_text', 'Açıklama', 1), T('courform_p1', 'Madde 1'), T('courform_p2', 'Madde 2'), T('courform_p3', 'Madde 3'), T('courform_btn', 'Gönder butonu yazısı'), T('courform_success_title', 'Gönderim sonrası başlık'), T('courform_success_text', 'Gönderim sonrası mesaj', 1)] },
+      { type: 'texts', title: 'Metinler', items: [T('courform_head', 'Form kutusu başlığı'), T('courform_sub', 'Form kutusu alt yazısı'), T('courform_kicker', 'Küçük etiket'), T('courform_title', 'Başlık'), T('courform_text', 'Açıklama', 1), T('courform_p1', 'Madde 1'), T('courform_p2', 'Madde 2'), T('courform_p3', 'Madde 3'), T('courform_btn', 'Gönder butonu yazısı'), T('courform_success_title', 'Gönderim sonrası başlık'), T('courform_success_text', 'Gönderim sonrası mesaj', 1)] },
       { type: 'formopts', forms: ['kurye'], title: 'Başvuru formu açılır liste seçenekleri' }
     ] },
     { id: 'yorum', group: 'Ortak', label: 'Yorumlar', blocks: [
@@ -1082,7 +1097,8 @@
     { id: 'blog', group: 'Blog', label: 'Blog Yazıları', blocks: [{ type: 'blog', title: 'Blog yazıları' }] },
     { id: 'seo', group: 'Yayın', label: 'SEO', blocks: [
       { type: 'seo', title: 'SEO puanı ve Google önizlemesi' },
-      { type: 'texts', title: 'Arama sonucu başlığı ve açıklaması', items: [T('seo_title', 'Sayfa başlığı (title) — 50–60 karakter önerilir'), T('seo_description', 'Meta açıklama — 140–160 karakter önerilir', 1)] },
+      { type: 'texts', title: 'Ana sayfa: arama sonucu başlığı ve açıklaması', items: [T('seo_title', 'Sayfa başlığı (title) — 50–60 karakter önerilir'), T('seo_description', 'Meta açıklama — 140–160 karakter önerilir', 1)] },
+      { type: 'texts', title: 'Diğer sayfalar: arama sonucu başlıkları ve açıklamaları', note: 'Her sayfanın Google’da görünen başlığı ve açıklaması. Blog yazılarınınki yazı düzenleyicisindedir.', items: [T('seo_biz_title', 'İşletmeler sayfası – başlık'), T('seo_biz_desc', 'İşletmeler sayfası – açıklama', 1), T('seo_cour_title', 'Kuryeler sayfası – başlık'), T('seo_cour_desc', 'Kuryeler sayfası – açıklama', 1), T('seo_bv_title', 'Başvuru sayfası – başlık'), T('seo_bv_desc', 'Başvuru sayfası – açıklama', 1), T('seo_blog_title', 'Blog sayfası – başlık'), T('seo_blog_desc', 'Blog sayfası – açıklama', 1)] },
       { type: 'settings', title: 'Site adresi ve anahtar kelimeler', items: [T('site_url', 'Sitenin tam adresi (ör. https://yakindakurye.com)'), T('seo_keywords', 'Anahtar kelimeler (virgülle)', 1), { k: 'noindex', l: 'Siteyi arama motorlarından gizle (yalnızca test aşamasında açın)', bool: true, def: false }] },
       { type: 'images', title: 'Sosyal medya paylaşım görseli', items: [['og', 'Paylaşım görseli (boşsa ana görsel kullanılır, 1200×630 önerilir)']] },
       { type: 'settings', title: 'Yerel SEO (Google Haritalar & yerel aramalar)', note: 'Koordinatları Google Haritalar’da şubenize sağ tıklayarak kopyalayabilirsiniz.', items: [T('city', 'İl'), T('district', 'İlçe'), T('postal', 'Posta kodu'), T('geo_lat', 'Enlem (ör. 39.9208)'), T('geo_lng', 'Boylam (ör. 32.8541)'), T('opening_hours', 'Açılış saatleri (schema biçimi, ör. Mo-Su 00:00-23:59)'), T('price_range', 'Fiyat aralığı (opsiyonel, ör. ₺₺)')] },
@@ -1096,7 +1112,7 @@
     let draft = YK.getContent();
     const tab = CONTENT_TABS.find(t => t.id === tabId) || CONTENT_TABS[0];
     const isPub = tab.id === 'yayin';
-    setTop(tab.id === 'seo' ? 'SEO' : 'Site İçeriği', '<a href="' + previewHref() + '" target="_blank" rel="noopener" class="btn btn-light" title="Kaydedilmiş (yayınlanmamış) hali gösterir">' + I('goz') + '<span class="hide-sm">Önizle</span></a>' + (isPub ? '' : '<button class="btn btn-light" id="cUndo" disabled>Geri al</button><button class="btn btn-yellow" id="cSave" disabled>' + I('check') + 'Kaydet</button>') + '<a href="#icerik/yayin" class="btn btn-dark' + (YK.hasUnpublished() ? ' attn' : '') + '">' + I('gonder') + 'Yayınla</a>',
+    setTop(tab.id === 'seo' ? 'SEO' : 'Site İçeriği', editBtn() + '<a href="' + previewHref() + '" target="_blank" rel="noopener" class="btn btn-light" title="Kaydedilmiş (yayınlanmamış) hali gösterir">' + I('goz') + '<span class="hide-sm">Önizle</span></a>' + (isPub ? '' : '<button class="btn btn-light" id="cUndo" disabled>Geri al</button><button class="btn btn-yellow" id="cSave" disabled>' + I('check') + 'Kaydet</button>') + '<a href="#icerik/yayin" class="btn btn-dark' + (YK.hasUnpublished() ? ' attn' : '') + '">' + I('gonder') + 'Yayınla</a>',
       tab.id === 'seo' ? 'Arama motorları ve sosyal medya için ayarlar' : 'Metinler, görseller ve bölümler · ' + tab.label);
     const groups = []; CONTENT_TABS.forEach(t => { let g = groups.find(x => x.n === t.group); if (!g) groups.push(g = { n: t.group, t: [] }); g.t.push(t); });
     view.innerHTML = '<nav class="ctabs">' + groups.map(g => '<div class="ctg"><span>' + esc(g.n) + '</span><div>' + g.t.map(t => '<a href="#icerik/' + t.id + '" class="' + (t === tab ? 'on' : '') + '">' + t.label + (t.id === 'yayin' && YK.hasUnpublished() ? ' <i class="dotr"></i>' : '') + '</a>').join('') + '</div></div>').join('') + '</nav>' +
@@ -1125,9 +1141,14 @@
               l.className = 'fld' + (it.ta ? ' full' : '');
               l.innerHTML = '<span>' + esc(it.l) + '</span>' + (it.ta ? '<textarea rows="' + (it.k === 'kvkk_full' || it.k === 'about_text' ? 8 : 3) + '"></textarea>' : '<input>') + '<small class="cnt"></small>';
               const inp = $('input,textarea', l), cnt = $('.cnt', l); inp.value = src[it.k] || '';
-              const lim = { seo_title: [30, 60], seo_description: [120, 160] }[it.k];
+              const lim = { seo_title: [30, 60], seo_description: [120, 160] }[it.k] || (/^seo_[a-z]+_title$/.test(it.k) ? [30, 60] : /^seo_[a-z]+_desc$/.test(it.k) ? [120, 160] : null);
               const showCnt = () => { if (lim) { const n = inp.value.length; cnt.textContent = n + ' karakter' + (n < lim[0] ? ' · kısa' : n > lim[1] ? ' · uzun, Google kısaltabilir' : ' · ideal'); cnt.className = 'cnt ' + (n >= lim[0] && n <= lim[1] ? 'good' : 'warn'); } };
               inp.oninput = () => { src[it.k] = inp.value; setDirty(true); showCnt(); if (tab.id === 'seo') drawSeo(); }; showCnt();
+              if (b.type === 'texts' && YK.DEFAULT_CONTENT.texts[it.k] != null && src[it.k] !== YK.DEFAULT_CONTENT.texts[it.k]) {
+                const rb = document.createElement('button'); rb.type = 'button'; rb.className = 'link-btn fld-reset'; rb.textContent = 'Varsayılana dön';
+                rb.onclick = e => { e.preventDefault(); src[it.k] = inp.value = YK.DEFAULT_CONTENT.texts[it.k]; setDirty(true); showCnt(); rb.remove(); if (tab.id === 'seo') drawSeo(); };
+                l.appendChild(rb);
+              }
             }
             g.appendChild(l);
           });
@@ -1179,6 +1200,10 @@
             wrap.appendChild(bx);
           }));
           sec.appendChild(wrap);
+        } else if (b.type === 'theme') {
+          sec.appendChild(themeEditor(draft, () => setDirty(true)));
+        } else if (b.type === 'popup') {
+          sec.appendChild(popupEditor(draft, () => setDirty(true), draw));
         } else if (b.type === 'blog') {
           sec.appendChild(blogEditor(draft, () => setDirty(true), draw, save));
         } else if (b.type === 'seo') {
@@ -1490,6 +1515,119 @@
       }
     }
     return wrap;
+  }
+
+  /* Tema: ana renk, koyu renk ve yazı tipi */
+  const THEME_PRESETS = [['Yakında (varsayılan)', '#FFD500', '#0E0E0E'], ['Turuncu', '#FF8A00', '#121212'], ['Kırmızı', '#E63946', '#15110F'], ['Yeşil', '#22C55E', '#0B1A12'], ['Mavi', '#2F80ED', '#0B1220'], ['Mor', '#8B5CF6', '#120E1C']];
+  function loadFont(f) {
+    if (!f || f === 'Poppins' || document.getElementById('ykf-' + f)) return;
+    const l = document.createElement('link'); l.rel = 'stylesheet'; l.id = 'ykf-' + f;
+    l.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(f) + ':wght@400;600;800&display=swap'; document.head.appendChild(l);
+  }
+  function themeEditor(draft, changed) {
+    const D = YK.DEFAULT_CONTENT.theme, th = draft.theme = Object.assign({}, D, draft.theme);
+    const box = document.createElement('div'); box.className = 'theme-ed';
+    const hex = v => /^#[0-9a-f]{6}$/i.test(v || '');
+    function draw() {
+      loadFont(th.font);
+      box.innerHTML = '<div class="th-presets">' + THEME_PRESETS.map((p, i) => '<button type="button" class="th-pre' + (th.y.toUpperCase() === p[1] && th.k.toUpperCase() === p[2].toUpperCase() ? ' on' : '') + '" data-p="' + i + '"><i style="background:' + p[1] + '"></i><i style="background:' + p[2] + '"></i><span>' + esc(p[0]) + '</span></button>').join('') + '</div>' +
+        '<div class="th-grid"><div class="f-grid one">' +
+        '<label class="fld"><span>Ana renk (butonlar, vurgular)</span><span class="th-col"><input type="color" data-k="y" value="' + esc(th.y) + '"><input data-h="y" value="' + esc(th.y) + '" maxlength="7"></span></label>' +
+        '<label class="fld"><span>Koyu renk (üst bilgi, koyu bölümler, yazılar)</span><span class="th-col"><input type="color" data-k="k" value="' + esc(th.k) + '"><input data-h="k" value="' + esc(th.k) + '" maxlength="7"></span></label>' +
+        '<label class="fld"><span>Yazı tipi</span><select data-f>' + YK.FONTS.map(f => '<option' + (f === th.font ? ' selected' : '') + '>' + f + '</option>').join('') + '</select></label>' +
+        '<button type="button" class="link-btn" data-reset>Varsayılan renklere dön</button></div>' +
+        '<div class="th-prev" style="--ty:' + th.y + ';--tk:' + th.k + ';font-family:\'' + esc(th.font) + '\',system-ui,sans-serif"><div class="th-bar"><b>YAKINDA</b><span>Ana Sayfa · İşletmeler · Kuryeler</span><em>Kurye Ol</em></div><div class="th-hero"><small>● Kurye hizmeti</small><h3>Zamanında <i>Yanınızda</i></h3><p>Önizleme: sitedeki başlık, buton ve vurguların yeni görünümü.</p><div><em>Kurye Talep Et</em><u>Kurye Ol</u></div></div></div></div>' +
+        '<p class="muted small mt">Renkler sitenin tüm sayfalarına uygulanır. Logo ve fotoğraflar değişmez. Okunabilirlik için ana rengin açık, koyu rengin koyu tonda olmasına dikkat edin.</p>';
+      $$('[data-p]', box).forEach(b => b.onclick = () => { const p = THEME_PRESETS[b.dataset.p]; th.y = p[1]; th.k = p[2]; changed(); draw(); });
+      $$('input[type=color]', box).forEach(inp => inp.oninput = () => { th[inp.dataset.k] = inp.value.toUpperCase(); changed(); draw(); });
+      $$('[data-h]', box).forEach(inp => inp.onchange = () => { const v = inp.value.trim(); if (hex(v)) { th[inp.dataset.h] = v.toUpperCase(); changed(); draw(); } else { toast('Renk #RRGGBB biçiminde olmalı', 'err'); inp.value = th[inp.dataset.h]; } });
+      $('[data-f]', box).onchange = e => { th.font = e.target.value; changed(); draw(); };
+      $('[data-reset]', box).onclick = () => { Object.assign(th, D); changed(); draw(); };
+    }
+    draw();
+    return box;
+  }
+
+  /* Duyuru / kampanya penceresi */
+  function popupEditor(draft, changed, redraw) {
+    const pp = draft.popup = Object.assign({}, YK.DEFAULT_CONTENT.popup, draft.popup);
+    const box = document.createElement('div');
+    const LINKS = [['basvuru.html#isletme-basvuru', 'İşletme talep formu'], ['basvuru.html#kurye-basvuru', 'Kurye başvuru formu'], ['kuryeler.html#kazanc', 'Kazanç hesaplayıcı'], ['isletmeler.html', 'İşletmeler sayfası'], ['blog.html', 'Blog']];
+    box.innerHTML = '<label class="switch full"><input type="checkbox" data-on' + (pp.on ? ' checked' : '') + '><span class="sw"></span><span><b>Pencereyi sitede göster</b> — ziyaretçiye bir kez gösterilir, kapatınca tekrar çıkmaz</span></label>' +
+      '<div class="f-grid mt"><label class="fld full"><span>Başlık</span><input data-k="title" maxlength="90" placeholder="Örn. Yeni şubemiz açıldı!"></label>' +
+      '<label class="fld full"><span>Metin</span><textarea data-k="text" rows="3" maxlength="400" placeholder="Örn. Bu ay kurye hizmetine başlayan işletmelere ilk hafta %20 indirim."></textarea></label>' +
+      '<label class="fld"><span>Buton yazısı (boşsa buton gösterilmez)</span><input data-k="btn" maxlength="40" placeholder="Hemen teklif al"></label>' +
+      '<label class="fld"><span>Buton bağlantısı</span><input data-k="link" list="ppLinks" placeholder="basvuru.html#isletme-basvuru veya https://…"><datalist id="ppLinks">' + LINKS.map(l => '<option value="' + l[0] + '">' + l[1] + '</option>').join('') + '</datalist></label>' +
+      '<label class="fld"><span>Gösterilecek sayfa</span><select data-k="pages">' + [['all', 'Tüm sayfalar'], ['home', 'Yalnızca ana sayfa'], ['isletme', 'İşletmeler sayfası'], ['kurye', 'Kuryeler sayfası'], ['basvuru', 'Başvuru sayfası'], ['blog', 'Blog sayfası']].map(o => '<option value="' + o[0] + '"' + ((pp.pages || 'all') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select></label>' +
+      '<label class="fld"><span>Kaç saniye sonra açılsın</span><input data-k="delay" type="number" min="0" max="60"></label></div>' +
+      '<div class="pe-img mt"><span class="muted small">Görsel (isteğe bağlı, yatay önerilir)</span><div class="img-card pp-img"><div class="img-prev">' + (pp.img ? '<img data-src="' + esc(pp.img) + '" alt="">' : '<span class="muted small">Görsel yok</span>') + '</div><div class="img-btns"><button type="button" class="btn btn-light sm" data-pick>' + I('gorsel') + (pp.img ? 'Değiştir' : 'Seç') + '</button>' + (pp.img ? '<button type="button" class="link-btn" data-clear>Kaldır</button>' : '') + '</div></div></div>' +
+      '<div class="btn-row mt"><a class="btn btn-light sm" href="' + (R.on ? 'index.html?onizleme=1' : 'index.html') + '" target="_blank" rel="noopener">' + I('goz') + 'Önizle (kaydettikten sonra)</a><button type="button" class="btn btn-light sm" data-again>' + I('gecmis') + 'Daha önce kapatanlara tekrar göster</button></div>';
+    $$('[data-k]', box).forEach(inp => { inp.value = pp[inp.dataset.k] == null ? '' : pp[inp.dataset.k]; inp.oninput = inp.onchange = () => { pp[inp.dataset.k] = inp.dataset.k === 'delay' ? Math.max(0, Math.min(60, Number(inp.value) || 0)) : inp.value; changed(); }; });
+    $('[data-on]', box).onchange = e => { pp.on = e.target.checked; changed(); };
+    $('[data-pick]', box).onclick = () => pickImage(src => { pp.img = src; changed(); redraw(); });
+    const cl = $('[data-clear]', box); if (cl) cl.onclick = () => { pp.img = ''; changed(); redraw(); };
+    $('[data-again]', box).onclick = () => { pp.ver = (Number(pp.ver) || 1) + 1; changed(); toast('Kaydedip yayınladığınızda pencere herkese yeniden gösterilir'); };
+    return box;
+  }
+
+  /* =================== Görsel kütüphanesi =================== */
+  const IMAGE_SLOTS = [['hero', 'Ana sayfa – ana görsel'], ['about', 'Hakkımızda'], ['business', 'İşletmeler – avantajlar'], ['business_sticker', 'İşletmeler – yuvarlak sticker'], ['courier', 'Kuryeler – Kurye Ol'], ['calc', 'Kuryeler – hesaplayıcı'], ['bizform', 'Başvuru – işletme formu'], ['courform', 'Başvuru – kurye formu'], ['contact', 'İletişim (harita yoksa)'], ['og', 'Sosyal medya paylaşım görseli'], ['logo', 'Logo (açık zemin)'], ['logo_dark', 'Logo (koyu zemin)']];
+  function imageUsage(c) {
+    const u = {}; const add = (src, l) => { if (src) (u[src] = u[src] || []).push(l); };
+    IMAGE_SLOTS.forEach(([k, l]) => add(c.images[k], l));
+    c.gallery.forEach(g => add(g && g.src, 'Galeri'));
+    (c.testimonials || []).forEach(t => add(t && t.photo, 'Yorum fotoğrafı'));
+    (c.blog || []).forEach(p => add(p && p.gorsel, 'Blog: ' + (p.baslik || '').slice(0, 28)));
+    if (c.popup && c.popup.img) add(c.popup.img, 'Duyuru penceresi');
+    return u;
+  }
+  function viewMedia() {
+    setTop('Görseller', '<label class="btn btn-yellow">' + I('yukle') + '<span class="hide-sm">Görsel yükle</span><input type="file" accept="image/*" multiple hidden id="mdFile"></label>' + editBtn(), 'Yüklenen ve hazır görseller · bir görseli sitedeki bir alana tek tıkla atayın');
+    view.innerHTML = '<div id="mdWrap"><div class="drop" id="mdDrop">' + I('yukle') + ' Görselleri buraya sürükleyip bırakın (JPG, PNG, WEBP · büyükler otomatik küçültülür)</div>' +
+      '<section class="card"><div class="card-head"><h2>' + I('gorsel') + ' Yüklenen görseller</h2><span class="pill" id="mdCnt">…</span></div><div class="media-grid" id="mdUp"></div></section>' +
+      '<section class="card"><div class="card-head"><h2>' + I('yildiz') + ' Hazır görseller</h2><span class="pill">' + YK.BUNDLED_IMAGES.length + '</span></div><p class="muted small">Siteyle birlikte gelen fotoğraflar, sticker’lar ve logolar. Kendi fotoğraflarınızı yükledikçe bunların yerine kullanabilirsiniz.</p><div class="media-grid" id="mdLib"></div></section></div>';
+    const slotSel = '<select class="md-use"><option value="">Bir alana ata…</option>' + IMAGE_SLOTS.map(([k, l]) => '<option value="' + k + '">' + esc(l) + '</option>').join('') + '<option value="gallery">Galeriye ekle</option></select>';
+    const cardHTML = (x, used, del) => '<div class="md-item"><a class="md-img" href="' + esc(x.url) + '" target="_blank" rel="noopener"><img src="' + esc(x.url) + '" alt="" loading="lazy"></a><div class="md-body"><b title="' + esc(x.name) + '">' + esc(x.name || 'Görsel') + '</b>' +
+      (used && used.length ? '<small class="md-used">' + I('check') + esc(used.slice(0, 3).join(', ') + (used.length > 3 ? ' +' + (used.length - 3) : '')) + '</small>' : '<small class="muted">Kullanılmıyor</small>') +
+      '<div class="md-act" data-src="' + esc(x.src) + '">' + slotSel + (del ? '<button class="icon-btn sm danger" data-del title="Kalıcı sil" aria-label="Kalıcı sil">' + I('cop') + '</button>' : '') + '</div></div></div>';
+    function bind(root) {
+      $$('.md-use', root).forEach(sel => sel.onchange = () => {
+        const k = sel.value, src = sel.closest('.md-act').dataset.src; if (!k) return;
+        const c = YK.getContent();
+        if (k === 'gallery') c.gallery.push({ src: src, title: '' }); else c.images[k] = src;
+        if (YK.saveContent(c)) { YK.log('Görsel atandı: ' + (k === 'gallery' ? 'galeri' : (IMAGE_SLOTS.find(s => s[0] === k) || [k, k])[1])); toast('Atandı — yayına almak için “Yayınla”'); updateBadges(); draw(); }
+      });
+      $$('[data-del]', root).forEach(b => b.onclick = async () => {
+        const src = b.closest('.md-act').dataset.src, used = imageUsage(YK.getContent())[src];
+        if (!(await confirmBox((used ? 'Bu görsel sitede kullanılıyor (' + used.join(', ') + '). Silerseniz o alanlarda görünmez. ' : '') + 'Görsel kalıcı olarak silinsin mi?'))) return;
+        await YK.media.del(src); YK.log('Görsel silindi'); toast('Görsel silindi'); draw();
+      });
+    }
+    async function draw() {
+      const usage = imageUsage(YK.getContent());
+      const lib = $('#mdLib'); if (!lib) return;
+      lib.innerHTML = YK.BUNDLED_IMAGES.map(x => cardHTML({ src: x.src, url: x.src, name: x.title }, usage[x.src], false)).join(''); bind(lib);
+      const up = $('#mdUp');
+      let items = [];
+      try { items = (await YK.media.all()).filter(Boolean).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')); }
+      catch (e) { up.innerHTML = '<div class="empty small">' + I('uyari') + '<p>' + esc(e.message) + '</p></div>'; return; }
+      $('#mdCnt').textContent = items.length;
+      up.innerHTML = items.length ? items.map(x => cardHTML(x, usage[x.src], true)).join('') : empty('gorsel', 'Henüz görsel yüklenmedi', 'Kendi fotoğraflarınızı (şube, kurye ekibi, çanta, motor) yükleyip sitedeki alanlara atayabilirsiniz.');
+      bind(up);
+    }
+    async function upload(files) {
+      files = files.filter(f => /^image\//.test(f.type)); if (!files.length) return;
+      const d = $('#mdDrop'); d.classList.add('on'); d.textContent = 'Yükleniyor…'; let ok = 0;
+      for (const f of files) { if (f.size > 15e6) { toast(f.name + ' çok büyük (15 MB üstü)', 'err'); continue; } try { await YK.media.put(await YK.fileToDataUrl(f, 1600), f.name); ok++; } catch (er) { toast(f.name + ': ' + (er && er.message ? er.message : 'yüklenemedi'), 'err'); } }
+      d.classList.remove('on'); d.innerHTML = I('yukle') + ' Görselleri buraya sürükleyip bırakın (JPG, PNG, WEBP · büyükler otomatik küçültülür)';
+      if (ok) { toast(ok + ' görsel yüklendi'); YK.log(ok + ' görsel yüklendi'); } draw();
+    }
+    $('#mdFile').onchange = e => { upload(Array.from(e.target.files || [])); e.target.value = ''; };
+    const wrap = $('#mdWrap'), drop = $('#mdDrop');
+    ['dragenter', 'dragover'].forEach(ev => wrap.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('on'); }));
+    wrap.addEventListener('dragleave', e => { if (e.target === wrap) drop.classList.remove('on'); });
+    wrap.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('on'); upload(Array.from(e.dataTransfer.files || [])); });
+    draw();
   }
 
   /* Görsel seçici */

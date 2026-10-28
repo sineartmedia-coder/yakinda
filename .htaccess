@@ -1,4 +1,7 @@
-# Yakında Kurye — Apache ayarları (desteklenmeyen modüller sessizce atlanır)
+# Yakında Kurye — Apache/cPanel hostingler için ayarlar (desteklenmeyen modüller sessizce atlanır).
+# Firebase Hosting bu dosyayı kullanmaz; aynı ayarlar firebase.json içindedir.
+
+ErrorDocument 404 /404.html
 
 # Panelden yayınlanan içerik her ziyarette güncel yüklensin
 <IfModule mod_headers.c>

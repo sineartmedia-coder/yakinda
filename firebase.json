@@ -1,0 +1,43 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "firestore.rules",
+      ".firebaserc",
+      "README.md",
+      ".htaccess",
+      ".git/**",
+      "**/.git/**",
+      "**/.*",
+      "**/.*/**",
+      "**/node_modules/**",
+      "firebase-debug.log"
+    ],
+    "cleanUrls": false,
+    "headers": [
+      {
+        "source": "**/*.@(html|js)",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      },
+      {
+        "source": "**/*.@(jpg|jpeg|png|webp|gif|svg|ico)",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=2592000" }]
+      },
+      {
+        "source": "**/*.css",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800" }]
+      },
+      {
+        "source": "**",
+        "headers": [
+          { "key": "X-Content-Type-Options", "value": "nosniff" },
+          { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+        ]
+      }
+    ]
+  }
+}

@@ -1,5 +1,5 @@
-/* Yakında Kurye — site tarafı */
-(function () {
+/* Yakında Kurye — site tarafı (yayındaki içerik hazır olunca çizilir: YK.ready) */
+YK.ready.then(function () {
   'use strict';
   const PAGE = document.body.dataset.page || 'home';
   // Eski tek sayfalık sitenin #bağlantıları (ör. index.html#kurye-basvuru) yeni sayfalara gider
@@ -645,4 +645,4 @@
 
   // Panelde içerik kaydedilirse açık sitede otomatik yenile (aynı tarayıcı)
   window.addEventListener('storage', e => { if (EDIT) return; if ((e.key === 'yk_content' && !YK.isPreview()) || (e.key === 'yk_preview' && YK.isPreview())) location.reload(); });
-})();
+});

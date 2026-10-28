@@ -1,4 +1,4 @@
-# Yakında Kurye — Web Sitesi ve Yönetim Paneli (Sürüm 5)
+# Yakında Kurye — Web Sitesi ve Yönetim Paneli (Sürüm 6)
 
 Restoran ve işletmelere kurye hizmeti veren, kurye alımı yapan **Yakında Kurye** için çok sayfalı web sitesi, blog ve yönetim paneli.
 
@@ -12,6 +12,8 @@ Restoran ve işletmelere kurye hizmeti veren, kurye alımı yapan **Yakında Kur
 | `admin.html` | Yönetim paneli |
 | `api/index.php` | Sunucu kodu: formları kaydeder, panel verilerini saklar, "Yayınla" ile siteyi günceller |
 | `assets/` | Görseller, stil ve JavaScript dosyaları |
+| `assets/img/foto/` | Sitede kullanılan gerçek fotoğraflar (bkz. **Görseller ve lisans**) |
+| `assets/js/editor.js` | Sitede tıklayarak düzenleme modu (yalnızca yönetici) |
 | `assets/js/content.js` | Yayındaki site içeriği (panelden "Yayınla" ile güncellenir) |
 | `uploads/` | Panelden yüklenen görseller (sunucu modunda) |
 | `.htaccess`, `robots.txt` | Hosting ayarları ve arama motoru kuralları |
@@ -61,6 +63,11 @@ Panelin sol alt köşesinde hangi modda çalıştığı yazar.
 - **Site İçeriği:** Sitedeki tüm yazılar ve buton metinleri, görseller (sürükle-bırak), bölümleri aç/kapa, kayan bant, istatistikler, hesaplayıcı, yorumlar, galeri, bölgeler, SSS, KVKK metni ve form seçenekleri.
   - Kaydedilen değişiklikler önce taslaktır. **Önizle** ile (`index.html?onizleme=1`) yayına almadan görülebilir.
   - Ctrl/Cmd + S ile kaydedilir.
+- **Görseller:** Yüklenen ve hazır tüm görseller tek sayfada. Her görselin sitede nerede kullanıldığı yazar; “Bir alana ata” ile tek tıkla ana görsel, hakkımızda, form görselleri, paylaşım görseli vb. alanlara atanır ya da galeriye eklenir. Sürükle-bırak ile yükleme, kullanılmayanları silme.
+- **Sitede düzenle:** Panelin üstündeki “Sitede düzenle” butonu siteyi düzenleme modunda açar (`sayfa.html?onizleme=1&duzenle=1`). Yazılara tıklayıp yerinde değiştirirsiniz (başlıklar, açıklamalar, butonlar, menü, alt bilgi, hizmet kartları, adımlar, SSS, istatistikler, iletişim bilgileri…), görsellere tıklayıp yenisini seçer ya da yüklersiniz. Alttaki çubuktan kaydedilir; sunucu modunda “Yayınla” ile oradan yayına alınır. Düzenleme modunda bağlantılar açılmaz ve formlar gönderilmez. Yalnızca panele giriş yapmış yönetici kullanabilir.
+- **Site İçeriği › Menü & Alt Bilgi / Sayfa Başlıkları:** Üst menü yazıları, alt bilgi sütun başlıkları ve telif satırı; İşletmeler, Kuryeler, Başvuru ve Blog sayfalarının üst bölümleri. Sitede artık panelden değiştirilemeyen sabit yazı kalmadı (form alan adları ve blog kategori adları hariç). Değiştirilen her yazının yanında “Varsayılana dön” bağlantısı çıkar.
+- **Site İçeriği › Tema & Renkler:** Ana renk, koyu renk ve yazı tipi (Poppins, Montserrat, Nunito, Inter, Rubik, Outfit); hazır renk paketleri ve canlı önizleme.
+- **Site İçeriği › Duyuru Penceresi:** Kampanya/duyuru açılır penceresi: başlık, metin, buton, bağlantı, görsel, gecikme ve hangi sayfada çıkacağı. Her ziyaretçiye bir kez gösterilir; “Daha önce kapatanlara tekrar göster” ile yeniden çıkarılır.
 - **SEO:** SEO puanı, Google önizlemesi, başlık/açıklama, alan adı, yerel SEO, Search Console, Google Analytics (çerez onaylı), kurye iş ilanı yapısal verisi.
 - **Ayarlar:** Şifre, bildirim e-postası (sunucu modu), yedek indir / geri yükle, işlem geçmişi, örnek veri, sıfırlama.
 
@@ -68,7 +75,8 @@ Panelin sol alt köşesinde hangi modda çalıştığı yazar.
 
 - Panelde düzenlenen metinler, görseller ve listeler hangi sayfada bulunuyorsa orada görünür (ör. kazanç hesaplayıcı Kuryeler sayfasında, formlar Başvuru sayfasında). Bölümleri aç/kapa ayarları aynen çalışır.
 - Eski tek sayfalık sitenin bağlantıları (ör. `index.html#kurye-basvuru`) kendiliğinden yeni sayfalara yönlendirilir.
-- Her sayfanın kendi başlığı, açıklaması ve yapısal verisi vardır (sayfa yolu, SSS, iş ilanı, blog yazısı). Panelde girilen SEO başlığı ve açıklaması ana sayfa içindir.
+- Her sayfanın kendi başlığı, açıklaması ve yapısal verisi vardır (sayfa yolu, SSS, iş ilanı, blog yazısı). Ana sayfanın ve alt sayfaların (İşletmeler, Kuryeler, Başvuru, Blog) arama sonucu başlık/açıklamaları SEO sekmesinden değiştirilir.
+  - Ana sayfanınkiler “Yayınla” ile `index.html` dosyasına da yazılır. Alt sayfalarınkiler sayfa açılırken uygulanır (Google sayfaları bu haliyle görür); sosyal medya önizlemelerinde alt sayfaların HTML’deki varsayılan başlığı görünür.
 - **Blog yazıları panelden yönetilir:** Site İçeriği → **Blog Yazıları**. Yeni yazı ekleme, düzenleme, silme, taslak/yayında, kapak görseli, SSS ve SEO başlığı/açıklaması buradadır. İçerik, biçim butonlarıyla (ara başlık, kalın, liste, bağlantı, not kutusu, tablo) veya şu işaretlerle yazılır: `## başlık`, `- madde`, `**kalın**`, `[metin](adres)`, `> not`, `| tablo |`. "Önizle" ile kaydedilen hali sitede görülür.
   - **Sunucu modu:** "Yayınla" her yayındaki yazı için `blog/adres.html` sayfasını oluşturur (arama motorları için hazır içerikli), silinen/taslağa alınan yazıların sayfalarını kaldırır ve sitemap'i günceller.
   - **Yerel mod:** `content.js` yayınlandığında yazılar sitede görünür; yeni yazılar `blog/yazi.html?s=adres` adresinde açılır, ek dosya gerekmez.
@@ -97,6 +105,13 @@ Tek sayfalık önceki sürüm iki yerde saklanır: GitHub'daki `yedek-tek-sayfa`
 - Formlarda bot tuzağı, IP başına gönderim sınırı (10 dakikada 15), aynı telefonla 24 saatte tek başvuru, 18 yaş ve alan kontrolleri vardır; bu kontroller sunucuda da yapılır.
 - Panel 60 dakika işlem yapılmazsa oturumu kapatır.
 - **Ayarlar → Yedek indir** ile düzenli yedek alın. Sunucu modunda yüklenen görseller `uploads/` klasöründe durur; hosting yedeğinize dahil edin.
+
+## Görseller ve lisans
+
+- Önceki sürümdeki çanta/vitrin maketleri (mockup) kaldırıldı. Sitedeki fotoğraflar `assets/img/foto/` klasöründedir ve [Unsplash](https://unsplash.com) üzerinden **Unsplash Lisansı** ile alınmıştır: ticari kullanım ücretsizdir, kaynak gösterme zorunlu değildir. Rakip kurye markalarının logosu bulunan fotoğraflar seçilmemiştir.
+- Logo, sticker tasarımları (`sticker-*.jpg`) ve sosyal medya paylaşım görseli (`og.png`) markanın kendi görselleridir.
+- Kendi fotoğraflarınızı (şube, kurye ekibi, markalı çanta ve motorlar) çektikçe **Görseller** sayfasından yükleyip ilgili alana atamanız önerilir; gerçek ekip fotoğrafları güveni artırır.
+- Daha önce panelde eski maket görselleri seçilmiş olsa bile site bozulmaz: kayıtlı içerikteki eski görsel yolları otomatik olarak yeni fotoğraflarla değiştirilir.
 
 ## Mutlaka güncellenecek örnek değerler
 

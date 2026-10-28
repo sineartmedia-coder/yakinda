@@ -28,6 +28,25 @@
   const ROOT = document.body.dataset.root || '';
   const src = u => (ROOT && typeof u === 'string' && u && !/^(https?:|data:|media:|blob:|\/)/.test(u)) ? ROOT + u : u;
   const FORM_URL = k => (PAGE === 'basvuru' ? '' : ROOT + 'basvuru.html') + '#' + k + '-basvuru';
+  const EDIT = /[?&]duzenle=1(&|$)/.test(location.search);
+
+  /* ---------- Tema: renkler ve yazı tipi (panel › Tema & Renkler) ---------- */
+  (function theme() {
+    const th = C.theme || {}, st = document.documentElement.style;
+    const hex = v => /^#[0-9a-f]{6}$/i.test(v || '') ? v : null;
+    const rgb = h => [1, 3, 5].map(i => parseInt(h.substr(i, 2), 16));
+    const mix = (a, b, t) => '#' + a.map((x, i) => Math.round(x + (b[i] - x) * t).toString(16).padStart(2, '0')).join('');
+    const y = hex(th.y), k = hex(th.k);
+    if (y && y.toUpperCase() !== '#FFD500') { const c = rgb(y); st.setProperty('--y', y); st.setProperty('--y-rgb', c.join(' ')); st.setProperty('--y-2', mix(c, [0, 0, 0], .06)); st.setProperty('--y-soft', mix(c, [255, 255, 255], .78)); }
+    if (k && k.toUpperCase() !== '#0E0E0E') {
+      const c = rgb(k); st.setProperty('--k', k); st.setProperty('--k-2', mix(c, [255, 255, 255], .05)); st.setProperty('--k-3', mix(c, [255, 255, 255], .1));
+      const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = k;
+    }
+    if (th.font && th.font !== 'Poppins' && YK.FONTS.indexOf(th.font) >= 0) {
+      const l = document.getElementById('ykFont'); if (l) l.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(th.font) + ':wght@400;500;600;700;800;900&display=swap';
+      st.setProperty('--font', "'" + th.font + "', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif");
+    }
+  })();
 
   /* ---------- Blog: yazılar panelden yönetilir, sayfalar içerikten çizilir ---------- */
   const BLOG = C.sections.blog === false ? [] : YK.blogList(C);
@@ -80,29 +99,31 @@
   }
 
   /* ---------- Listeler ---------- */
-  const card = (x, cls) => '<div class="' + (cls || 'card svc') + '"><span class="ic-box">' + YK.icon(x.icon) + '</span><div><h3>' + esc(x.title) + '</h3><p>' + nl(x.desc) + '</p></div></div>';
+  const L = (k, i, f) => ' data-l="' + k + '.' + i + (f ? '.' + f : '') + '"';
+  const card = (x, cls, k, i) => '<div class="' + (cls || 'card svc') + '"><span class="ic-box">' + YK.icon(x.icon) + '</span><div><h3' + L(k, i, 'title') + '>' + esc(x.title) + '</h3><p' + L(k, i, 'desc') + '>' + nl(x.desc) + '</p></div></div>';
 
   const mq = C.marquee.filter(Boolean);
   const mqItems = mq.map(m => '<span>' + esc(m) + '</span><i>' + YK.icon('motor') + '</i>').join('');
   fill('marquee', '<div class="mq-set">' + mqItems + '</div><div class="mq-set">' + mqItems + '</div>');
 
-  fill('stats', C.stats.map(s => '<div class="stat"><b data-count="' + esc(s.value) + '">' + esc(s.value) + '</b><span>' + esc(s.label) + '</span></div>').join(''));
-  fill('values', C.values.map(x => card(x, 'card value')).join(''));
-  fill('services', C.services.map(x => card(x)).join(''));
-  fill('businessBenefits', C.businessBenefits.map(x => card(x, 'benefit')).join(''));
-  fill('bizModels', C.bizModels.map(m => '<div class="bizmodel' + (m.tag ? ' featured' : '') + '">' + (m.tag ? '<span class="tag">' + esc(m.tag) + '</span>' : '') + '<span class="ic-box">' + YK.icon(m.icon) + '</span><h3>' + esc(m.title) + '</h3><p>' + nl(m.desc) + '</p><a href="' + FORM_URL('isletme') + '" class="bm-link" data-sec="bizForm">Teklif iste ' + YK.icon('ok') + '</a></div>').join(''));
-  fill('sectors', C.sectors.filter(s => s && s.title).map(s => '<div class="sector">' + YK.icon(s.icon) + '<span>' + esc(s.title) + '</span></div>').join(''));
-  fill('bizSteps', C.bizSteps.map((s, i) => '<li><span class="num">' + (i + 1) + '</span><h4>' + esc(s.title) + '</h4><p>' + nl(s.desc) + '</p></li>').join(''));
-  fill('courierBenefits', C.courierBenefits.map(x => card(x, 'benefit')).join(''));
-  fill('requirements', C.requirements.filter(Boolean).map(r => '<li>' + YK.icon('check') + '<span>' + esc(r) + '</span></li>').join(''));
-  fill('workModels', C.workModels.map(m =>
-    '<div class="model' + (m.tag ? ' featured' : '') + '">' + (m.tag ? '<span class="tag">' + esc(m.tag) + '</span>' : '') +
-    '<h4>' + esc(m.title) + '</h4><div class="hours">' + YK.icon('saat') + esc(m.hours) + '</div><p>' + nl(m.desc) + '</p></div>').join(''));
-  fill('steps', C.steps.map((s, i) => '<li><span class="num">' + (i + 1) + '</span><h4>' + esc(s.title) + '</h4><p>' + nl(s.desc) + '</p></li>').join(''));
+  fill('stats', C.stats.map((s, i) => '<div class="stat"><b data-count="' + esc(s.value) + '"' + L('stats', i, 'value') + '>' + esc(s.value) + '</b><span' + L('stats', i, 'label') + '>' + esc(s.label) + '</span></div>').join(''));
+  fill('values', C.values.map((x, i) => card(x, 'card value', 'values', i)).join(''));
+  fill('services', C.services.map((x, i) => card(x, '', 'services', i)).join(''));
+  fill('businessBenefits', C.businessBenefits.map((x, i) => card(x, 'benefit', 'businessBenefits', i)).join(''));
+  fill('bizModels', C.bizModels.map((m, i) => '<div class="bizmodel' + (m.tag ? ' featured' : '') + '">' + (m.tag ? '<span class="tag"' + L('bizModels', i, 'tag') + '>' + esc(m.tag) + '</span>' : '') + '<span class="ic-box">' + YK.icon(m.icon) + '</span><h3' + L('bizModels', i, 'title') + '>' + esc(m.title) + '</h3><p' + L('bizModels', i, 'desc') + '>' + nl(m.desc) + '</p><a href="' + FORM_URL('isletme') + '" class="bm-link" data-sec="bizForm">Teklif iste ' + YK.icon('ok') + '</a></div>').join(''));
+  fill('sectors', C.sectors.map((s, i) => s && s.title ? '<div class="sector">' + YK.icon(s.icon) + '<span' + L('sectors', i, 'title') + '>' + esc(s.title) + '</span></div>' : '').join(''));
+  const stepLi = k => (s, i) => '<li><span class="num">' + (i + 1) + '</span><h4' + L(k, i, 'title') + '>' + esc(s.title) + '</h4><p' + L(k, i, 'desc') + '>' + nl(s.desc) + '</p></li>';
+  fill('bizSteps', C.bizSteps.map(stepLi('bizSteps')).join(''));
+  fill('courierBenefits', C.courierBenefits.map((x, i) => card(x, 'benefit', 'courierBenefits', i)).join(''));
+  fill('requirements', C.requirements.map((r, i) => r ? '<li>' + YK.icon('check') + '<span' + L('requirements', i) + '>' + esc(r) + '</span></li>' : '').join(''));
+  fill('workModels', C.workModels.map((m, i) =>
+    '<div class="model' + (m.tag ? ' featured' : '') + '">' + (m.tag ? '<span class="tag"' + L('workModels', i, 'tag') + '>' + esc(m.tag) + '</span>' : '') +
+    '<h4' + L('workModels', i, 'title') + '>' + esc(m.title) + '</h4><div class="hours">' + YK.icon('saat') + '<span' + L('workModels', i, 'hours') + '>' + esc(m.hours) + '</span></div><p' + L('workModels', i, 'desc') + '>' + nl(m.desc) + '</p></div>').join(''));
+  fill('steps', C.steps.map(stepLi('steps')).join(''));
 
   const stars = n => { n = Math.max(0, Math.min(5, parseInt(n, 10) || 5)); let h = ''; for (let i = 0; i < 5; i++) h += '<i class="' + (i < n ? 'on' : '') + '">★</i>'; return h; };
-  const testis = C.testimonials.filter(t => t && t.text);
-  fill('testimonials', testis.map((t, i) => '<figure class="testi ' + (t.type === 'kurye' ? 't-cour' : 't-biz') + '"><span class="t-type">' + YK.icon(t.type === 'kurye' ? 'motor' : 'magaza') + (t.type === 'kurye' ? 'Kurye' : 'İşletme') + '</span><span class="q">' + YK.icon('tirnak') + '</span><div class="stars" aria-label="' + (parseInt(t.rating, 10) || 5) + ' yıldız">' + stars(t.rating) + '</div><blockquote>' + nl(t.text) + '</blockquote><figcaption><span class="t-av">' + (t.photo ? '<img data-tp="' + i + '" alt="">' : esc((t.name || '?').trim().charAt(0).toLocaleUpperCase('tr-TR'))) + '</span><span><b>' + esc(t.name) + '</b><small>' + esc(t.role || '') + '</small></span></figcaption></figure>').join(''));
+  const testis = C.testimonials.map((t, i) => t && t.text ? Object.assign({ _i: i }, t) : null).filter(Boolean);
+  fill('testimonials', testis.map((t, i) => '<figure class="testi ' + (t.type === 'kurye' ? 't-cour' : 't-biz') + '"><span class="t-type">' + YK.icon(t.type === 'kurye' ? 'motor' : 'magaza') + (t.type === 'kurye' ? 'Kurye' : 'İşletme') + '</span><span class="q">' + YK.icon('tirnak') + '</span><div class="stars" aria-label="' + (parseInt(t.rating, 10) || 5) + ' yıldız">' + stars(t.rating) + '</div><blockquote' + L('testimonials', t._i, 'text') + '>' + nl(t.text) + '</blockquote><figcaption><span class="t-av">' + (t.photo ? '<img data-tp="' + i + '" alt="">' : esc((t.name || '?').trim().charAt(0).toLocaleUpperCase('tr-TR'))) + '</span><span><b' + L('testimonials', t._i, 'name') + '>' + esc(t.name) + '</b><small' + L('testimonials', t._i, 'role') + '>' + esc(t.role || '') + '</small></span></figcaption></figure>').join(''));
   $$('[data-tp]').forEach(im => YK.setImg(im, src(testis[im.dataset.tp].photo)));
 
   const regions = C.regions.filter(Boolean);
@@ -114,8 +135,8 @@
 
   // SSS: her sayfa kendi kitlesinin sorularını gösterir (kategorisiz sorular her yerde)
   const faqBox = $('#faq'), faqCat = faqBox ? faqBox.dataset.cat : '';
-  const faqs = C.faq.filter(f => f && f.q && (!faqCat || !f.cat || f.cat === 'genel' || f.cat === faqCat));
-  fill('faq', faqs.map(f => '<details class="faq-item"><summary>' + esc(f.q) + '<span class="pm"></span></summary><div class="faq-a">' + nl(f.a) + '</div></details>').join(''));
+  const faqs = C.faq.map((f, i) => f && f.q && (!faqCat || !f.cat || f.cat === 'genel' || f.cat === faqCat) ? Object.assign({ _i: i }, f) : null).filter(Boolean);
+  fill('faq', faqs.map(f => '<details class="faq-item"><summary><span' + L('faq', f._i, 'q') + '>' + esc(f.q) + '</span><span class="pm"></span></summary><div class="faq-a"' + L('faq', f._i, 'a') + '>' + nl(f.a) + '</div></details>').join(''));
   $$('.faq-item').forEach(d => d.addEventListener('toggle', () => { if (d.open) $$('.faq-item').forEach(o => { if (o !== d && o.parentNode === d.parentNode) o.open = false; }); }));
 
   // Ana sayfa kartları: kitlenin öne çıkan avantajları
@@ -142,6 +163,7 @@
   if (!testis.length) hidden.testimonials = true;
   if (!regions.length) hidden.regions = true;
   if (!C.stats.length) hidden.stats = true;
+  if (!C.sectors.some(s => s && s.title)) $$('#sectors, .h3-center[data-t="sectors_title"]').forEach(el => el.remove());
   if (!faqs.length) hidden.faq = true;
   if (!C.gallery.some(g => g && g.src)) hidden.refs = true;
   if (!(Number(C.calc.perPackage) > 0)) hidden.calc = true;
@@ -224,8 +246,9 @@
     const home = PAGE === 'home', isPost = PAGE === 'yazi' && !!post;
     const metaOf = (a, k) => { const m = document.head.querySelector('meta[' + a + '="' + k + '"]'); return m ? m.getAttribute('content') : ''; };
     // Ana sayfanın başlık/açıklaması panelden gelir; diğer sayfalarınki kendi HTML'inde yazılıdır
-    const title = home ? (TX.seo_title || TX.site_title || document.title) : document.title;
-    const desc = home ? (TX.seo_description || '') : metaOf('name', 'description');
+    const ps = { isletme: 'biz', kurye: 'cour', basvuru: 'bv', blog: 'blog' }[PAGE];
+    const title = home ? (TX.seo_title || TX.site_title || document.title) : (ps && TX['seo_' + ps + '_title']) || document.title;
+    const desc = home ? (TX.seo_description || '') : (ps && TX['seo_' + ps + '_desc']) || metaOf('name', 'description');
     const ogImg = abs(document.body.dataset.img || C.images.og || C.images.hero);
     const root = (base ? base + '/' : new URL(ROOT || './', location.href).href).replace(/\/?$/, '/');
     const url = root + (document.body.dataset.path || '');
@@ -354,7 +377,7 @@
   }
   function countUp(el) {
     const raw = el.dataset.count || '', m = raw.match(/^(\D*)(\d+(?:[.,]\d+)?)(.*)$/);
-    if (!m || reduced || /^\d+\/\d+/.test(raw)) return;
+    if (!m || reduced || EDIT || /^\d+\/\d+/.test(raw)) return;
     const target = parseFloat(m[2].replace(',', '.')), dec = (m[2].split(/[.,]/)[1] || '').length, sep = m[2].indexOf(',') >= 0 ? ',' : '.';
     const t0 = performance.now(), dur = 1300;
     (function step(t) {
@@ -426,8 +449,8 @@
 
   /* ---------- Başvuru / talep formları ---------- */
   const FORM_UI = {
-    kurye: { icon: 'motor', head: 'Kurye Başvuru Formu', sub: 'Kurye olarak ekibimize katılmak için', btn: TX.courform_btn || 'Başvuruyu Gönder', okTitle: 'courform_success_title', okText: 'courform_success_text', refLabel: 'Başvuru No' },
-    isletme: { icon: 'magaza', head: 'İşletme Talep Formu', sub: 'İşletmeniz için kurye hizmeti almak için', btn: TX.bizform_btn || 'Teklif İste', okTitle: 'bizform_success_title', okText: 'bizform_success_text', refLabel: 'Talep No' }
+    kurye: { icon: 'motor', head: 'courform_head', sub: 'courform_sub', btn: TX.courform_btn || 'Başvuruyu Gönder', okTitle: 'courform_success_title', okText: 'courform_success_text', refLabel: 'Başvuru No' },
+    isletme: { icon: 'magaza', head: 'bizform_head', sub: 'bizform_sub', btn: TX.bizform_btn || 'Teklif İste', okTitle: 'bizform_success_title', okText: 'bizform_success_text', refLabel: 'Talep No' }
   };
   $$('[data-form]').forEach(box => mountForm(box, box.dataset.form));
 
@@ -437,7 +460,7 @@
     // Telefonda isteğe bağlı alanlar "Ek bilgiler" düğmesinin altında katlanır
     const moreBtn = opts.length ? '<button type="button" class="form-more" aria-expanded="false">' + YK.icon('arti') + '<span><b>Ek bilgiler</b> <small>(isteğe bağlı)</small><em>' + opts.map(f => esc(f.label)).join(', ') + '</em></span></button>' : '';
     box.innerHTML =
-      '<div class="form-head"><span class="fh-ic">' + YK.icon(ui.icon) + '</span><div><b>' + ui.head + '</b><small>' + ui.sub + '</small></div></div>' +
+      '<div class="form-head"><span class="fh-ic">' + YK.icon(ui.icon) + '</span><div><b data-t="' + ui.head + '">' + esc(TX[ui.head]) + '</b><small data-t="' + ui.sub + '">' + esc(TX[ui.sub]) + '</small></div></div>' +
       '<div class="form-progress" aria-hidden="true"><span></span></div>' +
       '<form novalidate><div class="form-grid">' + def.fields.map(f => fieldHTML(f, type)).join('') + moreBtn + '</div>' +
       '<input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">' +
@@ -591,6 +614,35 @@
   // Telefon / WhatsApp tıklamalarını ölç (Analytics açıksa)
   document.addEventListener('click', e => { const a = e.target.closest('a[href^="tel:"], a[href*="wa.me"]'); if (a) track(a.href.indexOf('tel:') === 0 ? 'click_phone' : 'click_whatsapp'); });
 
+  /* ---------- Duyuru / kampanya penceresi (panel › Duyuru Penceresi) ---------- */
+  const PP = C.popup || {};
+  const ppPage = !PP.pages || PP.pages === 'all' || PP.pages === PAGE;
+  if (PP.on && (PP.title || PP.text) && ppPage && !EDIT) {
+    // Aynı duyuru bir kez gösterilir; metni değişirse ya da panelden "tekrar göster" denirse yeniden çıkar
+    const key = (PP.ver || 1) + '|' + (PP.title || '') + '|' + (PP.text || '');
+    const seen = store.get('yk_popup_seen');
+    if (YK.isPreview() || seen !== key) setTimeout(() => {
+      const ext = /^https?:\/\//.test(PP.link || '');
+      const href = !PP.link ? '' : ext || /^(tel:|mailto:|#)/.test(PP.link) ? PP.link : ROOT + PP.link.replace(/^\/+/, '');
+      const box = document.createElement('div'); box.className = 'pop'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'popT');
+      box.innerHTML = '<div class="pop-box">' + (PP.img ? '<div class="pop-img"><img alt=""></div>' : '') + '<button class="lb-btn pop-x" aria-label="Kapat">' + YK.icon('kapat') + '</button><div class="pop-body">' +
+        (PP.title ? '<h3 id="popT">' + nl(PP.title) + '</h3>' : '') + (PP.text ? '<p>' + nl(PP.text) + '</p>' : '') +
+        (PP.btn && href ? '<a class="btn btn-y btn-lg" href="' + esc(href) + '"' + (ext ? ' target="_blank" rel="noopener"' : '') + '>' + esc(PP.btn) + YK.icon('ok') + '</a>' : '') + '</div></div>';
+      if (PP.img) YK.setImg($('img', box), src(PP.img));
+      const close = () => { box.classList.remove('on'); store.set('yk_popup_seen', key); setTimeout(() => box.remove(), 300); document.removeEventListener('keydown', esc1); };
+      const esc1 = e => { if (e.key === 'Escape') close(); };
+      box.addEventListener('click', e => { if (e.target === box || e.target.closest('.pop-x')) close(); else if (e.target.closest('.pop-body a')) { store.set('yk_popup_seen', key); track('popup_click'); } });
+      document.addEventListener('keydown', esc1);
+      document.body.appendChild(box); requestAnimationFrame(() => box.classList.add('on'));
+    }, Math.max(0, Number(PP.delay) || 0) * 1000);
+  }
+
+  /* ---------- Sitede düzenleme modu (?duzenle=1): yalnızca panele giriş yapmış yönetici ---------- */
+  if (EDIT) {
+    window.YK_PAGE = { C: C, PAGE: PAGE, ROOT: ROOT };
+    const ed = document.createElement('script'); ed.src = ROOT + 'assets/js/editor.js?v=13'; document.body.appendChild(ed);
+  }
+
   // Panelde içerik kaydedilirse açık sitede otomatik yenile (aynı tarayıcı)
-  window.addEventListener('storage', e => { if ((e.key === 'yk_content' && !YK.isPreview()) || (e.key === 'yk_preview' && YK.isPreview())) location.reload(); });
+  window.addEventListener('storage', e => { if (EDIT) return; if ((e.key === 'yk_content' && !YK.isPreview()) || (e.key === 'yk_preview' && YK.isPreview())) location.reload(); });
 })();

@@ -18,8 +18,8 @@
   <link rel="apple-touch-icon" href="assets/img/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/style.css?v=12">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,800&display=swap" rel="stylesheet" id="ykFont">
+  <link rel="stylesheet" href="assets/css/style.css?v=13">
 </head>
 <body data-page="basvuru" data-path="basvuru.html">
   <a class="skip" href="#main">İçeriğe geç</a>
@@ -39,12 +39,12 @@
     <div class="container header-in">
       <a href="index.html" class="brand" aria-label="Yakında Kurye ana sayfa"><img data-img="logo" alt="Yakında Kurye"></a>
       <nav class="nav" id="nav" aria-label="Ana menü">
-        <a href="index.html">Ana Sayfa</a>
-        <a href="isletmeler.html" class="nav-biz" data-sec="zoneBiz"><span data-icon="magaza"></span>İşletmeler İçin</a>
-        <a href="kuryeler.html" class="nav-cour" data-sec="zoneCour"><span data-icon="motor"></span>Kuryeler İçin</a>
-        <a href="index.html#hakkimizda" data-sec="about">Hakkımızda</a>
-        <a href="blog.html" data-sec="blog">Blog</a>
-        <a href="basvuru.html#iletisim" data-sec="contact">İletişim</a>
+        <a href="index.html"><span data-t="nav_home">Ana Sayfa</span></a>
+        <a href="isletmeler.html" class="nav-biz" data-sec="zoneBiz"><span data-icon="magaza"></span><span data-t="nav_biz">İşletmeler İçin</span></a>
+        <a href="kuryeler.html" class="nav-cour" data-sec="zoneCour"><span data-icon="motor"></span><span data-t="nav_cour">Kuryeler İçin</span></a>
+        <a href="index.html#hakkimizda" data-sec="about" data-t="nav_about">Hakkımızda</a>
+        <a href="blog.html" data-sec="blog" data-t="nav_blog">Blog</a>
+        <a href="basvuru.html#iletisim" data-sec="contact" data-t="nav_contact">İletişim</a>
         <span class="nav-ctas">
           <a href="basvuru.html#isletme-basvuru" class="btn btn-y nav-cta" data-sec="bizForm" data-t="nav_cta_biz">Kurye Talep Et</a>
           <a href="basvuru.html#kurye-basvuru" class="btn btn-k nav-cta" data-sec="courForm" data-t="nav_cta_cour">Kurye Ol</a>
@@ -59,17 +59,17 @@
       <div class="container zone-in">
         <span class="zone-ic" data-icon="gonder"></span>
         <div class="zone-txt">
-          <span class="zone-tag">Online talep ve başvuru</span>
-          <h1>Başvuru ve İletişim</h1>
-          <p>İşletmeniz için kurye talep edin ya da kurye olarak ekibimize katılın. Formu doldurun, en kısa sürede sizi arayalım.</p>
+          <span class="zone-tag" data-t="bv_page_tag">Online talep ve başvuru</span>
+          <h1 data-t="bv_page_title">Başvuru ve İletişim</h1>
+          <p data-t="bv_page_text">İşletmeniz için kurye talep edin ya da kurye olarak ekibimize katılın. Formu doldurun, en kısa sürede sizi arayalım.</p>
         </div>
       </div>
     </section>
 
     <div class="container bv-wrap">
       <div class="bv-tabs" id="bvTabs" role="tablist" aria-label="Form seçimi">
-        <button type="button" role="tab" data-bv="isletme" aria-selected="true"><span data-icon="magaza"></span><span><b>İşletmeyim</b><small>Kurye talep et</small></span></button>
-        <button type="button" role="tab" data-bv="kurye" aria-selected="false"><span data-icon="motor"></span><span><b>Kuryeyim</b><small>Kurye ol, başvur</small></span></button>
+        <button type="button" role="tab" data-bv="isletme" aria-selected="true"><span data-icon="magaza"></span><span><b data-t="path_biz_label">İşletmeyim</b><small data-t="bv_tab_biz_sub">Kurye talep et</small></span></button>
+        <button type="button" role="tab" data-bv="kurye" aria-selected="false"><span data-icon="motor"></span><span><b data-t="path_cour_label">Kuryeyim</b><small data-t="bv_tab_cour_sub">Kurye ol, başvur</small></span></button>
       </div>
     </div>
 
@@ -129,8 +129,8 @@
             <div class="c-item"><span class="c-ic" data-icon="saat"></span><span><small>Çalışma saatleri</small><b data-s="hours">Operasyon: 7/24 · Ofis: Hafta içi 09:00 – 18:00</b></span></div>
           </div>
           <div class="contact-ctas">
-            <a href="#isletme-basvuru" class="btn btn-y" data-sec="bizForm"><span data-icon="magaza"></span>Kurye Talep Et</a>
-            <a href="#kurye-basvuru" class="btn btn-ghost" data-sec="courForm"><span data-icon="motor"></span>Kurye Ol</a>
+            <a href="#isletme-basvuru" class="btn btn-y" data-sec="bizForm"><span data-icon="magaza"></span><span data-t="nav_cta_biz">Kurye Talep Et</span></a>
+            <a href="#kurye-basvuru" class="btn btn-ghost" data-sec="courForm"><span data-icon="motor"></span><span data-t="nav_cta_cour">Kurye Ol</span></a>
           </div>
         </div>
         <div class="contact-visual" id="mapBox"></div>
@@ -147,24 +147,24 @@
         <div class="socials" id="socials"></div>
       </div>
       <div>
-        <h4>Kurumsal</h4>
-        <a href="index.html#hakkimizda" data-sec="about">Hakkımızda</a><a href="index.html#referanslar" data-sec="refs">Referanslar</a><a href="blog.html" data-sec="blog">Blog</a><a href="basvuru.html#iletisim" data-sec="contact">İletişim</a><button type="button" class="f-link" data-kvkk>KVKK Aydınlatma Metni</button>
+        <h4 data-t="footer_col1">Kurumsal</h4>
+        <a href="index.html#hakkimizda" data-sec="about" data-t="nav_about">Hakkımızda</a><a href="index.html#referanslar" data-sec="refs" data-t="refs_kicker">Referanslar</a><a href="blog.html" data-sec="blog" data-t="nav_blog">Blog</a><a href="basvuru.html#iletisim" data-sec="contact" data-t="nav_contact">İletişim</a><button type="button" class="f-link" data-kvkk data-t="kvkk_link">KVKK Aydınlatma Metni</button>
       </div>
       <div class="f-col-kitle">
-        <h4>İşletmeler İçin</h4>
-        <a href="isletmeler.html#hizmetler" data-sec="services">Hizmetlerimiz</a><a href="isletmeler.html#cozumler" data-sec="bizSolutions">Hizmet Modelleri</a><a href="isletmeler.html#nasil-calisir" data-sec="bizSteps">Nasıl Çalışır</a><a href="basvuru.html#isletme-basvuru" data-sec="bizForm">Kurye Talep Et</a>
+        <h4 data-t="footer_col2">İşletmeler İçin</h4>
+        <a href="isletmeler.html#hizmetler" data-sec="services" data-t="services_kicker">Hizmetlerimiz</a><a href="isletmeler.html#cozumler" data-sec="bizSolutions">Hizmet Modelleri</a><a href="isletmeler.html#nasil-calisir" data-sec="bizSteps">Nasıl Çalışır</a><a href="basvuru.html#isletme-basvuru" data-sec="bizForm" data-t="nav_cta_biz">Kurye Talep Et</a>
       </div>
       <div class="f-col-kitle">
-        <h4>Kuryeler İçin</h4>
+        <h4 data-t="footer_col3">Kuryeler İçin</h4>
         <a href="kuryeler.html#kurye-ol" data-sec="courier">Neden Yakında Kurye</a><a href="kuryeler.html#kurye-sartlar" data-sec="courier">Başvuru Şartları</a><a href="kuryeler.html#kazanc" data-sec="calc">Kazanç Hesapla</a><a href="basvuru.html#kurye-basvuru" data-sec="courForm">Kurye Başvurusu</a>
       </div>
       <div>
-        <h4>İletişim</h4>
+        <h4 data-t="footer_col4">İletişim</h4>
         <a data-href="tel" data-s="phone">0850 000 00 00</a><a data-href="mail" data-s="email">info@yakindakurye.com</a><span class="f-addr" data-s="address">Örnek Mah. Örnek Cad. No:10/A, Ankara</span>
       </div>
     </div>
     <div class="container f-bottom">
-      <span>© <span id="year"></span> Yakında Kurye. Tüm hakları saklıdır.</span>
+      <span>© <span id="year"></span> <span data-t="footer_copy">Yakında Kurye. Tüm hakları saklıdır.</span></span>
       <span class="slogan" data-t="slogan">Zamanında Yanınızda</span>
     </div>
   </footer>
@@ -184,8 +184,8 @@
     </div>
   </div>
 
-  <script src="assets/js/content.js?v=12"></script>
-  <script src="assets/js/store.js?v=12"></script>
-  <script src="assets/js/site.js?v=12"></script>
+  <script src="assets/js/content.js?v=13"></script>
+  <script src="assets/js/store.js?v=13"></script>
+  <script src="assets/js/site.js?v=13"></script>
 </body>
 </html>
